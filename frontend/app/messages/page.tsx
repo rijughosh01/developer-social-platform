@@ -322,10 +322,10 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="flex h-[80vh] max-w-5xl mx-auto bg-white rounded-lg shadow mt-8">
+    <div className="flex h-screen w-screen bg-white">
       {/* Chat List */}
-      <div className="w-1/3 border-r p-4 overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
+      <div className="w-1/3 border-r overflow-y-auto">
+        <div className="flex items-center justify-between mb-4 mt-6 px-6">
           <h2 className="text-lg font-bold">Chats</h2>
           <button
             className="bg-primary-600 text-white px-3 py-1 rounded text-sm"
@@ -386,7 +386,7 @@ export default function MessagesPage() {
         {selectedChat ? (
           <>
             {/* Chat Header */}
-            <div className="flex items-center gap-3 border-b px-4 py-2">
+            <div className="flex items-center gap-3 border-b py-3 px-4">
               {selectedChat.isGroupChat ? (
                 <>
                   <div className="w-10 h-10 flex items-center justify-center bg-primary-100 rounded-full">

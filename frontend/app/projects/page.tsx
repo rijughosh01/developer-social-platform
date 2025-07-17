@@ -219,13 +219,20 @@ export default function ProjectsPage() {
               New Project
             </button>
           </div>
-          <input
-            type="text"
-            placeholder="Search projects"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-2 w-full mb-6"
-          />
+          <div className="relative mb-6">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Search projects"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition text-gray-700 bg-white"
+            />
+          </div>
           {loading && <div>Loading projects...</div>}
           {error && <div className="text-red-500">{error}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -258,9 +265,9 @@ export default function ProjectsPage() {
                     </div>
                     <div>
                       <div className="font-semibold text-gray-900 text-base">{project.owner?.firstName} {project.owner?.lastName}</div>
-                      <div className="text-xl font-bold text-gray-900 leading-tight">{project.title}</div>
                     </div>
                   </div>
+                  <div className="text-xl font-bold text-gray-900 leading-tight mb-2 mt-1">{project.title}</div>
                   {/* Tags */}
                   {project.tags && project.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">

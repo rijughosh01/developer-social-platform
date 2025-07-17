@@ -56,7 +56,15 @@ router.get('/', [
   const total = await User.countDocuments(query);
 
   // Ensure virtuals are included
-  const usersWithVirtuals = users.map(u => u.toObject({ virtuals: true }));
+  const usersWithVirtuals = users.map(u => {
+    const obj = u.toObject({ virtuals: true });
+    let isFollowing = false;
+    if (req.user) {
+      isFollowing = u.followers.some(f => f.toString() === req.user._id.toString());
+    }
+    obj.isFollowing = isFollowing;
+    return obj;
+  });
 
   res.json({
     success: true,

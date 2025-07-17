@@ -39,7 +39,7 @@ export default function TrendingPage() {
             {/* Main Trending Content */}
             <div className="lg:col-span-2">
               <div className="max-w-5xl mx-auto py-10 px-2 sm:px-4">
-                <h1 className="text-4xl font-extrabold mb-10 text-center text-gray-900 tracking-tight">Trending</h1>
+                <h1 className="text-4xl font-extrabold mb-10 text-left text-gray-900 tracking-tight ml-2">Trending</h1>
                 <div className="grid gap-12">
                   {/* Trending Posts */}
                   <section>
@@ -219,7 +219,6 @@ export default function TrendingPage() {
                 </div>
               </div>
             </div>
-            {/* Optionally, you can add a right sidebar here if needed */}
           </div>
         </div>
       </main>

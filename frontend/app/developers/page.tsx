@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
-import { fetchUsers } from '@/store/slices/usersSlice'
+import { fetchUsers, followUser, unfollowUser } from '@/store/slices/usersSlice'
 import { FiMapPin, FiBriefcase, FiGithub, FiLinkedin, FiGlobe, FiUserPlus, FiUsers } from 'react-icons/fi'
 import { formatDistanceToNow } from 'date-fns'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
@@ -25,6 +25,7 @@ interface User {
     website?: string
   }
   bio?: string
+  isFollowing?: boolean
 }
 
 export default function DevelopersPage() {
@@ -71,17 +72,24 @@ export default function DevelopersPage() {
         <div className="max-w-4xl mx-auto py-8 px-4">
           <h1 className="text-3xl font-bold mb-6">All Developers</h1>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <input
-              type="text"
-              placeholder="Search by name or username"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/2"
-            />
+            <div className="relative w-full md:w-1/2">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search by name or username"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition text-gray-700 bg-white"
+              />
+            </div>
             <select
               value={skill}
               onChange={e => setSkill(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 w-full md:w-1/4"
+              className="w-full md:w-1/4 px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition text-gray-700 bg-white"
             >
               <option value="">All Skills</option>
               {allSkills.map(s => (
@@ -113,8 +121,17 @@ export default function DevelopersPage() {
                         <div className="text-gray-500 text-sm">@{user.username}</div>
                       </div>
                       {currentUser?._id !== user._id && (
-                        <button className="ml-2 px-3 py-1 rounded bg-primary-600 text-white text-xs flex items-center gap-1 hover:bg-primary-700 transition">
-                          <FiUserPlus className="h-4 w-4" /> Follow
+                        <button
+                          className={`ml-2 px-3 py-1 rounded text-xs flex items-center gap-1 transition font-medium ${user.isFollowing ? 'bg-gray-200 text-gray-700' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+                          onClick={async () => {
+                            if (user.isFollowing) {
+                              await dispatch(unfollowUser(user._id));
+                            } else {
+                              await dispatch(followUser(user._id));
+                            }
+                          }}
+                        >
+                          <FiUserPlus className="h-4 w-4" /> {user.isFollowing ? 'Unfollow' : 'Follow'}
                         </button>
                       )}
                     </div>
