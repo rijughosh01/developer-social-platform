@@ -5,7 +5,7 @@ import { useAppSelector } from '@/hooks/useAppDispatch';
 import { useSearchParams } from 'next/navigation';
 import { useSocket } from '@/hooks/useSocket';
 import { FaUsers } from 'react-icons/fa';
-import { FiEdit, FiCheck, FiX } from 'react-icons/fi';
+import { FiEdit, FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 
@@ -33,6 +33,8 @@ export default function MessagesPage() {
   const [pendingMessageIds, setPendingMessageIds] = useState<string[]>([]);
   const [editingMessageId, setEditingMessageId] = useState<string>('');
   const [editInput, setEditInput] = useState('');
+  const [deletingMessageId, setDeletingMessageId] = useState<string>('');
+  const [hoveredMessageId, setHoveredMessageId] = useState<string>('');
 
   const selectedChatRef = useRef(selectedChat);
   const messagesRef = useRef(messages);
@@ -184,6 +186,20 @@ export default function MessagesPage() {
     };
   }, [socket, selectedChat, joinChat]);
 
+  // Listen for message-deleted event
+  useEffect(() => {
+    if (!socket) return;
+    const handleDeleted = (data: any) => {
+      if (data.chatId === selectedChatRef.current?._id) {
+        setMessages((prev) => prev.filter((msg) => msg._id !== data.messageId));
+      }
+    };
+    socket.on('message-deleted', handleDeleted);
+    return () => {
+      socket.off('message-deleted', handleDeleted);
+    };
+  }, [socket]);
+
   // Typing indicator logic
   useEffect(() => {
     if (!selectedChat) return;
@@ -319,6 +335,26 @@ export default function MessagesPage() {
     socket?.emit('edit-message', { chatId: selectedChat._id, messageId: editingMessageId, newContent: editInput });
     setEditingMessageId('');
     setEditInput('');
+    toast.success('Message edited');
+  };
+
+  const handleDeleteMessage = async (msg: any) => {
+    if (!selectedChat) return;
+    if (!window.confirm('Are you sure you want to delete this message?')) return;
+    setDeletingMessageId(msg._id);
+    try {
+      if (socket && socket.connected) {
+        socket.emit('delete-message', { chatId: selectedChat._id, messageId: msg._id });
+      } else {
+        await chatAPI.deleteMessage(selectedChat._id, msg._id);
+        setMessages((prev) => prev.filter((m) => m._id !== msg._id));
+      }
+      toast.success('Message deleted');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete message');
+    } finally {
+      setDeletingMessageId('');
+    }
   };
 
   return (
@@ -428,9 +464,15 @@ export default function MessagesPage() {
                   <div className="space-y-2">
                     {messages.map((msg) => {
                       const isMe = !!user && msg.sender && user?._id === msg.sender._id;
+                      const canDelete = isMe;
                       const sender = selectedChat.participants.find((p: any) => p._id === msg.sender._id) || msg.sender;
                       return (
-                        <div key={msg._id} className={`flex items-end ${isMe ? 'justify-end' : 'justify-start'} gap-2`}>
+                        <div
+                          key={msg._id}
+                          className={`flex items-end ${isMe ? 'justify-end' : 'justify-start'} gap-2`}
+                          onMouseEnter={() => setHoveredMessageId(msg._id)}
+                          onMouseLeave={() => setHoveredMessageId('')}
+                        >
                           {/* Avatar for received messages */}
                           {!isMe && (sender.avatar ? (
                             <Image src={sender.avatar} alt={sender.firstName} width={32} height={32} className="rounded-full w-8 h-8 object-cover mr-1" />
@@ -465,16 +507,27 @@ export default function MessagesPage() {
                                 </>
                               )}
                             </div>
-                            {/* Edit icon for sent messages, outside the bubble */}
-                            {isMe && editingMessageId !== msg._id && (
-                              <button
-                                onClick={() => startEditMessage(msg)}
-                                className="text-xs text-primary-500 hover:text-yellow-400 transition-colors duration-150 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-300"
-                                title="Edit message"
-                                style={{ marginLeft: '2px' }}
-                              >
-                                <FiEdit size={18} />
-                              </button>
+                            {/* Show icons only on hover and if sender */}
+                            {canDelete && hoveredMessageId === msg._id && editingMessageId !== msg._id && (
+                              <>
+                                <button
+                                  onClick={() => handleDeleteMessage(msg)}
+                                  className="text-xs text-red-500 hover:text-red-700 transition-colors duration-150 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-red-300"
+                                  title="Delete message"
+                                  disabled={deletingMessageId === msg._id}
+                                  style={{ marginLeft: '2px' }}
+                                >
+                                  <FiTrash2 size={18} />
+                                </button>
+                                <button
+                                  onClick={() => startEditMessage(msg)}
+                                  className="text-xs text-primary-500 hover:text-yellow-400 transition-colors duration-150 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                                  title="Edit message"
+                                  style={{ marginLeft: '2px' }}
+                                >
+                                  <FiEdit size={18} />
+                                </button>
+                              </>
                             )}
                           </div>
                           {/* Avatar for sent messages */}

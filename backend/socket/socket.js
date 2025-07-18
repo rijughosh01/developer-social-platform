@@ -259,6 +259,27 @@ const setupSocketIO = (io) => {
         socket.emit('error', { message: 'Failed to edit message' });
       }
     });
+
+    // Handle deleting a message
+    socket.on('delete-message', async (data) => {
+      try {
+        const { chatId, messageId } = data;
+        const chat = await Chat.findById(chatId);
+        if (!chat || !chat.participants.includes(socket.userId)) {
+          return socket.emit('error', { message: 'Chat not found or access denied' });
+        }
+        await chat.deleteMessage(messageId, socket.userId);
+        // Notify all participants in the chat
+        chat.participants.forEach(participantId => {
+          io.to(participantId.toString()).emit('message-deleted', {
+            chatId,
+            messageId
+          });
+        });
+      } catch (error) {
+        socket.emit('error', { message: error.message || 'Failed to delete message' });
+      }
+    });
   });
 };
 

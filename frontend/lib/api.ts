@@ -163,6 +163,9 @@ export const chatAPI = {
     api.delete<ApiResponse>(`/chat/${id}/participants/${userId}`),
 
   leaveGroup: (id: string) => api.delete<ApiResponse>(`/chat/${id}/leave`),
+
+  deleteMessage: (chatId: string, messageId: string) =>
+    api.delete<ApiResponse>(`/chat/${chatId}/messages/${messageId}`),
 }
 
 export const commentsAPI = {
@@ -192,4 +195,4 @@ export const settingsAPI = {
   updateTheme: (userId: string, data: any) => api.put<ApiResponse>(`/users/${userId}/theme`, data),
   // Account Deletion
   deleteAccount: (userId: string) => api.delete<ApiResponse>(`/users/${userId}`),
-}; 
+}

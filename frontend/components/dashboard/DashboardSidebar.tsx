@@ -28,7 +28,9 @@ export function DashboardSidebar() {
   return (
     <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:pt-0 lg:pb-0 lg:overflow-y-auto lg:border-r lg:border-gray-200 lg:bg-white">
       <div className="flex flex-col items-center justify-center py-4 bg-gray-50 border-b border-gray-200">
-        <span className="text-2xl font-bold text-primary-600 tracking-tight">DevLink</span>
+        <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+          <span className="text-2xl font-bold text-primary-600 tracking-tight">DevLink</span>
+        </Link>
         <span className="text-xs text-gray-400 mt-1">Connect. Collaborate. Code.</span>
       </div>
       <nav className="mt-6 px-4 space-y-1">

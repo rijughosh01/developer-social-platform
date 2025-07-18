@@ -134,6 +134,26 @@ chatSchema.methods.getUnreadCount = function(userId) {
   return this.unreadCount.get(userId.toString()) || 0;
 };
 
+// Method to delete a message
+chatSchema.methods.deleteMessage = function(messageId, userId) {
+  // Find the message
+  const message = this.messages.find(m => m._id.toString() === messageId.toString());
+  if (!message) {
+    throw new Error('Message not found');
+  }
+  // Only sender can delete
+  if (message.sender.toString() !== userId.toString()) {
+    throw new Error('Not authorized to delete this message');
+  }
+  // Remove the message using array filter
+  this.messages = this.messages.filter(m => m._id.toString() !== messageId.toString());
+  // Update lastMessage if needed
+  if (this.lastMessage && this.lastMessage.toString() === messageId.toString()) {
+    this.lastMessage = this.messages.length > 0 ? this.messages[this.messages.length - 1]._id : null;
+  }
+  return this.save();
+};
+
 // Static method to find or create chat between two users
 chatSchema.statics.findOrCreateChat = async function(user1Id, user2Id) {
   let chat = await this.findOne({

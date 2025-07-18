@@ -33,7 +33,6 @@ export const useSocket = ({
       socketUrl,
       {
         auth: { token },
-        transports: ['websocket'],
       }
     );
     socketRef.current = socket;

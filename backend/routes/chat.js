@@ -413,4 +413,25 @@ router.delete('/:id/leave', protect, asyncHandler(async (req, res) => {
   });
 }));
 
+// @desc    Delete a message from a chat
+// @route   DELETE /api/chat/:chatId/messages/:messageId
+// @access  Private (sender or group admin)
+router.delete('/:chatId/messages/:messageId', protect, asyncHandler(async (req, res) => {
+  const { chatId, messageId } = req.params;
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return res.status(404).json({ success: false, message: 'Chat not found' });
+  }
+  // Check if user is a participant
+  if (!chat.participants.some(p => p.toString() === req.user._id.toString())) {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+  try {
+    await chat.deleteMessage(messageId, req.user._id);
+    res.json({ success: true, message: 'Message deleted successfully' });
+  } catch (err) {
+    res.status(403).json({ success: false, message: err.message });
+  }
+}));
+
 module.exports = router; 
