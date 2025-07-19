@@ -7,6 +7,23 @@ import { createPost } from '@/store/slices/postsSlice'
 import { Button } from '@/components/ui/button'
 import { FiImage, FiX, FiSend, FiLoader } from 'react-icons/fi'
 import toast from 'react-hot-toast'
+import Editor from 'react-simple-code-editor'
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import js from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript'
+import ts from 'react-syntax-highlighter/dist/esm/languages/hljs/typescript'
+import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python'
+import java from 'react-syntax-highlighter/dist/esm/languages/hljs/java'
+import cpp from 'react-syntax-highlighter/dist/esm/languages/hljs/cpp'
+import xml from 'react-syntax-highlighter/dist/esm/languages/hljs/xml'
+
+SyntaxHighlighter.registerLanguage('javascript', js)
+SyntaxHighlighter.registerLanguage('typescript', ts)
+SyntaxHighlighter.registerLanguage('python', python)
+SyntaxHighlighter.registerLanguage('java', java)
+SyntaxHighlighter.registerLanguage('cpp', cpp)
+SyntaxHighlighter.registerLanguage('markup', xml)
 
 interface CreatePostForm {
   content: string
@@ -20,7 +37,11 @@ export function CreatePost() {
   const [content, setContent] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [tagsInput, setTagsInput] = useState('')
-  
+  const [postType, setPostType] = useState<'regular' | 'code'>('regular')
+  const [code, setCode] = useState('')
+  const [codeLanguage, setCodeLanguage] = useState('javascript')
+  const [codeTab, setCodeTab] = useState<'edit' | 'preview'>('edit')
+
   const dispatch = useAppDispatch()
   const { user } = useAppSelector((state) => state.auth)
 
@@ -50,31 +71,48 @@ export function CreatePost() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() && !selectedImage) {
-      toast.error('Please write something or add an image');
-      return;
-    }
-    if (!title.trim()) {
-      toast.error('Please enter a title');
-      return;
+    if (postType === 'regular') {
+      if (!content.trim() && !selectedImage) {
+        toast.error('Please write something or add an image');
+        return;
+      }
+      if (!title.trim()) {
+        toast.error('Please enter a title');
+        return;
+      }
+    } else if (postType === 'code') {
+      if (!title.trim()) {
+        toast.error('Please enter a title');
+        return;
+      }
+      if (!code.trim()) {
+        toast.error('Please enter some code');
+        return;
+      }
     }
     setIsCreating(true);
     let imageUrl = '';
     try {
-      if (selectedImage) {
+      if (postType === 'regular' && selectedImage) {
         imageUrl = await uploadImageToBackend(selectedImage);
       }
-      // Parse tags input into array, trim whitespace, remove empty tags
       const tags = tagsInput
         .split(',')
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
-      await dispatch(createPost({ title, content, image: imageUrl, tags }));
+      if (postType === 'regular') {
+        await dispatch(createPost({ title, content, image: imageUrl, tags, type: 'regular' }));
+      } else {
+        await dispatch(createPost({ title, code, codeLanguage, tags, type: 'code' }));
+      }
       setTitle('');
       setContent('');
       setTagsInput('');
       setSelectedImage(null);
       setImagePreview(null);
+      setCode('');
+      setCodeLanguage('javascript');
+      setPostType('regular');
       toast.success('Post created successfully!');
     } catch (err: any) {
       toast.error(err.message || 'Failed to create post');
@@ -111,6 +149,11 @@ export function CreatePost() {
           {user?.firstName?.charAt(0) || ''}{user?.lastName?.charAt(0) || ''}
         </div>
         <form onSubmit={onSubmit} className="flex-1">
+          {/* Post type toggle */}
+          <div className="flex gap-2 mb-2">
+            <button type="button" className={`px-3 py-1 rounded-lg text-sm font-medium border ${postType === 'regular' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border-gray-200'}`} onClick={() => setPostType('regular')}>Regular Post</button>
+            <button type="button" className={`px-3 py-1 rounded-lg text-sm font-medium border ${postType === 'code' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border-gray-200'}`} onClick={() => setPostType('code')}>Code Post</button>
+          </div>
           <input
             type="text"
             placeholder="Title"
@@ -126,20 +169,100 @@ export function CreatePost() {
             onChange={e => setTagsInput(e.target.value)}
             className="w-full mb-2 px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base placeholder-gray-400 transition"
           />
-          <textarea
-            placeholder="What's on your mind?"
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            required
-            rows={3}
-            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none placeholder-gray-400 transition"
-          />
+          {postType === 'regular' && (
+            <textarea
+              placeholder="What's on your mind?"
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              required
+              rows={3}
+              className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none placeholder-gray-400 transition"
+            />
+          )}
+          {postType === 'code' && (
+            <>
+              <div className="flex gap-2 mb-2">
+                <select
+                  value={codeLanguage}
+                  onChange={e => setCodeLanguage(e.target.value)}
+                  className="px-3 py-1 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-sm"
+                >
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                  <option value="markup">HTML</option>
+                </select>
+                <span className="text-xs text-gray-400 self-center">Select language</span>
+              </div>
+              <div className="flex gap-2 mb-2">
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded-lg text-sm font-medium border ${codeTab === 'edit' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border-gray-200'}`}
+                  onClick={() => setCodeTab('edit')}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded-lg text-sm font-medium border ${codeTab === 'preview' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border-gray-200'}`}
+                  onClick={() => setCodeTab('preview')}
+                >
+                  Preview
+                </button>
+              </div>
+              {codeTab === 'edit' && (
+                <div className="w-full max-w-full" style={{ height: 240 }}>
+                  <textarea
+                    value={code}
+                    onChange={e => setCode(e.target.value)}
+                    className="w-full h-full font-mono text-sm rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 bg-white p-3 resize-none"
+                    style={{
+                      fontFamily: 'Fira Mono, monospace',
+                      fontSize: 14,
+                      minHeight: 0,
+                      height: '100%',
+                      overflowY: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                      color: '#111',
+                      background: '#fff',
+                    }}
+                    placeholder="Paste or write your code here..."
+                  />
+                </div>
+              )}
+              {codeTab === 'preview' && code && (
+                <div className="w-full max-w-full" style={{ height: 320 }}>
+                  <SyntaxHighlighter
+                    language={codeLanguage || 'javascript'}
+                    style={atomOneDark}
+                    customStyle={{
+                      borderRadius: '0.75rem',
+                      fontSize: 16,
+                      padding: 20,
+                      minWidth: 0,
+                      height: '280px',
+                      overflowY: 'auto',
+                      background: '#1e1e1e',
+                      boxShadow: '0 4px 24px 0 rgba(0, 123, 255, 0.15)',
+                      borderBottom: '4px solid #2563eb',
+                    }}
+                    showLineNumbers
+                  >
+                    {code}
+                  </SyntaxHighlighter>
+                </div>
+              )}
+            </>
+          )}
           {errors.content && (
             <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>
           )}
 
           {/* Image Preview */}
-          {imagePreview && (
+          {postType === 'regular' && imagePreview && (
             <div className="mt-3 relative group w-fit">
               <img
                 src={imagePreview}
@@ -165,18 +288,20 @@ export function CreatePost() {
           )}
 
           <div className="flex items-center justify-between mt-4">
-            <label className="cursor-pointer flex items-center gap-2 text-gray-500 hover:text-primary-600">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              <div className="p-2 hover:bg-primary-50 rounded-full transition-colors">
-                <FiImage className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium hidden sm:inline">Add image</span>
-            </label>
+            {postType === 'regular' && (
+              <label className="cursor-pointer flex items-center gap-2 text-gray-500 hover:text-primary-600">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <div className="p-2 hover:bg-primary-50 rounded-full transition-colors">
+                  <FiImage className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-medium hidden sm:inline">Add image</span>
+              </label>
+            )}
             <Button
               type="submit"
               disabled={isCreating || isUploading}

@@ -23,6 +23,21 @@ import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
 import { commentsAPI, savedAPI, api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import js from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript'
+import ts from 'react-syntax-highlighter/dist/esm/languages/hljs/typescript'
+import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python'
+import java from 'react-syntax-highlighter/dist/esm/languages/hljs/java'
+import cpp from 'react-syntax-highlighter/dist/esm/languages/hljs/cpp'
+import xml from 'react-syntax-highlighter/dist/esm/languages/hljs/xml'
+
+SyntaxHighlighter.registerLanguage('javascript', js)
+SyntaxHighlighter.registerLanguage('typescript', ts)
+SyntaxHighlighter.registerLanguage('python', python)
+SyntaxHighlighter.registerLanguage('java', java)
+SyntaxHighlighter.registerLanguage('cpp', cpp)
+SyntaxHighlighter.registerLanguage('markup', xml)
 
 interface PostCardProps {
   post: any
@@ -400,9 +415,26 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
               ))}
             </div>
           )}
-          <div className="text-lg text-gray-800 mb-4 whitespace-pre-line">
-            {post.content}
-          </div>
+          {post.type === 'code' ? (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="inline-block px-2 py-0.5 rounded bg-gray-200 text-xs font-mono text-gray-700">{post.codeLanguage || 'code'}</span>
+                <span className="text-xs text-gray-400">Code Post</span>
+              </div>
+              <SyntaxHighlighter
+                language={post.codeLanguage || 'javascript'}
+                style={atomOneLight}
+                customStyle={{ borderRadius: '0.5rem', fontSize: 14, padding: 16 }}
+                showLineNumbers
+              >
+                {post.code || ''}
+              </SyntaxHighlighter>
+            </div>
+          ) : (
+            <div className="text-lg text-gray-800 mb-4 whitespace-pre-line">
+              {post.content}
+            </div>
+          )}
         </>
       )}
 
@@ -447,7 +479,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
       {/* Post Actions */}
       <div className="px-4 py-3 border-t border-gray-200">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-10">
             <button
               onClick={handleLike}
               className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-colors ${
@@ -456,7 +488,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                   : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
               }`}
             >
-              <FiHeart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
+              <FiHeart className={`h-6 w-6 ${post.isLiked ? 'fill-current' : ''}`} />
               <span className="text-sm font-medium">{post.likesCount || 0}</span>
             </button>
 
@@ -464,7 +496,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
               onClick={handleToggleComments}
               className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             >
-              <FiMessageCircle className="h-4 w-4" />
+              <FiMessageCircle className="h-6 w-6" />
               <span className="text-sm font-medium">{post.commentsCount || 0}</span>
             </button>
 
@@ -473,7 +505,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                 onClick={() => setShowShareMenu((prev) => !prev)}
                 className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
               >
-                <FiShare className="h-4 w-4" />
+                <FiShare className="h-6 w-6" />
                 <span className="text-sm font-medium">Share</span>
               </button>
               {showShareMenu && (
@@ -519,7 +551,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                 onClick={handleSave}
                 className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-colors ${isSaved ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}
               >
-                <FiBookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+                <FiBookmark className={`h-6 w-6 ${isSaved ? 'fill-current' : ''}`} />
                 <span className="text-sm font-medium">{isSaved ? 'Saved' : 'Save'}</span>
               </button>
             )}

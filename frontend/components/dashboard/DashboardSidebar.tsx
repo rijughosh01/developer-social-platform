@@ -9,7 +9,8 @@ import {
   FiMessageSquare, 
   FiBookmark,
   FiTrendingUp,
-  FiSettings
+  FiSettings,
+  FiCode
 } from 'react-icons/fi'
 
 const navigation = [
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Messages', href: '/messages', icon: FiMessageSquare },
   { name: 'Saved', href: '/saved', icon: FiBookmark },
   { name: 'Trending', href: '/trending', icon: FiTrendingUp },
+  { name: 'Code Feed', href: '/code-feed', icon: FiCode },
   { name: 'Settings', href: '/settings', icon: FiSettings },
 ]
 

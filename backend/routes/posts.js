@@ -141,9 +141,22 @@ router.post('/', protect, [
     .isLength({ min: 1, max: 200 })
     .withMessage('Title is required and must be less than 200 characters'),
   body('content')
+    .optional()
     .trim()
-    .isLength({ min: 1, max: 10000 })
-    .withMessage('Content is required and must be less than 10000 characters'),
+    .isLength({ max: 10000 })
+    .withMessage('Content must be less than 10000 characters'),
+  body('code')
+    .optional()
+    .isString()
+    .withMessage('Code must be a string'),
+  body('codeLanguage')
+    .optional()
+    .isString()
+    .withMessage('Language must be a string'),
+  body('type')
+    .optional()
+    .isIn(['regular', 'code'])
+    .withMessage('Type must be either regular or code'),
   body('excerpt')
     .optional()
     .trim()
@@ -162,13 +175,24 @@ router.post('/', protect, [
     .isURL()
     .withMessage('Image URL must be valid')
 ], validate, asyncHandler(async (req, res) => {
-  const { title, content, excerpt, category, tags, image } = req.body;
+  const { title, content, code, codeLanguage, type, excerpt, category, tags, image } = req.body;
+
+  // For code posts, either content or code must be present
+  if (type === 'code' && !code) {
+    return res.status(400).json({
+      success: false,
+      message: 'Code is required for code posts'
+    });
+  }
 
   const post = await Post.create({
     author: req.user._id,
     title,
-    content,
-    excerpt: excerpt || content.substring(0, 300),
+    content: content || '',
+    code: code || '',
+    language: codeLanguage || '',
+    type: type || 'regular',
+    excerpt: excerpt || (content ? content.substring(0, 300) : ''),
     category: category || 'general',
     tags: tags || [],
     image: image || ''
@@ -508,6 +532,42 @@ router.post('/:id/view', asyncHandler(async (req, res) => {
   }
   await post.incrementViews();
   res.json({ success: true, views: post.views });
+}));
+
+// @desc    Save a post
+// @route   POST /api/posts/:id/save
+// @access  Private
+router.post('/:id/save', protect, asyncHandler(async (req, res) => {
+  const postId = req.params.id;
+  const user = await require('../models/User').findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  if (!user.savedPosts.includes(postId)) {
+    user.savedPosts.push(postId);
+    await user.save();
+  }
+
+  res.json({ success: true, message: 'Post saved' });
+}));
+
+// @desc    Unsave a post
+// @route   DELETE /api/posts/:id/save
+// @access  Private
+router.delete('/:id/save', protect, asyncHandler(async (req, res) => {
+  const postId = req.params.id;
+  const user = await require('../models/User').findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  user.savedPosts = user.savedPosts.filter(id => id.toString() !== postId.toString());
+  await user.save();
+
+  res.json({ success: true, message: 'Post unsaved' });
 }));
 
 module.exports = router; 

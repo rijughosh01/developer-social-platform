@@ -33,8 +33,34 @@ const postSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, 'Post content is required'],
-    maxlength: [10000, 'Content cannot exceed 10000 characters']
+    maxlength: [10000, 'Content cannot exceed 10000 characters'],
+    validate: {
+      validator: function (v) {
+        // Only require content for regular posts
+        return this.type === 'code' ? true : (v && v.trim().length > 0);
+      },
+      message: 'Post content is required'
+    }
+  },
+  code: {
+    type: String,
+    default: '',
+    validate: {
+      validator: function (v) {
+        // Only require code for code posts
+        return this.type === 'code' ? (v && v.trim().length > 0) : true;
+      },
+      message: 'Code is required for code posts'
+    }
+  },
+  codeLanguage: {
+    type: String,
+    default: ''
+  },
+  type: {
+    type: String,
+    enum: ['regular', 'code'],
+    default: 'regular'
   },
   excerpt: {
     type: String,
