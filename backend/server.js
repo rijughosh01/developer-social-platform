@@ -17,6 +17,7 @@ const commentRoutes = require("./routes/comments");
 const trendingRoutes = require("./routes/trending");
 const uploadRoute = require("./routes/upload");
 const notificationRoutes = require("./routes/notifications");
+const analyticsRoutes = require("./routes/analytics");
 
 const { setupSocketIO } = require("./socket/socket");
 
@@ -70,6 +71,7 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/trending", trendingRoutes);
 app.use("/api/upload", uploadRoute);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

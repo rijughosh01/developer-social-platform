@@ -57,6 +57,16 @@ const postSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  difficulty: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    default: 'beginner'
+  },
+  description: {
+    type: String,
+    maxlength: [2000, 'Description cannot exceed 2000 characters'],
+    default: ''
+  },
   type: {
     type: String,
     enum: ['regular', 'code'],
@@ -92,10 +102,53 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  views: {
+  copies: {
     type: Number,
     default: 0
-  }
+  },
+  forkedFrom: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post'
+  },
+  isFork: {
+    type: Boolean,
+    default: false
+  },
+  reviewRequests: [{
+    reviewer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    comment: {
+      type: String,
+      required: true,
+      maxlength: [1000, 'Review comment cannot exceed 1000 characters']
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: 5
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'completed', 'rejected'],
+      default: 'pending'
+    },
+    response: {
+      type: String,
+      maxlength: [1000, 'Review response cannot exceed 1000 characters']
+    },
+    requesterReply: {
+      type: String,
+      maxlength: [1000, 'Requester reply cannot exceed 1000 characters']
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -157,9 +210,9 @@ postSchema.methods.removeComment = function(commentId) {
   return this.save();
 };
 
-// Method to increment views
-postSchema.methods.incrementViews = function() {
-  this.views += 1;
+// Method to increment copies
+postSchema.methods.incrementCopies = function() {
+  this.copies += 1;
   return this.save();
 };
 

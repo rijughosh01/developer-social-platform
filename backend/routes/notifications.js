@@ -202,4 +202,61 @@ router.put('/settings', protect, asyncHandler(async (req, res) => {
   });
 }));
 
+// @desc    Get collaboration notifications
+// @route   GET /api/notifications/collaboration
+// @access  Private
+router.get('/collaboration', protect, asyncHandler(async (req, res) => {
+  const notifications = await Notification.find({ 
+    recipient: req.user._id,
+    type: { $in: ['review_request', 'review_response', 'fork_created', 'fork_received', 'collaboration_invite'] }
+  })
+    .populate('sender', 'firstName lastName username avatar')
+    .populate('data.postId', 'title')
+    .sort({ createdAt: -1 })
+    .limit(50);
+
+  res.json({
+    success: true,
+    data: notifications
+  });
+}));
+
+// @desc    Mark collaboration notification as read
+// @route   PUT /api/notifications/collaboration/:id/read
+// @access  Private
+router.put('/collaboration/:id/read', protect, asyncHandler(async (req, res) => {
+  const notification = await Notification.findOneAndUpdate(
+    { _id: req.params.id, recipient: req.user._id },
+    { isRead: true },
+    { new: true }
+  );
+
+  if (!notification) {
+    return res.status(404).json({ success: false, message: 'Notification not found' });
+  }
+
+  res.json({
+    success: true,
+    data: notification
+  });
+}));
+
+// @desc    Mark all collaboration notifications as read
+// @route   PUT /api/notifications/collaboration/read-all
+// @access  Private
+router.put('/collaboration/read-all', protect, asyncHandler(async (req, res) => {
+  await Notification.updateMany(
+    { 
+      recipient: req.user._id,
+      type: { $in: ['review_request', 'review_response', 'fork_created', 'fork_received', 'collaboration_invite'] }
+    },
+    { isRead: true }
+  );
+
+  res.json({
+    success: true,
+    message: 'All collaboration notifications marked as read'
+  });
+}));
+
 module.exports = router; 

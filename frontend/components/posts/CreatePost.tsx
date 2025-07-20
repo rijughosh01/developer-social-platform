@@ -17,6 +17,10 @@ import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python'
 import java from 'react-syntax-highlighter/dist/esm/languages/hljs/java'
 import cpp from 'react-syntax-highlighter/dist/esm/languages/hljs/cpp'
 import xml from 'react-syntax-highlighter/dist/esm/languages/hljs/xml'
+import css from 'react-syntax-highlighter/dist/esm/languages/hljs/css'
+import php from 'react-syntax-highlighter/dist/esm/languages/hljs/php'
+import sql from 'react-syntax-highlighter/dist/esm/languages/hljs/sql'
+import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash'
 
 SyntaxHighlighter.registerLanguage('javascript', js)
 SyntaxHighlighter.registerLanguage('typescript', ts)
@@ -24,6 +28,10 @@ SyntaxHighlighter.registerLanguage('python', python)
 SyntaxHighlighter.registerLanguage('java', java)
 SyntaxHighlighter.registerLanguage('cpp', cpp)
 SyntaxHighlighter.registerLanguage('markup', xml)
+SyntaxHighlighter.registerLanguage('css', css)
+SyntaxHighlighter.registerLanguage('php', php)
+SyntaxHighlighter.registerLanguage('sql', sql)
+SyntaxHighlighter.registerLanguage('bash', bash)
 
 interface CreatePostForm {
   content: string
@@ -40,6 +48,8 @@ export function CreatePost() {
   const [postType, setPostType] = useState<'regular' | 'code'>('regular')
   const [code, setCode] = useState('')
   const [codeLanguage, setCodeLanguage] = useState('javascript')
+  const [codeDifficulty, setCodeDifficulty] = useState('beginner')
+  const [codeDescription, setCodeDescription] = useState('')
   const [codeTab, setCodeTab] = useState<'edit' | 'preview'>('edit')
 
   const dispatch = useAppDispatch()
@@ -103,7 +113,8 @@ export function CreatePost() {
       if (postType === 'regular') {
         await dispatch(createPost({ title, content, image: imageUrl, tags, type: 'regular' }));
       } else {
-        await dispatch(createPost({ title, code, codeLanguage, tags, type: 'code' }));
+        console.log('Creating code post with difficulty:', codeDifficulty);
+        await dispatch(createPost({ title, code, codeLanguage, difficulty: codeDifficulty, description: codeDescription, tags, type: 'code' }));
       }
       setTitle('');
       setContent('');
@@ -112,6 +123,8 @@ export function CreatePost() {
       setImagePreview(null);
       setCode('');
       setCodeLanguage('javascript');
+      setCodeDifficulty('beginner');
+      setCodeDescription('');
       setPostType('regular');
       toast.success('Post created successfully!');
     } catch (err: any) {
@@ -148,7 +161,7 @@ export function CreatePost() {
         <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center text-white text-lg font-semibold">
           {user?.firstName?.charAt(0) || ''}{user?.lastName?.charAt(0) || ''}
         </div>
-        <form onSubmit={onSubmit} className="flex-1">
+        <form onSubmit={onSubmit} className="flex-1 min-w-0">
           {/* Post type toggle */}
           <div className="flex gap-2 mb-2">
             <button type="button" className={`px-3 py-1 rounded-lg text-sm font-medium border ${postType === 'regular' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border-gray-200'}`} onClick={() => setPostType('regular')}>Regular Post</button>
@@ -192,10 +205,42 @@ export function CreatePost() {
                   <option value="python">Python</option>
                   <option value="java">Java</option>
                   <option value="cpp">C++</option>
+                  <option value="css">CSS</option>
+                  <option value="php">PHP</option>
+                  <option value="sql">SQL</option>
+                  <option value="bash">Bash</option>
                   <option value="markup">HTML</option>
+                  <option value="react">React</option>
+                  <option value="node">Node.js</option>
                 </select>
                 <span className="text-xs text-gray-400 self-center">Select language</span>
               </div>
+              
+              {/* Difficulty Level Selector */}
+              <div className="flex gap-2 mb-2">
+                <select
+                  value={codeDifficulty}
+                  onChange={e => setCodeDifficulty(e.target.value)}
+                  className="px-3 py-1 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-sm"
+                >
+                  <option value="beginner">🌱 Beginner</option>
+                  <option value="intermediate">🚀 Intermediate</option>
+                  <option value="advanced">⚡ Advanced</option>
+                </select>
+                <span className="text-xs text-gray-400 self-center">Select difficulty</span>
+              </div>
+              
+              {/* Description Field */}
+              <div className="mb-2">
+                <textarea
+                  placeholder="Describe your code, explain what it does, or add any context..."
+                  value={codeDescription}
+                  onChange={e => setCodeDescription(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none placeholder-gray-400 transition"
+                />
+              </div>
+              
               <div className="flex gap-2 mb-2">
                 <button
                   type="button"
@@ -233,26 +278,42 @@ export function CreatePost() {
                   />
                 </div>
               )}
-              {codeTab === 'preview' && code && (
-                <div className="w-full max-w-full" style={{ height: 320 }}>
-                  <SyntaxHighlighter
-                    language={codeLanguage || 'javascript'}
-                    style={atomOneDark}
-                    customStyle={{
-                      borderRadius: '0.75rem',
-                      fontSize: 16,
-                      padding: 20,
-                      minWidth: 0,
-                      height: '280px',
-                      overflowY: 'auto',
-                      background: '#1e1e1e',
-                      boxShadow: '0 4px 24px 0 rgba(0, 123, 255, 0.15)',
-                      borderBottom: '4px solid #2563eb',
-                    }}
-                    showLineNumbers
-                  >
-                    {code}
-                  </SyntaxHighlighter>
+              {codeTab === 'preview' && (
+                <div className="w-full border border-gray-200 rounded-lg overflow-hidden" style={{ maxWidth: '100%', wordWrap: 'break-word', minWidth: 0 }}>
+                  {code ? (
+                    <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
+                      <SyntaxHighlighter
+                        language={codeLanguage || 'javascript'}
+                        style={atomOneDark}
+                        customStyle={{
+                          borderRadius: '0.5rem',
+                          fontSize: 14,
+                          padding: 16,
+                          margin: 0,
+                          background: '#1e1e1e',
+                          minHeight: '240px',
+                          maxHeight: '400px',
+                          overflowY: 'auto',
+                          overflowX: 'auto',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                          maxWidth: '100%',
+                          minWidth: 0,
+                        }}
+                        showLineNumbers
+                      >
+                        {code}
+                      </SyntaxHighlighter>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-60 bg-gray-50 text-gray-500">
+                      <div className="text-center">
+                        <div className="text-lg mb-2">📝</div>
+                        <div className="text-sm">No code to preview</div>
+                        <div className="text-xs mt-1">Switch to Edit tab to write code</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>

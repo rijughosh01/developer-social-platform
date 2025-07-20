@@ -5,6 +5,7 @@ const { protect, optionalAuth } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const Post = require('../models/Post');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
 const NotificationService = require('../utils/notificationService');
 
 const router = express.Router();
@@ -68,6 +69,10 @@ router.get('/', [
 
   const posts = await Post.find(query)
     .populate('author', 'username firstName lastName avatar')
+    .populate({
+      path: 'forkedFrom',
+      populate: { path: 'author', select: 'username firstName lastName avatar' }
+    })
     .sort(req.query.search ? { score: { $meta: 'textScore' } } : { createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -95,13 +100,227 @@ router.get('/', [
   });
 }));
 
+// Get review requests for a user (both as requester and reviewer)
+router.get('/review-requests', protect, asyncHandler(async (req, res) => {
+  // Reviews where the user is the post author (requester)
+  const postsAsAuthor = await Post.find({
+    author: req.user._id,
+    'reviewRequests.0': { $exists: true }
+  }).populate('reviewRequests.reviewer', 'firstName lastName username');
+
+  // Reviews where the user is the reviewer
+  const postsAsReviewer = await Post.find({
+    'reviewRequests.reviewer': req.user._id
+  }).populate('author', 'firstName lastName username');
+
+  // Collect review requests for both roles
+  const reviewRequests = [];
+
+  // As requester
+  postsAsAuthor.forEach(post => {
+    post.reviewRequests.forEach(review => {
+      reviewRequests.push({
+        _id: review._id,
+        post: {
+          _id: post._id,
+          title: post.title,
+          code: post.code,
+          codeLanguage: post.codeLanguage,
+          author: {
+            _id: post.author,
+            firstName: post.author.firstName,
+            lastName: post.author.lastName,
+            username: post.author.username
+          }
+        },
+        reviewer: review.reviewer,
+        comment: review.comment,
+        rating: review.rating,
+        status: review.status,
+        response: review.response,
+        requesterReply: review.requesterReply,
+        createdAt: review.createdAt,
+        role: 'requester'
+      });
+    });
+  });
+
+  // As reviewer
+  postsAsReviewer.forEach(post => {
+    post.reviewRequests.forEach(review => {
+      if (review.reviewer && review.reviewer._id.toString() === req.user._id.toString()) {
+        reviewRequests.push({
+          _id: review._id,
+          post: {
+            _id: post._id,
+            title: post.title,
+            code: post.code,
+            codeLanguage: post.codeLanguage,
+            author: {
+              _id: post.author._id,
+              firstName: post.author.firstName,
+              lastName: post.author.lastName,
+              username: post.author.username
+            }
+          },
+          reviewer: {
+            _id: review.reviewer._id,
+            firstName: review.reviewer.firstName,
+            lastName: review.reviewer.lastName,
+            username: review.reviewer.username
+          },
+          comment: review.comment,
+          rating: review.rating,
+          status: review.status,
+          response: review.response,
+          requesterReply: review.requesterReply,
+          createdAt: review.createdAt,
+          role: 'reviewer'
+        });
+      }
+    });
+  });
+
+  res.json({
+    success: true,
+    data: reviewRequests
+  });
+}));
+
+// Update review request status
+router.put('/review-requests/:reviewId', protect, asyncHandler(async (req, res) => {
+  const { status, response } = req.body;
+  
+  const post = await Post.findOne({
+    author: req.user._id,
+    'reviewRequests._id': req.params.reviewId
+  });
+
+  if (!post) {
+    return res.status(404).json({ success: false, message: 'Review request not found' });
+  }
+
+  const reviewRequest = post.reviewRequests.id(req.params.reviewId);
+  if (!reviewRequest) {
+    return res.status(404).json({ success: false, message: 'Review request not found' });
+  }
+
+  reviewRequest.status = status;
+  if (response) {
+    reviewRequest.response = response;
+  }
+
+  await post.save();
+
+  res.json({
+    success: true,
+    message: 'Review request updated successfully',
+    data: reviewRequest
+  });
+}));
+
+// Add requester reply to a review request
+router.put('/review-requests/:reviewId/requester-reply', protect, asyncHandler(async (req, res) => {
+  const { requesterReply } = req.body;
+
+  // Find the post where the current user is the author and the review request exists
+  const post = await Post.findOne({
+    author: req.user._id,
+    'reviewRequests._id': req.params.reviewId
+  });
+
+  if (!post) {
+    return res.status(404).json({ success: false, message: 'Review request not found' });
+  }
+
+  const reviewRequest = post.reviewRequests.id(req.params.reviewId);
+  if (!reviewRequest) {
+    return res.status(404).json({ success: false, message: 'Review request not found' });
+  }
+
+  reviewRequest.requesterReply = requesterReply;
+  await post.save();
+
+  res.json({
+    success: true,
+    message: 'Requester reply added successfully',
+    data: reviewRequest
+  });
+}));
+
+// Get fork history
+router.get('/fork-history', protect, asyncHandler(async (req, res) => {
+  const { filter } = req.query;
+  
+  let query = {};
+  
+  switch (filter) {
+    case 'my-forks':
+      // Posts that the current user has forked (only code posts)
+      query = { author: req.user._id, isFork: true, type: 'code' };
+      break;
+    case 'forks-of-mine':
+      // Posts that others have forked from the current user's code posts
+      query = { author: req.user._id, type: 'code', forkedFrom: { $exists: false } };
+      break;
+    default:
+      // All fork activity related to the current user (only code posts)
+      query = { 
+        type: 'code',
+        $or: [
+          { author: req.user._id, isFork: true },
+          { author: req.user._id, forkedFrom: { $exists: false } }
+        ] 
+      };
+  }
+
+  const posts = await Post.find(query)
+    .populate('author', 'firstName lastName username')
+    .populate('forkedFrom', 'title author')
+    .populate('forkedFrom.author', 'firstName lastName username')
+    .sort({ createdAt: -1 });
+
+  // Get forks of each post (only code posts)
+  const postsWithForks = await Promise.all(
+    posts.map(async (post) => {
+      const forks = await Post.find({ forkedFrom: post._id, type: 'code' })
+        .populate('author', 'firstName lastName username')
+        .select('title author createdAt')
+        .sort({ createdAt: -1 });
+
+      return {
+        _id: post._id,
+        title: post.title,
+        description: post.description,
+        code: post.code,
+        codeLanguage: post.codeLanguage,
+        difficulty: post.difficulty,
+        createdAt: post.createdAt,
+        forkedFrom: post.forkedFrom,
+        forks: forks,
+        likesCount: post.likesCount,
+        copies: post.copies
+      };
+    })
+  );
+
+  res.json({
+    success: true,
+    data: postsWithForks
+  });
+}));
+
 // @desc    Get post by ID
 // @route   GET /api/posts/:id
 // @access  Public
 router.get('/:id', optionalAuth, asyncHandler(async (req, res) => {
   const post = await Post.findById(req.params.id)
     .populate('author', 'username firstName lastName avatar bio')
-    .populate('likes', 'username firstName lastName avatar');
+    .populate('likes', 'username firstName lastName avatar')
+    .populate({
+      path: 'forkedFrom',
+      populate: { path: 'author', select: 'username firstName lastName avatar' }
+    });
 
   if (!post) {
     return res.status(404).json({
@@ -109,9 +328,6 @@ router.get('/:id', optionalAuth, asyncHandler(async (req, res) => {
       message: 'Post not found'
     });
   }
-
-  // Increment views
-  await post.incrementViews();
 
   // Check if current user liked the post
   let isLiked = false;
@@ -153,6 +369,10 @@ router.post('/', protect, [
     .optional()
     .isString()
     .withMessage('Language must be a string'),
+  body('difficulty')
+    .optional()
+    .isIn(['beginner', 'intermediate', 'advanced'])
+    .withMessage('Difficulty must be beginner, intermediate, or advanced'),
   body('type')
     .optional()
     .isIn(['regular', 'code'])
@@ -175,7 +395,10 @@ router.post('/', protect, [
     .isURL()
     .withMessage('Image URL must be valid')
 ], validate, asyncHandler(async (req, res) => {
-  const { title, content, code, codeLanguage, type, excerpt, category, tags, image } = req.body;
+  const { title, content, code, codeLanguage, difficulty, description, type, excerpt, category, tags, image } = req.body;
+  
+  console.log('Creating post with difficulty:', difficulty);
+  console.log('Full request body:', req.body);
 
   // For code posts, either content or code must be present
   if (type === 'code' && !code) {
@@ -185,18 +408,26 @@ router.post('/', protect, [
     });
   }
 
-  const post = await Post.create({
+  const postData = {
     author: req.user._id,
     title,
     content: content || '',
     code: code || '',
-    language: codeLanguage || '',
+    codeLanguage: codeLanguage || '',
+    difficulty: difficulty || 'beginner',
+    description: description || '',
     type: type || 'regular',
     excerpt: excerpt || (content ? content.substring(0, 300) : ''),
     category: category || 'general',
     tags: tags || [],
     image: image || ''
-  });
+  };
+  
+  console.log('Creating post with data:', postData);
+  
+  const post = await Post.create(postData);
+  
+  console.log('Post created with difficulty:', post.difficulty);
 
   await post.populate('author', 'username firstName lastName avatar');
 
@@ -524,14 +755,92 @@ router.get('/:postId', async (req, res) => {
   }
 });
 
-// Increment post views
-router.post('/:id/view', asyncHandler(async (req, res) => {
+// Increment post copy count
+router.post('/:id/copy', asyncHandler(async (req, res) => {
+  console.log('Copy count route hit for post:', req.params.id);
+  const post = await Post.findById(req.params.id);
+  if (!post) {
+    console.log('Post not found');
+    return res.status(404).json({ success: false, message: 'Post not found' });
+  }
+  console.log('Current copy count:', post.copies);
+  await post.incrementCopies();
+  console.log('Updated copy count:', post.copies);
+  res.json({ success: true, copies: post.copies });
+}));
+
+// Fork a code post
+router.post('/:id/fork', protect, asyncHandler(async (req, res) => {
+  const { title, description, code, codeLanguage, difficulty, tags } = req.body;
+  
+  const originalPost = await Post.findById(req.params.id);
+  if (!originalPost) {
+    return res.status(404).json({ success: false, message: 'Original post not found' });
+  }
+
+  if (originalPost.type !== 'code') {
+    return res.status(400).json({ success: false, message: 'Only code posts can be forked' });
+  }
+
+  const forkedPost = await Post.create({
+    author: req.user._id,
+    title: title || `Fork of ${originalPost.title}`,
+    description: description || '',
+    code: code || originalPost.code,
+    codeLanguage: codeLanguage || originalPost.codeLanguage,
+    difficulty: difficulty || originalPost.difficulty,
+    type: 'code',
+    tags: tags || originalPost.tags,
+    forkedFrom: originalPost._id,
+    isFork: true
+  });
+
+  await forkedPost.populate('author', 'username firstName lastName avatar');
+  await forkedPost.populate({
+    path: 'forkedFrom',
+    populate: { path: 'author', select: 'username firstName lastName avatar' }
+  });
+
+  res.status(201).json({
+    success: true,
+    data: forkedPost
+  });
+}));
+
+// Request code review
+router.post('/:id/review-request', protect, asyncHandler(async (req, res) => {
+  const { comment, rating } = req.body;
+  
   const post = await Post.findById(req.params.id);
   if (!post) {
     return res.status(404).json({ success: false, message: 'Post not found' });
   }
-  await post.incrementViews();
-  res.json({ success: true, views: post.views });
+
+  if (post.type !== 'code') {
+    return res.status(400).json({ success: false, message: 'Only code posts can have review requests' });
+  }
+
+  // Create review request
+  const reviewRequest = {
+    reviewer: req.user._id,
+    comment: comment,
+    rating: rating || 5,
+    status: 'pending',
+    createdAt: new Date()
+  };
+
+  // Add to post's review requests
+  if (!post.reviewRequests) {
+    post.reviewRequests = [];
+  }
+  post.reviewRequests.push(reviewRequest);
+  await post.save();
+
+  res.status(201).json({
+    success: true,
+    message: 'Review request submitted successfully',
+    data: reviewRequest
+  });
 }));
 
 // @desc    Save a post

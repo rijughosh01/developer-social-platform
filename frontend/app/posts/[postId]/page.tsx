@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { postsAPI } from '@/lib/api';
 import { Post } from '@/types';
+import { PostCard } from '@/components/posts/PostCard';
 
 export default function PostDetailPage({ params }) {
   const [post, setPost] = useState<Post | null>(null);
@@ -22,16 +23,8 @@ export default function PostDetailPage({ params }) {
   if (!post) return <div className="p-8 text-center text-red-500">Post not found.</div>;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6 mt-8">
-      <h1 className="text-2xl font-bold mb-2">{post.title}</h1>
-      <div className="mb-4 text-gray-700 whitespace-pre-line">{post.content}</div>
-      {post.image && (
-        <img src={post.image} alt="Post" className="w-full rounded-lg object-cover max-h-96 mb-4" />
-      )}
-      <div className="flex items-center gap-6 text-gray-500 text-sm border-t pt-4 mt-4">
-        <span>👍 {post.likesCount || 0}</span>
-        <span>💬 {post.commentsCount || 0}</span>
-      </div>
+    <div className="max-w-2xl mx-auto mt-8">
+      <PostCard post={post} />
     </div>
   );
 } 

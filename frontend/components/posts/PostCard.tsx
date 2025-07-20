@@ -17,20 +17,32 @@ import {
   FiBookmark,
   FiEye,
   FiSend,
-  FiX
+  FiX,
+  FiCopy,
+  FiCode,
+  FiEyeOff,
+  FiSettings,
+  FiGitBranch,
+  FiUsers,
+  FiMessageSquare,
+  FiStar
 } from 'react-icons/fi'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
 import { commentsAPI, savedAPI, api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import { atomOneLight, atomOneDark, vs2015, dracula } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import js from 'react-syntax-highlighter/dist/esm/languages/hljs/javascript'
 import ts from 'react-syntax-highlighter/dist/esm/languages/hljs/typescript'
 import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python'
 import java from 'react-syntax-highlighter/dist/esm/languages/hljs/java'
 import cpp from 'react-syntax-highlighter/dist/esm/languages/hljs/cpp'
 import xml from 'react-syntax-highlighter/dist/esm/languages/hljs/xml'
+import css from 'react-syntax-highlighter/dist/esm/languages/hljs/css'
+import php from 'react-syntax-highlighter/dist/esm/languages/hljs/php'
+import sql from 'react-syntax-highlighter/dist/esm/languages/hljs/sql'
+import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash'
 
 SyntaxHighlighter.registerLanguage('javascript', js)
 SyntaxHighlighter.registerLanguage('typescript', ts)
@@ -38,6 +50,34 @@ SyntaxHighlighter.registerLanguage('python', python)
 SyntaxHighlighter.registerLanguage('java', java)
 SyntaxHighlighter.registerLanguage('cpp', cpp)
 SyntaxHighlighter.registerLanguage('markup', xml)
+SyntaxHighlighter.registerLanguage('css', css)
+SyntaxHighlighter.registerLanguage('php', php)
+SyntaxHighlighter.registerLanguage('sql', sql)
+SyntaxHighlighter.registerLanguage('bash', bash)
+
+// Language color mapping
+const languageColors: { [key: string]: string } = {
+  javascript: 'bg-yellow-100 text-yellow-800',
+  typescript: 'bg-blue-100 text-blue-800',
+  python: 'bg-green-100 text-green-800',
+  java: 'bg-orange-100 text-orange-800',
+  cpp: 'bg-purple-100 text-purple-800',
+  css: 'bg-pink-100 text-pink-800',
+  php: 'bg-indigo-100 text-indigo-800',
+  sql: 'bg-teal-100 text-teal-800',
+  bash: 'bg-gray-100 text-gray-800',
+  html: 'bg-red-100 text-red-800',
+  react: 'bg-cyan-100 text-cyan-800',
+  node: 'bg-emerald-100 text-emerald-800'
+}
+
+// Theme options
+const themes: { [key: string]: any } = {
+  light: atomOneLight,
+  dark: atomOneDark,
+  vs2015: vs2015,
+  dracula: dracula
+}
 
 interface PostCardProps {
   post: any
@@ -46,6 +86,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
+  console.log('POSTCARD POST DATA:', post);
   const [showMenu, setShowMenu] = useState(false)
   const [comments, setComments] = useState<any[]>([])
   const [commentInput, setCommentInput] = useState('')
@@ -68,6 +109,26 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
   const [searchUser, setSearchUser] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [sending, setSending] = useState(false)
+  
+  // Code display enhancements
+  const [showLineNumbers, setShowLineNumbers] = useState(true)
+  const [selectedTheme, setSelectedTheme] = useState('dark')
+  const [showThemeMenu, setShowThemeMenu] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [copyCount, setCopyCount] = useState(post.copies || 0)
+  
+  // Collaboration features
+  const [showForkModal, setShowForkModal] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [forkTitle, setForkTitle] = useState('')
+  const [forkDescription, setForkDescription] = useState('')
+  const [forkCode, setForkCode] = useState(post.code || '')
+  const [forkCodeTab, setForkCodeTab] = useState<'edit' | 'preview'>('edit')
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewRating, setReviewRating] = useState(5)
+  const [isForking, setIsForking] = useState(false)
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+  
   const router = useRouter()
   
   const dispatch = useAppDispatch()
@@ -83,6 +144,8 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
     if (showComments && commentInputRef.current) {
       commentInputRef.current.focus();
     }
+    
+
   }, [post._id, showComments, user])
 
   const fetchComments = async () => {
@@ -238,8 +301,9 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
   }
 
   // Native share/copy link
+  const postUrl = typeof window !== 'undefined' ? `${window.location.origin}/posts/${post._id}` : '';
+  
   const handleShare = () => {
-    const postUrl = `${window.location.origin}/posts/${post._id}`;
     if (navigator.share) {
       navigator.share({
         title: post.title,
@@ -248,46 +312,201 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
       });
     } else {
       navigator.clipboard.writeText(postUrl);
-      toast.success('Post link copied to clipboard!');
+      toast.success('Link copied to clipboard!');
     }
-    setShowShareMenu(false);
   };
 
-  // Social media share URLs
-  const postUrl = typeof window !== 'undefined' ? `${window.location.origin}/posts/${post._id}` : '';
   const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(postUrl)}`;
   const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
 
-  // Internal share (send to message box)
   const handleUserSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchUser(e.target.value);
-    if (e.target.value.trim().length > 1) {
-      // Simple user search API (adjust as needed)
-      const res = await api.get('/users', { params: { search: e.target.value } });
-      setSearchResults(res.data.data || []);
+    const query = e.target.value;
+    setSearchUser(query);
+    if (query.length > 1) {
+      try {
+        const res = await api.get(`/users/search?q=${query}`);
+        setSearchResults(res.data.data.users || []);
+      } catch (err) {
+        setSearchResults([]);
+      }
     } else {
       setSearchResults([]);
     }
   };
+
   const handleSendToUser = async (userId: string) => {
     setSending(true);
     try {
-      // Create or find chat, then send post link as a message
-      let chatRes = await api.post('/chat/start', { userId });
-      const chatId = chatRes.data.data._id;
-      await api.post(`/chat/${chatId}/messages`, {
-        content: `Check out this post: ${postUrl}`,
-        messageType: 'text',
+      await api.post('/chat/send', {
+        recipientId: userId,
+        message: `Check out this post: ${post.title}`,
+        postId: post._id
       });
-      toast.success('Post shared in message!');
+      toast.success('Post shared successfully!');
       setShowInternalShare(false);
-      router.push(`/messages?chat=${chatId}`);
     } catch (err) {
-      toast.error('Failed to share post in message');
+      toast.error('Failed to share post');
+    } finally {
+      setSending(false);
     }
-    setSending(false);
   };
+
+  // Code copy functionality
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(post.code || '');
+      setCopied(true);
+      toast.success('Code copied to clipboard!');
+      setTimeout(() => setCopied(false), 2000);
+      // Track copy count
+      trackCopyCount();
+    } catch (err) {
+      toast.error('Failed to copy code');
+    }
+  };
+
+  // Get language color
+  const getLanguageColor = (language: string) => {
+    const lang = language?.toLowerCase() || 'code';
+    return languageColors[lang] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Get display language name
+  const getDisplayLanguage = (language: string) => {
+    const lang = language?.toLowerCase() || 'code';
+    const languageMap: { [key: string]: string } = {
+      javascript: 'JavaScript',
+      typescript: 'TypeScript',
+      python: 'Python',
+      java: 'Java',
+      cpp: 'C++',
+      css: 'CSS',
+      php: 'PHP',
+      sql: 'SQL',
+      bash: 'Bash',
+      html: 'HTML',
+      react: 'React',
+      node: 'Node.js'
+    };
+    return languageMap[lang] || language || 'Code';
+  };
+
+  // Track copy count
+  const trackCopyCount = async () => {
+    try {
+      console.log('Sending copy request for post:', post._id);
+      const response = await api.post(`/posts/${post._id}/copy`)
+      console.log('Copy response:', response.data);
+      setCopyCount(response.data.copies)
+    } catch (err) {
+      console.error('Copy count error:', err);
+      // Silently fail - copy tracking is not critical
+    }
+  }
+
+  // Fork code post
+  const handleFork = async () => {
+    if (!forkTitle.trim()) {
+      toast.error('Please enter a title for your fork');
+      return;
+    }
+    if (!forkCode.trim()) {
+      toast.error('Please enter or modify the code for your fork');
+      return;
+    }
+    setIsForking(true);
+    try {
+      const response = await api.post(`/posts/${post._id}/fork`, {
+        title: forkTitle,
+        description: forkDescription,
+        code: forkCode,
+        codeLanguage: post.codeLanguage,
+      });
+      toast.success('Code forked successfully!');
+      setShowForkModal(false);
+      setForkTitle('');
+      setForkDescription('');
+      setForkCode(post.code || '');
+      // Redirect to the new forked post
+      if (response.data && response.data.data && response.data.data._id) {
+        window.location.href = `/posts/${response.data.data._id}`;
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to fork code');
+    }
+    setIsForking(false);
+  };
+
+  // Request code review
+  const handleRequestReview = async () => {
+    if (!reviewComment.trim()) {
+      toast.error('Please add a comment for your review request');
+      return;
+    }
+    
+    setIsSubmittingReview(true);
+    try {
+      await api.post(`/posts/${post._id}/review-request`, {
+        comment: reviewComment,
+        rating: reviewRating
+      });
+      
+      toast.success('Review request submitted!');
+      setShowReviewModal(false);
+      setReviewComment('');
+      setReviewRating(5);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit review request');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  }
+
+  // Get difficulty level
+  const getDifficultyLevel = (post: any) => {
+    console.log('Post difficulty from DB:', post.difficulty);
+    console.log('Post object:', post);
+    
+    // If post has a difficulty field set by user, ALWAYS use it (user choice takes absolute priority)
+    if (post.difficulty) {
+      console.log('Using user-selected difficulty:', post.difficulty);
+      return post.difficulty;
+    }
+    
+    // Only auto-detect for posts that don't have a difficulty field at all
+    const code = post.code || ''
+    const lines = code.split('\n').length
+    const hasFunctions = /function|=>|class/.test(code)
+    const hasLoops = /for|while|forEach|map/.test(code)
+    const hasConditionals = /if|else|switch/.test(code)
+    
+    const autoDetected = lines > 50 || hasFunctions && hasLoops && hasConditionals ? 'advanced' : 
+                        lines > 20 || hasFunctions || hasLoops ? 'intermediate' : 'beginner';
+    
+    console.log('Auto-detected difficulty:', autoDetected);
+    return autoDetected;
+  }
+
+  // Get difficulty color
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'beginner': return 'bg-green-100 text-green-800'
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800'
+      case 'advanced': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  // Get difficulty icon
+  const getDifficultyIcon = (difficulty: string) => {
+    switch (difficulty) {
+      case 'beginner': return '🌱'
+      case 'intermediate': return '🚀'
+      case 'advanced': return '⚡'
+      default: return '📝'
+    }
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 mb-4 border border-gray-100 transition-shadow hover:shadow-lg">
@@ -309,6 +528,15 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
               >
                 {post.author?.firstName} {post.author?.lastName}
               </Link>
+              {post.forkedFrom && post.forkedFrom.author && (
+                <>
+                  <span className="text-gray-400">/</span>
+                  <span className="text-xs text-gray-500">Forked from </span>
+                  <Link href={`/profile/${post.forkedFrom.author.username}`} className="text-xs text-primary-600 font-semibold hover:underline">
+                    {post.forkedFrom.author.firstName} {post.forkedFrom.author.lastName}
+                  </Link>
+                </>
+              )}
               <span className="text-gray-500">•</span>
               <span className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
@@ -417,18 +645,86 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
           )}
           {post.type === 'code' ? (
             <div className="mb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-block px-2 py-0.5 rounded bg-gray-200 text-xs font-mono text-gray-700">{post.codeLanguage || 'code'}</span>
-                <span className="text-xs text-gray-400">Code Post</span>
+              {/* Code Header with Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3 p-3 bg-gray-50 rounded-t-lg border-b">
+                {/* Badges Group */}
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getLanguageColor(post.codeLanguage)}`}>{getDisplayLanguage(post.codeLanguage)}</span>
+                  <span className="text-xs text-gray-500 bg-gray-200 rounded-full px-2 py-1 font-medium">Code Post</span>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${getDifficultyColor(getDifficultyLevel(post))}`}>{getDifficultyIcon(getDifficultyLevel(post))} {getDifficultyLevel(post).charAt(0).toUpperCase() + getDifficultyLevel(post).slice(1)}</span>
+                  {post.forkedFrom && (
+                    <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1">
+                      <FiGitBranch className="inline-block h-3 w-3 mr-1" /> Forked Code
+                    </span>
+                  )}
+                </div>
+                {/* Analytics & Controls Group */}
+                <div className="flex flex-wrap items-center gap-3 min-w-0">
+                  {/* Analytics */}
+                  <div className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 rounded px-2 py-1">
+                    <FiCopy className="h-3 w-3" />
+                    <span>{copyCount} copies</span>
+                  </div>
+                  {/* Controls */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button onClick={handleCopyCode} className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors" title="Copy code">
+                      <FiCopy className="h-3 w-3" />
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                    <button onClick={() => setShowForkModal(true)} className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors" title="Fork this code">
+                      <FiGitBranch className="h-3 w-3" />
+                      Fork
+                    </button>
+                    <button onClick={() => setShowReviewModal(true)} className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors" title="Request code review">
+                      <FiMessageSquare className="h-3 w-3" />
+                      Review
+                    </button>
+                    <button onClick={() => setShowLineNumbers(!showLineNumbers)} className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors" title={showLineNumbers ? 'Hide line numbers' : 'Show line numbers'}>
+                      {showLineNumbers ? <FiEyeOff className="h-3 w-3" /> : <FiEye className="h-3 w-3" />} Lines
+                    </button>
+                    <div className="relative">
+                      <button onClick={() => setShowThemeMenu(!showThemeMenu)} className="flex items-center gap-1 px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors" title="Change theme">
+                        <FiSettings className="h-3 w-3" />
+                        Theme
+                      </button>
+                      {showThemeMenu && (
+                        <div className="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10">
+                          {Object.keys(themes).map((theme) => (
+                            <button
+                              key={theme}
+                              onClick={() => {
+                                setSelectedTheme(theme);
+                                setShowThemeMenu(false);
+                              }}
+                              className={`w-full text-left px-3 py-1 text-xs hover:bg-gray-50 ${selectedTheme === theme ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                            >
+                              {theme.charAt(0).toUpperCase() + theme.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <SyntaxHighlighter
-                language={post.codeLanguage || 'javascript'}
-                style={atomOneLight}
-                customStyle={{ borderRadius: '0.5rem', fontSize: 14, padding: 16 }}
-                showLineNumbers
-              >
-                {post.code || ''}
-              </SyntaxHighlighter>
+              {/* Code Display */}
+              <div className="relative">
+                <SyntaxHighlighter
+                  language={post.codeLanguage || 'javascript'}
+                  style={themes[selectedTheme]}
+                  customStyle={{ borderRadius: '0 0 0.5rem 0.5rem', fontSize: 14, padding: 16, margin: 0, background: selectedTheme === 'dark' ? '#1e1e1e' : '#f8f9fa' }}
+                  showLineNumbers={showLineNumbers}
+                >
+                  {post.code || ''}
+                </SyntaxHighlighter>
+              </div>
+              {/* Description Display */}
+              {post.description && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-primary-500">
+                  <div className="text-sm font-medium text-gray-700 mb-2">📝 Description</div>
+                  <div className="text-gray-600 whitespace-pre-line">{post.description}</div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-lg text-gray-800 mb-4 whitespace-pre-line">
@@ -659,6 +955,149 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fork Modal */}
+      {showForkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button onClick={() => setShowForkModal(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+              <FiX className="h-5 w-5" />
+            </button>
+            <h3 className="text-lg font-bold mb-4">Fork Code</h3>
+            <input
+              type="text"
+              className="w-full mb-3 px-3 py-2 rounded border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base"
+              value={forkTitle}
+              onChange={(e) => setForkTitle(e.target.value)}
+              placeholder="Enter title for your fork..."
+            />
+            <textarea
+              className="w-full mb-3 px-3 py-2 rounded border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none"
+              value={forkDescription}
+              onChange={(e) => setForkDescription(e.target.value)}
+              placeholder="Describe your changes or improvements..."
+              rows={2}
+            />
+            {/* Code Editor Tabs */}
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                className={`px-3 py-1 rounded-lg text-sm font-medium border ${forkCodeTab === 'edit' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border-gray-200'}`}
+                onClick={() => setForkCodeTab('edit')}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1 rounded-lg text-sm font-medium border ${forkCodeTab === 'preview' ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 border-gray-200'}`}
+                onClick={() => setForkCodeTab('preview')}
+              >
+                Preview
+              </button>
+            </div>
+            {forkCodeTab === 'edit' && (
+              <textarea
+                value={forkCode}
+                onChange={e => setForkCode(e.target.value)}
+                className="w-full h-40 font-mono text-sm rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 bg-white p-3 resize-none mb-3"
+                style={{ fontFamily: 'Fira Mono, monospace', fontSize: 14, minHeight: 0, height: '10rem', overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#111', background: '#fff' }}
+                placeholder="Paste or write your code here..."
+              />
+            )}
+            {forkCodeTab === 'preview' && (
+              <div className="w-full border border-gray-200 rounded-lg overflow-hidden mb-3" style={{ maxWidth: '100%', wordWrap: 'break-word', minWidth: 0 }}>
+                {forkCode ? (
+                  <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
+                    <SyntaxHighlighter
+                      language={post.codeLanguage || 'javascript'}
+                      style={atomOneDark}
+                      customStyle={{ borderRadius: '0.5rem', fontSize: 14, padding: 16, margin: 0, background: '#1e1e1e', minHeight: '160px', maxHeight: '300px', overflowY: 'auto', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: '100%', minWidth: 0 }}
+                      showLineNumbers
+                    >
+                      {forkCode}
+                    </SyntaxHighlighter>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-32 bg-gray-50 text-gray-500">
+                    <div className="text-center">
+                      <div className="text-lg mb-2">📝</div>
+                      <div className="text-sm">No code to preview</div>
+                      <div className="text-xs mt-1">Switch to Edit tab to write code</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              className="w-full mt-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold text-base shadow-sm transition"
+              onClick={handleFork}
+              disabled={isForking || !forkTitle.trim() || !forkCode.trim()}
+            >
+              {isForking ? 'Forking...' : 'Fork Code'}
+            </button>
+            <button
+              className="w-full mt-2 px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-base shadow-sm transition"
+              onClick={() => setShowForkModal(false)}
+              disabled={isForking}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Review Request Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button onClick={() => setShowReviewModal(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+              <FiX className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold mb-4">Request Code Review</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => setReviewRating(star)}
+                      className={`text-2xl ${star <= reviewRating ? 'text-yellow-400' : 'text-gray-300'}`}
+                    >
+                      <FiStar className={star <= reviewRating ? 'fill-current' : ''} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Review Comment</label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="What specific feedback are you looking for?"
+                  rows={4}
+                  className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRequestReview}
+                  disabled={isSubmittingReview || !reviewComment.trim()}
+                  className="flex-1 bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {isSubmittingReview ? 'Submitting...' : 'Submit Review Request'}
+                </button>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
