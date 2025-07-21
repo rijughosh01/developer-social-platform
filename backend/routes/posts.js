@@ -772,8 +772,9 @@ router.post('/:id/copy', asyncHandler(async (req, res) => {
 // Fork a code post
 router.post('/:id/fork', protect, asyncHandler(async (req, res) => {
   const { title, description, code, codeLanguage, difficulty, tags } = req.body;
+  const notificationService = new NotificationService(req.app.get('io'));
   
-  const originalPost = await Post.findById(req.params.id);
+  const originalPost = await Post.findById(req.params.id).populate('author', 'username firstName lastName avatar');
   if (!originalPost) {
     return res.status(404).json({ success: false, message: 'Original post not found' });
   }
@@ -801,6 +802,22 @@ router.post('/:id/fork', protect, asyncHandler(async (req, res) => {
     populate: { path: 'author', select: 'username firstName lastName avatar' }
   });
 
+  // Notify the original post author if the forker is not the owner
+  if (originalPost.author && originalPost.author._id.toString() !== req.user._id.toString()) {
+    await notificationService.createNotification({
+      recipient: originalPost.author._id,
+      sender: req.user._id,
+      type: 'system', // You may want to add a custom type like 'fork' in Notification.js
+      title: `${forkedPost.author.firstName || ''} ${forkedPost.author.lastName || ''} forked your code post`.
+        trim(),
+      message: `Your code post \"${originalPost.title}\" was forked.`,
+      data: {
+        postId: forkedPost._id,
+        url: `/posts/${forkedPost._id}`
+      }
+    });
+  }
+
   res.status(201).json({
     success: true,
     data: forkedPost
@@ -810,8 +827,9 @@ router.post('/:id/fork', protect, asyncHandler(async (req, res) => {
 // Request code review
 router.post('/:id/review-request', protect, asyncHandler(async (req, res) => {
   const { comment, rating } = req.body;
+  const notificationService = new NotificationService(req.app.get('io'));
   
-  const post = await Post.findById(req.params.id);
+  const post = await Post.findById(req.params.id).populate('author', 'username firstName lastName avatar');
   if (!post) {
     return res.status(404).json({ success: false, message: 'Post not found' });
   }
@@ -835,6 +853,21 @@ router.post('/:id/review-request', protect, asyncHandler(async (req, res) => {
   }
   post.reviewRequests.push(reviewRequest);
   await post.save();
+
+  // Notify the post author if the reviewer is not the owner
+  if (post.author && post.author._id.toString() !== req.user._id.toString()) {
+    await notificationService.createNotification({
+      recipient: post.author._id,
+      sender: req.user._id,
+      type: 'system', // You may want to add a custom type like 'review_request' in Notification.js
+      title: `${req.user.firstName || ''} ${req.user.lastName || ''} requested a review on your code post`.trim(),
+      message: `Your code post \"${post.title}\" received a new review request.`,
+      data: {
+        postId: post._id,
+        url: `/posts/${post._id}`
+      }
+    });
+  }
 
   res.status(201).json({
     success: true,

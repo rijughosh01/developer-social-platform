@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { chatAPI, usersAPI } from '@/lib/api';
 import { useAppSelector } from '@/hooks/useAppDispatch';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useSocket } from '@/hooks/useSocket';
 import { FaUsers } from 'react-icons/fa';
 import { FiEdit, FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 export default function MessagesPage() {
   const { user, token } = useAppSelector((state) => state.auth);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [chats, setChats] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -230,6 +231,31 @@ export default function MessagesPage() {
     });
   }, [user]);
 
+  // Auto-open chat with userId from query param
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    if (user && userId && userId !== user._id) {
+      // Check if chat already exists
+      const existingChat = chats.find(chat =>
+        !chat.isGroupChat &&
+        chat.participants.some((p: any) => p._id === userId)
+      );
+      if (existingChat) {
+        setSelectedChat(existingChat);
+      } else {
+        // Start a new chat with the user
+        chatAPI.startChat({ userId }).then(res => {
+          const newChat = res.data.data;
+          setChats(prev => [newChat, ...prev]);
+          setSelectedChat(newChat);
+        });
+      }
+      // Clean up the URL to /messages after opening
+      router.replace('/messages');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, chats, searchParams]);
+
   useEffect(() => {
     if (!selectedChat) return;
     setLoadingMessages(true);
@@ -371,9 +397,13 @@ export default function MessagesPage() {
           </button>
         </div>
         {loadingChats ? <div>Loading...</div> : (
-          chats.length === 0 ? <div className="text-gray-500">No chats yet.</div> : (
+          chats.filter(chat =>
+            chat.isGroupChat || (chat.messages && chat.messages.length > 0)
+          ).length === 0 ? <div className="text-gray-500">No chats yet.</div> : (
             <ul>
-              {chats.map((chat) => {
+              {chats.filter(chat =>
+                chat.isGroupChat || (chat.messages && chat.messages.length > 0)
+              ).map((chat) => {
                 if (chat.isGroupChat) {
                   return (
                     <li

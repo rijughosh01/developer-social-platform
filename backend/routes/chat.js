@@ -434,4 +434,40 @@ router.delete('/:chatId/messages/:messageId', protect, asyncHandler(async (req, 
   }
 }));
 
+// @desc    Get messages for a chat with pagination
+// @route   GET /api/chat/:id/messages
+// @access  Private
+router.get('/:id/messages', protect, asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = (page - 1) * limit;
+
+  const chat = await Chat.findById(req.params.id)
+    .populate('messages.sender', 'username firstName lastName avatar');
+
+  if (!chat) {
+    return res.status(404).json({ success: false, message: 'Chat not found' });
+  }
+
+  // Check if user is a participant
+  if (!chat.participants.some(p => p.toString() === req.user._id.toString())) {
+    return res.status(403).json({ success: false, message: 'Access denied' });
+  }
+
+  // Sort messages by createdAt descending
+  const sortedMessages = [...chat.messages].sort((a, b) => b.createdAt - a.createdAt);
+  const paginatedMessages = sortedMessages.slice(skip, skip + limit);
+
+  res.json({
+    success: true,
+    data: paginatedMessages,
+    pagination: {
+      page,
+      limit,
+      total: sortedMessages.length,
+      pages: Math.ceil(sortedMessages.length / limit)
+    }
+  });
+}));
+
 module.exports = router; 

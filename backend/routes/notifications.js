@@ -5,7 +5,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
-// @desc    Get user's notifications
+// @desc    Get notifications for the current user with pagination
 // @route   GET /api/notifications
 // @access  Private
 router.get('/', protect, asyncHandler(async (req, res) => {
@@ -13,36 +13,23 @@ router.get('/', protect, asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
 
-  const notifications = await Notification.find({
-    recipient: req.user._id,
-    isDeleted: false
-  })
-    .populate('sender', 'username firstName lastName avatar')
-    .populate('data.postId', 'title')
-    .populate('data.projectId', 'title')
-    .populate('data.commentId', 'content')
+  const query = { user: req.user._id };
+
+  const notifications = await Notification.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
 
-  const total = await Notification.countDocuments({
-    recipient: req.user._id,
-    isDeleted: false
-  });
-
-  const unreadCount = await Notification.getUnreadCount(req.user._id);
+  const total = await Notification.countDocuments(query);
 
   res.json({
     success: true,
-    data: {
-      notifications,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      },
-      unreadCount
+    data: notifications,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit)
     }
   });
 }));

@@ -33,6 +33,13 @@ export const NotificationDropdown: React.FC = () => {
       console.log('New notification received:', data)
       dispatch(addNotification(data.notification))
       dispatch(updateUnreadCount(data.unreadCount))
+      // Play notification sound
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play();
+      } catch (err) {
+        console.error('Failed to play notification sound:', err);
+      }
     },
     onUnreadCountUpdate: (data) => {
       // Handle unread count update from socket

@@ -66,6 +66,7 @@ const notificationSchema = new mongoose.Schema({
 notificationSchema.index({ recipient: 1, createdAt: -1 });
 notificationSchema.index({ recipient: 1, isRead: 1 });
 notificationSchema.index({ recipient: 1, type: 1 });
+notificationSchema.index({ user: 1 });
 
 // Virtual for time ago
 notificationSchema.virtual('timeAgo').get(function() {

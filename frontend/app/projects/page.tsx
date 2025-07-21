@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useAppSelector } from '@/hooks/useAppDispatch'
-import { FiStar, FiTrash2, FiExternalLink, FiGithub, FiImage, FiX, FiLoader, FiEdit } from 'react-icons/fi'
+import { FiStar, FiTrash2, FiExternalLink, FiGithub, FiImage, FiX, FiLoader, FiEdit, FiMessageSquare } from 'react-icons/fi'
 import ProjectDetailsModal from './ProjectDetailsModal'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
+import Link from 'next/link'
 
 interface Project {
   _id: string
@@ -20,6 +21,7 @@ interface Project {
   owner?: {
     firstName?: string
     lastName?: string
+    username?: string
   }
   tags?: string[]
   category: string
@@ -264,7 +266,17 @@ export default function ProjectsPage() {
                       {project.owner?.firstName?.charAt(0)}{project.owner?.lastName?.charAt(0)}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900 text-base">{project.owner?.firstName} {project.owner?.lastName}</div>
+                      {user && user.username !== project.owner.username ? (
+                        <Link href={`/profile/${project.owner.username}`}>
+                          <span className="font-semibold cursor-pointer hover:underline">
+                            {project.owner.firstName} {project.owner.lastName}
+                          </span>
+                        </Link>
+                      ) : (
+                        <span className="font-semibold">
+                          {project.owner.firstName} {project.owner.lastName}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="text-xl font-bold text-gray-900 leading-tight mb-2 mt-1">{project.title}</div>
@@ -326,6 +338,19 @@ export default function ProjectsPage() {
                         <FiStar className={project.isLiked ? 'fill-yellow-400' : ''} />
                         <span>{project.likesCount || 0}</span>
                       </button>
+                      {/* Message Button: Only show if user is not the owner */}
+                      {user?._id !== (project as any).owner?._id && (
+                        <button
+                          className="p-2 rounded-full hover:bg-blue-100 text-blue-500 hover:text-blue-700 transition"
+                          title="Message project owner"
+                          onClick={e => {
+                            e.stopPropagation();
+                            window.location.href = `/messages?userId=${(project as any).owner?._id}`;
+                          }}
+                        >
+                          <FiMessageSquare className="w-5 h-5" />
+                        </button>
+                      )}
                       {user?._id === (project as any).owner?._id && (
                         <>
                           <button

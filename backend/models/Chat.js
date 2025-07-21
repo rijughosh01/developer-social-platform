@@ -157,7 +157,7 @@ chatSchema.methods.deleteMessage = function(messageId, userId) {
 // Static method to find or create chat between two users
 chatSchema.statics.findOrCreateChat = async function(user1Id, user2Id) {
   let chat = await this.findOne({
-    participants: { $all: [user1Id, user2Id] },
+    participants: { $all: [user1Id, user2Id], $size: 2 },
     isGroupChat: false
   }).populate('participants', 'username firstName lastName avatar');
   
@@ -183,5 +183,7 @@ chatSchema.statics.getUserChats = async function(userId) {
   .populate('groupAdmin', 'username firstName lastName')
   .sort({ updatedAt: -1 });
 };
+
+chatSchema.index({ participants: 1 });
 
 module.exports = mongoose.model('Chat', chatSchema); 

@@ -216,4 +216,8 @@ postSchema.methods.incrementCopies = function() {
   return this.save();
 };
 
+postSchema.index({ author: 1 });
+postSchema.index({ createdAt: -1 });
+postSchema.index({ type: 1 });
+
 module.exports = mongoose.model('Post', postSchema); 

@@ -158,6 +158,8 @@ userSchema.virtual('followingCount').get(function() {
 
 // Index for search
 userSchema.index({ username: 'text', firstName: 'text', lastName: 'text', skills: 'text' });
+userSchema.index({ username: 1 });
+userSchema.index({ email: 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
