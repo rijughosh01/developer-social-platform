@@ -20,7 +20,7 @@ export const NotificationDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null)
   
   const dispatch = useAppDispatch()
-  const { notifications, unreadCount, isLoading: notificationsLoading } = useAppSelector(
+  const { notifications = [], unreadCount, isLoading: notificationsLoading } = useAppSelector(
     (state) => state.notifications
   )
   const { token } = useAppSelector((state) => state.auth)

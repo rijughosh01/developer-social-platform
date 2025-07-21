@@ -807,9 +807,8 @@ router.post('/:id/fork', protect, asyncHandler(async (req, res) => {
     await notificationService.createNotification({
       recipient: originalPost.author._id,
       sender: req.user._id,
-      type: 'system', // You may want to add a custom type like 'fork' in Notification.js
-      title: `${forkedPost.author.firstName || ''} ${forkedPost.author.lastName || ''} forked your code post`.
-        trim(),
+      type: 'fork_created',
+      title: `${forkedPost.author.firstName || ''} ${forkedPost.author.lastName || ''} forked your code post`.trim(),
       message: `Your code post \"${originalPost.title}\" was forked.`,
       data: {
         postId: forkedPost._id,
@@ -859,7 +858,7 @@ router.post('/:id/review-request', protect, asyncHandler(async (req, res) => {
     await notificationService.createNotification({
       recipient: post.author._id,
       sender: req.user._id,
-      type: 'system', // You may want to add a custom type like 'review_request' in Notification.js
+      type: 'review_request',
       title: `${req.user.firstName || ''} ${req.user.lastName || ''} requested a review on your code post`.trim(),
       message: `Your code post \"${post.title}\" received a new review request.`,
       data: {

@@ -13,7 +13,7 @@ router.get('/', protect, asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const skip = (page - 1) * limit;
 
-  const query = { user: req.user._id };
+  const query = { recipient: req.user._id, isDeleted: { $ne: true } };
 
   const notifications = await Notification.find(query)
     .sort({ createdAt: -1 })
@@ -21,15 +21,19 @@ router.get('/', protect, asyncHandler(async (req, res) => {
     .limit(limit);
 
   const total = await Notification.countDocuments(query);
+  const unreadCount = await Notification.getUnreadCount(req.user._id);
 
   res.json({
     success: true,
-    data: notifications,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit)
+    data: {
+      notifications,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      },
+      unreadCount
     }
   });
 }));

@@ -461,6 +461,17 @@ router.post('/:id/like', protect, asyncHandler(async (req, res) => {
   } else {
     // Like
     await project.addLike(req.user._id);
+    // Create notification for project owner (if not liking own project)
+    if (project.owner.toString() !== req.user._id.toString()) {
+      const NotificationService = require('../utils/notificationService');
+      const notificationService = new NotificationService(req.app.get('io'));
+      await notificationService.createLikeProjectNotification(
+        req.user._id,
+        project.owner,
+        project._id,
+        project.title
+      );
+    }
     res.json({
       success: true,
       message: 'Project liked',
@@ -505,6 +516,20 @@ router.post('/:id/collaborators', protect, [
 
   await project.addCollaborator(userId, role);
   await project.populate('collaborators.user', 'username firstName lastName avatar');
+
+  // Notify the invited collaborator
+  try {
+    const NotificationService = require('../utils/notificationService');
+    const notificationService = new NotificationService(req.app.get('io'));
+    await notificationService.createProjectInviteNotification(
+      req.user._id, // inviter
+      userId, // invitee
+      project._id,
+      project.title
+    );
+  } catch (error) {
+    console.error('Error sending project invite notification:', error);
+  }
 
   res.json({
     success: true,

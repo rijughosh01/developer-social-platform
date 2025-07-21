@@ -165,7 +165,7 @@ const notificationSlice = createSlice({
       })
       .addCase(fetchNotifications.fulfilled, (state, action) => {
         state.isLoading = false
-        state.notifications = action.payload.data.notifications
+        state.notifications = action.payload.data.notifications || []
         state.unreadCount = action.payload.data.unreadCount
         state.pagination = action.payload.data.pagination
       })

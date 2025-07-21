@@ -51,7 +51,7 @@ export function CreatePost() {
   const [codeDifficulty, setCodeDifficulty] = useState('beginner')
   const [codeDescription, setCodeDescription] = useState('')
   const [codeTab, setCodeTab] = useState<'edit' | 'preview'>('edit')
-
+  
   const dispatch = useAppDispatch()
   const { user } = useAppSelector((state) => state.auth)
 
@@ -82,13 +82,13 @@ export function CreatePost() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (postType === 'regular') {
-      if (!content.trim() && !selectedImage) {
-        toast.error('Please write something or add an image');
-        return;
-      }
-      if (!title.trim()) {
-        toast.error('Please enter a title');
-        return;
+    if (!content.trim() && !selectedImage) {
+      toast.error('Please write something or add an image');
+      return;
+    }
+    if (!title.trim()) {
+      toast.error('Please enter a title');
+      return;
       }
     } else if (postType === 'code') {
       if (!title.trim()) {
@@ -183,14 +183,14 @@ export function CreatePost() {
             className="w-full mb-2 px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base placeholder-gray-400 transition"
           />
           {postType === 'regular' && (
-            <textarea
-              placeholder="What's on your mind?"
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              required
-              rows={3}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none placeholder-gray-400 transition"
-            />
+          <textarea
+            placeholder="What's on your mind?"
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            required
+            rows={3}
+            className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none placeholder-gray-400 transition"
+          />
           )}
           {postType === 'code' && (
             <>
@@ -350,18 +350,18 @@ export function CreatePost() {
 
           <div className="flex items-center justify-between mt-4">
             {postType === 'regular' && (
-              <label className="cursor-pointer flex items-center gap-2 text-gray-500 hover:text-primary-600">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-                <div className="p-2 hover:bg-primary-50 rounded-full transition-colors">
-                  <FiImage className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-medium hidden sm:inline">Add image</span>
-              </label>
+            <label className="cursor-pointer flex items-center gap-2 text-gray-500 hover:text-primary-600">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <div className="p-2 hover:bg-primary-50 rounded-full transition-colors">
+                <FiImage className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium hidden sm:inline">Add image</span>
+            </label>
             )}
             <Button
               type="submit"

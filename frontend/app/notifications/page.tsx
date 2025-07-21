@@ -27,11 +27,11 @@ export default function NotificationsPage() {
   
   const dispatch = useAppDispatch()
   const { 
-    notifications, 
+    notifications = [],
     unreadCount, 
     isLoading, 
     error,
-    pagination 
+    pagination = { page: 1, limit: 20, total: 0, pages: 0 },
   } = useAppSelector((state) => state.notifications)
   const { token } = useAppSelector((state) => state.auth)
 

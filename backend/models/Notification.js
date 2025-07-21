@@ -24,6 +24,8 @@ const notificationSchema = new mongoose.Schema({
       'mention',
       'project_invite',
       'collaboration_request',
+      'review_request',
+      'fork_created',
       'system'
     ],
     required: true
