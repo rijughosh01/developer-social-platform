@@ -129,6 +129,7 @@ router.get('/collaboration', protect, [
           firstName: { $first: '$authorInfo.firstName' },
           lastName: { $first: '$authorInfo.lastName' },
           username: { $first: '$authorInfo.username' },
+          avatar: { $first: '$authorInfo.avatar' },
           collaborationCount: { $sum: 1 }
         }
       },

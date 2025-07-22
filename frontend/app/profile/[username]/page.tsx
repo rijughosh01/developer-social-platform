@@ -9,6 +9,9 @@ import { useRouter } from 'next/navigation';
 import { chatAPI } from '@/lib/api';
 import { PostCard } from '@/components/posts/PostCard'
 import ProjectDetailsModal from '@/app/projects/ProjectDetailsModal'
+import { getAvatarUrl } from '@/lib/utils'
+import { FiMapPin, FiBriefcase, FiGithub, FiLinkedin, FiGlobe, FiTwitter } from 'react-icons/fi'
+import { Button } from '@/components/ui/button'
 
 interface ProfilePageProps {
   params: { username: string }
@@ -128,58 +131,77 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      {/* Profile Card */}
-      <div className="bg-white rounded-lg shadow p-6 flex flex-col md:flex-row items-center md:items-start mb-8">
-        <div className="w-24 h-24 rounded-full bg-primary-600 flex items-center justify-center text-white text-4xl font-bold mr-0 md:mr-8 mb-4 md:mb-0">
-          {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+      {/* Modern Profile Header with Banner */}
+      <div className="relative mb-8" style={{overflow: 'visible'}}>
+        {/* Banner */}
+        <div className="h-40 w-full rounded-2xl bg-gradient-to-r from-primary-600 to-blue-400 shadow-lg" style={{backgroundImage: 'url(https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', overflow: 'visible'}}></div>
+        {/* Avatar - Overlapping */}
+        <div className="absolute left-1/2 -bottom-16 transform -translate-x-1/2 z-20" style={{overflow: 'visible'}}>
+          <img
+            src={getAvatarUrl(user)}
+            alt="Profile Avatar"
+            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg bg-white"
+            style={{zIndex: 20, position: 'relative'}}
+          />
         </div>
-        <div className="flex-1">
-          <div className="flex items-center space-x-4 mb-2">
-            <div className="text-2xl font-bold">{user.firstName} {user.lastName}</div>
-            <div className="text-gray-500">@{user.username}</div>
-            {currentUser?.username === user.username && (
-              <Link href="/settings" className="ml-2 px-3 py-1 rounded bg-primary-600 text-white text-xs font-medium hover:bg-primary-700">Edit Profile</Link>
-            )}
-            {currentUser && currentUser.username !== user.username && (
-              <>
-                <button
-                  onClick={handleFollow}
-                  disabled={followLoading}
-                  className={`ml-2 px-3 py-1 rounded text-xs font-medium ${isFollowing ? 'bg-gray-200 text-gray-700' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
-                >
-                  {isFollowing ? 'Unfollow' : 'Follow'}
-                </button>
-                <button
-                  onClick={handleMessage}
-                  className="ml-2 px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
-                >
-                  Message
-                </button>
-              </>
-            )}
+      </div>
+      {/* Profile Card Modernized */}
+      <div className="bg-white rounded-2xl shadow-xl pt-14 pb-8 px-6 flex flex-col items-center relative -mt-8" style={{overflow: 'visible'}}>
+        <h2 className="text-3xl font-bold mb-1 mt-3">{user.firstName} {user.lastName}</h2>
+        <div className="text-gray-500 text-lg mb-2">@{user.username}</div>
+        <div className="mb-3 text-center text-gray-700 max-w-xl">{user.bio}</div>
+        <div className="flex flex-wrap gap-4 text-gray-600 text-sm mb-3 justify-center">
+          {user.location && <span className="flex items-center gap-1"><FiMapPin className="inline" /> {user.location}</span>}
+          {user.company && <span className="flex items-center gap-1"><FiBriefcase className="inline" /> {user.company}</span>}
+        </div>
+        {user.skills && user.skills.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3 justify-center">
+            {user.skills.map((skill: string) => (
+              <span key={skill} className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-xs font-semibold shadow-sm">{skill}</span>
+            ))}
           </div>
-          <div className="mb-2 text-gray-700">{user.bio}</div>
-          <div className="flex flex-wrap gap-4 text-gray-600 text-sm mb-2">
-            {user.location && <span>📍 {user.location}</span>}
-            {user.company && <span>🏢 {user.company}</span>}
-          </div>
-          {user.skills && user.skills.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {user.skills.map((skill: string) => (
-                <span key={skill} className="bg-gray-100 px-2 py-1 rounded text-xs">{skill}</span>
-              ))}
-            </div>
+        )}
+        <div className="flex gap-6 text-center mb-4">
+          <button onClick={openFollowers} className="hover:underline">
+            <div className="text-xl font-bold">{user.followersCount}</div>
+            <div className="text-xs text-gray-500">Followers</div>
+          </button>
+          <button onClick={openFollowing} className="hover:underline">
+            <div className="text-xl font-bold">{user.followingCount}</div>
+            <div className="text-xs text-gray-500">Following</div>
+          </button>
+        </div>
+        <div className="flex gap-3 mb-4">
+          {user.socialLinks?.github && <a href={user.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black"><FiGithub size={22} /></a>}
+          {user.socialLinks?.linkedin && <a href={user.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-700"><FiLinkedin size={22} /></a>}
+          {user.socialLinks?.twitter && <a href={user.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-blue-400"><FiTwitter size={22} /></a>}
+          {user.socialLinks?.website && <a href={user.socialLinks.website} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-green-700"><FiGlobe size={22} /></a>}
+        </div>
+        <div className="flex gap-3 mt-2">
+          {currentUser?.username === user.username && (
+            <Link href="/settings">
+              <Button size="sm">Edit Profile</Button>
+            </Link>
           )}
-          <div className="flex gap-4 text-sm text-gray-600 mb-2">
-            <button onClick={openFollowers} className="hover:underline"><span>{user.followersCount} Followers</span></button>
-            <button onClick={openFollowing} className="hover:underline"><span>{user.followingCount} Following</span></button>
-          </div>
-          <div className="flex gap-3 mt-2">
-            {user.socialLinks?.github && <a href={user.socialLinks.github} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black">GitHub</a>}
-            {user.socialLinks?.linkedin && <a href={user.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black">LinkedIn</a>}
-            {user.socialLinks?.twitter && <a href={user.socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black">Twitter</a>}
-            {user.socialLinks?.website && <a href={user.socialLinks.website} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-black">Website</a>}
-          </div>
+          {currentUser && currentUser.username !== user.username && (
+            <>
+              <Button
+                size="sm"
+                variant={isFollowing ? 'secondary' : 'default'}
+                onClick={handleFollow}
+                disabled={followLoading}
+              >
+                {isFollowing ? 'Unfollow' : 'Follow'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleMessage}
+              >
+                Message
+              </Button>
+            </>
+          )}
         </div>
       </div>
       {/* Followers Modal */}

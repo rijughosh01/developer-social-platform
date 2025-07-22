@@ -10,7 +10,7 @@ const NotificationService = require('../utils/notificationService');
 router.get('/:postId', async (req, res) => {
   try {
     const comments = await Comment.find({ post: req.params.postId })
-      .populate('author', 'firstName lastName')
+      .populate('author', 'firstName lastName avatar')
       .sort({ createdAt: -1 });
     res.json({ data: { comments } });
   } catch (err) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FiTrendingUp, FiMapPin, FiBriefcase } from 'react-icons/fi'
 import { usersAPI } from '@/lib/api'
+import { getAvatarUrl } from '@/lib/utils'
 
 export function TrendingDevelopers() {
   const [trendingUsers, setTrendingUsers] = useState<any[]>([])
@@ -51,10 +52,12 @@ export function TrendingDevelopers() {
               href={`/profile/${user.username}`}
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-                </span>
+              <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+                <img
+                  src={getAvatarUrl(user)}
+                  alt="Avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-base font-medium text-gray-900 truncate">

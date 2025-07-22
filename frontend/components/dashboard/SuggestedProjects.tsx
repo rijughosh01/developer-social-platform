@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
 import { fetchProjects } from '@/store/slices/projectsSlice'
 import { api } from '@/lib/api'
 import ProjectDetailsModal from '@/app/projects/ProjectDetailsModal'
+import { getAvatarUrl } from '@/lib/utils'
 
 export function SuggestedProjects() {
   const dispatch = useAppDispatch()
@@ -149,10 +150,12 @@ export function SuggestedProjects() {
                   </div>
                   {/* Owner row */}
                   <div className="flex items-center mt-3">
-                    <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center mr-2">
-                      <span className="text-white text-xs font-medium">
-                        {project.owner?.firstName?.charAt(0)}{project.owner?.lastName?.charAt(0)}
-                      </span>
+                    <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden mr-2">
+                      <img
+                        src={getAvatarUrl(project.owner)}
+                        alt="Owner Avatar"
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
                     </div>
                     <span className="text-xs text-gray-500">
                       {project.owner?.firstName} {project.owner?.lastName}

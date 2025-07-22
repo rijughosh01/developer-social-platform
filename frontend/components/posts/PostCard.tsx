@@ -43,6 +43,7 @@ import css from 'react-syntax-highlighter/dist/esm/languages/hljs/css'
 import php from 'react-syntax-highlighter/dist/esm/languages/hljs/php'
 import sql from 'react-syntax-highlighter/dist/esm/languages/hljs/sql'
 import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash'
+import { getAvatarUrl } from '@/lib/utils'
 
 SyntaxHighlighter.registerLanguage('javascript', js)
 SyntaxHighlighter.registerLanguage('typescript', ts)
@@ -514,10 +515,12 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center space-x-3">
           <Link href={`/profile/${post.author?.username}`}>
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
-              <span className="text-white text-sm font-medium">
-                {post.author?.firstName?.charAt(0)}{post.author?.lastName?.charAt(0)}
-              </span>
+            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+              <img
+                src={getAvatarUrl(post.author)}
+                alt="Author Avatar"
+                className="w-10 h-10 rounded-full object-cover"
+              />
             </div>
           </Link>
           <div className="flex-1 min-w-0">
@@ -890,11 +893,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
               comments.map((comment) => (
                 <div key={comment._id} className={`flex items-start space-x-2 group transition-opacity duration-200 ${deletingCommentId === comment._id ? 'opacity-50' : 'opacity-100'}`}> 
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
-                    {comment.author?.avatar ? (
-                      <img src={comment.author.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-                    ) : (
-                      <span>{comment.author?.firstName?.charAt(0)}{comment.author?.lastName?.charAt(0)}</span>
-                    )}
+                    <img src={getAvatarUrl(comment.author)} alt="" className="w-8 h-8 rounded-full object-cover" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">

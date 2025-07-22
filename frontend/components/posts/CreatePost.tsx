@@ -21,6 +21,7 @@ import css from 'react-syntax-highlighter/dist/esm/languages/hljs/css'
 import php from 'react-syntax-highlighter/dist/esm/languages/hljs/php'
 import sql from 'react-syntax-highlighter/dist/esm/languages/hljs/sql'
 import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash'
+import { getAvatarUrl } from '@/lib/utils'
 
 SyntaxHighlighter.registerLanguage('javascript', js)
 SyntaxHighlighter.registerLanguage('typescript', ts)
@@ -158,8 +159,12 @@ export function CreatePost() {
     <div className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-100">
       <div className="flex items-start gap-4">
         {/* Avatar */}
-        <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center text-white text-lg font-semibold">
-          {user?.firstName?.charAt(0) || ''}{user?.lastName?.charAt(0) || ''}
+        <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+          <img
+            src={getAvatarUrl(user)}
+            alt="User Avatar"
+            className="w-12 h-12 rounded-full object-cover"
+          />
         </div>
         <form onSubmit={onSubmit} className="flex-1 min-w-0">
           {/* Post type toggle */}

@@ -5,8 +5,13 @@ const auth = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const User = require('../models/User');
 const NotificationService = require('../utils/notificationService');
+const multer = require('multer');
+const fs = require('fs');
+const cloudinary = require('../utils/cloudinary');
 
 const router = express.Router();
+
+const upload = multer({ dest: 'uploads/' }); // Temporary storage for avatar uploads
 
 // @desc    Get all users (with pagination and search)
 // @route   GET /api/users
@@ -562,6 +567,33 @@ router.get('/username/:username', auth.optionalAuth, asyncHandler(async (req, re
       isFollowing
     }
   });
+}));
+
+// @desc    Upload and update user profile picture (avatar)
+// @route   POST /api/users/avatar
+// @access  Private
+router.post('/avatar', auth.protect, upload.single('avatar'), asyncHandler(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
+  }
+  try {
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'devlink-avatars', // Store avatars in a specific folder
+      width: 300,
+      height: 300,
+      crop: 'fill',
+      gravity: 'face',
+    });
+    // Remove file from server after upload
+    fs.unlinkSync(req.file.path);
+    // Update user avatar
+    req.user.avatar = result.secure_url;
+    await req.user.save();
+    res.json({ success: true, avatar: result.secure_url });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Avatar upload failed', error: err.message });
+  }
 }));
 
 module.exports = router; 

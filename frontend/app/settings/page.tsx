@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { authAPI, settingsAPI } from '@/lib/api'
+import { authAPI, settingsAPI, usersAPI } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { useAppSelector } from '@/hooks/useAppDispatch'
+import { useAppSelector, useAppDispatch } from '@/hooks/useAppDispatch'
 import { useRouter } from 'next/navigation'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { FiUser, FiLock, FiShield, FiBell, FiLink, FiMonitor, FiTrash2 } from 'react-icons/fi'
+import { getProfile } from '@/store/slices/authSlice'
 
 const TABS = [
   { label: 'Profile', icon: FiUser },
@@ -70,6 +71,8 @@ export default function SettingsPage() {
 }
 
 function ProfileForm() {
+  const dispatch = useAppDispatch()
+  const { user } = useAppSelector((state) => state.auth)
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -86,6 +89,9 @@ function ProfileForm() {
   })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string>(user?.avatar || '')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -107,6 +113,7 @@ function ProfileForm() {
           },
           skills: user.skills ? user.skills.join(', ') : '',
         })
+        setAvatarPreview(user.avatar || '')
       } catch (err) {
         toast.error('Failed to load profile')
       }
@@ -145,10 +152,52 @@ function ProfileForm() {
     setSubmitting(false)
   }
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setAvatarFile(file)
+      setAvatarPreview(URL.createObjectURL(file))
+    }
+  }
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return
+    setAvatarUploading(true)
+    try {
+      const res = await usersAPI.uploadAvatar(avatarFile)
+      setAvatarPreview(res.data.avatar)
+      toast.success('Profile picture updated!')
+      dispatch(getProfile()) // Refresh user state in Redux
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to upload avatar')
+    }
+    setAvatarUploading(false)
+  }
+
   if (loading) return <div>Loading...</div>
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      {/* Avatar Upload */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Profile Picture</label>
+        <div className="flex items-center gap-4">
+          <img
+            src={avatarPreview || '/default-avatar.png'}
+            alt="Avatar Preview"
+            className="w-16 h-16 rounded-full object-cover border"
+          />
+          <input type="file" accept="image/*" onChange={handleAvatarChange} />
+          <button
+            type="button"
+            className="bg-primary-600 text-white px-3 py-1 rounded"
+            onClick={handleAvatarUpload}
+            disabled={avatarUploading || !avatarFile}
+          >
+            {avatarUploading ? 'Uploading...' : 'Upload'}
+          </button>
+        </div>
+      </div>
       <div>
         <label className="block text-sm font-medium mb-1">First Name</label>
         <input className="w-full border rounded px-3 py-2" type="text" name="firstName" value={form.firstName} onChange={handleChange} />

@@ -16,6 +16,7 @@ import {
   FiMenu,
   FiX
 } from 'react-icons/fi'
+import { getAvatarUrl } from '@/lib/utils'
 
 export function DashboardHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -68,10 +69,18 @@ export function DashboardHeader() {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               >
-                <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">
-                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                  </span>
+                <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+                  {user?.avatar ? (
+                    <img
+                      src={getAvatarUrl(user)}
+                      alt="User Avatar"
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-sm font-medium">
+                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                    </span>
+                  )}
                 </div>
                 <span className="hidden lg:block text-sm font-medium text-gray-700">
                   {user?.firstName} {user?.lastName}
@@ -132,10 +141,18 @@ export function DashboardHeader() {
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200">
               <div className="flex items-center px-3 py-2">
-                <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center mr-3">
-                  <span className="text-white text-sm font-medium">
-                    {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                  </span>
+                <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+                  {user?.avatar ? (
+                    <img
+                      src={getAvatarUrl(user)}
+                      alt="User Avatar"
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-sm font-medium">
+                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                    </span>
+                  )}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
                   {user?.firstName} {user?.lastName}

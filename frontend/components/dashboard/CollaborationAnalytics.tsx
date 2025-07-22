@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAppSelector } from '@/hooks/useAppDispatch'
 import { api } from '@/lib/api'
 import { FiTrendingUp, FiUsers, FiGitBranch, FiMessageSquare, FiStar, FiClock, FiGift } from 'react-icons/fi'
+import { getAvatarUrl } from '@/lib/utils'
 
 interface AnalyticsData {
   totalReviews: number
@@ -208,8 +209,12 @@ export function CollaborationAnalytics() {
             analytics.topCollaborators.map((collaborator, index) => (
               <div key={collaborator._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold">
-                    {index + 1}
+                  <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={getAvatarUrl(collaborator)}
+                      alt="Collaborator Avatar"
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">

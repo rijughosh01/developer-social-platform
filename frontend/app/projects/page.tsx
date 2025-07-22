@@ -8,6 +8,7 @@ import ProjectDetailsModal from './ProjectDetailsModal'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
 import Link from 'next/link'
+import { getAvatarUrl } from '@/lib/utils'
 
 interface Project {
   _id: string
@@ -262,8 +263,12 @@ export default function ProjectsPage() {
                 <div className="p-6">
                   {/* Owner and Title */}
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white text-lg font-semibold">
-                      {project.owner?.firstName?.charAt(0)}{project.owner?.lastName?.charAt(0)}
+                    <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={getAvatarUrl(project.owner)}
+                        alt="Owner Avatar"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
                     </div>
                     <div>
                       {user && user.username !== project.owner.username ? (

@@ -89,6 +89,14 @@ export const usersAPI = {
 
   getSuggestions: (params?: any) =>
     api.get<ApiResponse>('/users/suggestions', { params }),
+
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.post<ApiResponse>('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 }
 
 export const postsAPI = {
