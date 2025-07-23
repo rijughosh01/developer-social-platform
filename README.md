@@ -19,7 +19,7 @@ A modern social platform for developers to connect, collaborate, and showcase th
 ## 🏗️ Project Architecture
 
 ```mermaid
-graph TD;
+graph TD
   A[Frontend (Next.js 14)] -->|API| B[Backend (Node.js/Express)]
   B -->|DB| C[(MongoDB)]
   B -->|Sockets| D[Socket.IO]
