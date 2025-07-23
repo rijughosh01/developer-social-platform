@@ -18,16 +18,12 @@ A modern social platform for developers to connect, collaborate, and showcase th
 
 ## 🏗️ Project Architecture
 
-```mermaid
-graph TD
-  A[Frontend (Next.js 14)] -->|API| B[Backend (Node.js/Express)]
-  B -->|DB| C[(MongoDB)]
-  B -->|Sockets| D[Socket.IO]
-  B -->|Analytics| F[Analytics/Trending]
-  A -->|WebSockets| D
-  A -->|Static Assets| E[Public/Uploads]
-  A -->|Analytics UI| F
-```
+DevLink uses a modern full-stack architecture:
+- **Frontend:** Next.js 14 (React), connects to backend via REST API and WebSockets
+- **Backend:** Node.js/Express, handles API requests, authentication, analytics, and real-time events
+- **Database:** MongoDB (Mongoose)
+- **Real-time:** Socket.IO for chat and notifications
+- **Static Assets:** Served from the public/uploads directory
 
 ---
 
