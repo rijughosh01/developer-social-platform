@@ -124,6 +124,37 @@ router.post('/login', [
     });
   }
 
+  // --- LOGIN STREAK LOGIC ---
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let streakUpdated = false;
+  if (user.lastLoginDate) {
+    const lastLogin = new Date(user.lastLoginDate);
+    lastLogin.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today - lastLogin) / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) {
+      user.loginStreak += 1;
+      streakUpdated = true;
+    } else if (diffDays > 1) {
+      user.loginStreak = 1;
+      streakUpdated = true;
+    }
+    // If diffDays === 0, do not increment (already logged in today)
+  } else {
+    user.loginStreak = 1;
+    streakUpdated = true;
+  }
+  if (streakUpdated || !user.lastLoginDate) {
+    user.lastLoginDate = today;
+    await user.save();
+  }
+  // Award Streak Master badge if streak is 7 or more
+  if (user.loginStreak >= 7) {
+    await user.addBadge('streak_master', req);
+  }
+  // Centralized badge evaluation for all badges
+  await User.evaluateAndAwardBadges(user._id, req);
+
   res.json({
     success: true,
     data: {

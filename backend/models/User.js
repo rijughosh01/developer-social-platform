@@ -134,6 +134,23 @@ const userSchema = new mongoose.Schema({
   deletedAt: {
     type: Date,
     default: null
+  },
+  // --- BADGES & REPUTATION ---
+  badges: [{
+    type: String // e.g., 'first_post', 'top_commenter', 'forked_10', 'profile_complete'
+  }],
+  reputation: {
+    type: Number,
+    default: 0
+  },
+  // --- STREAKS ---
+  loginStreak: {
+    type: Number,
+    default: 0
+  },
+  lastLoginDate: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true,
@@ -155,6 +172,113 @@ userSchema.virtual('followersCount').get(function() {
 userSchema.virtual('followingCount').get(function() {
   return this.following ? this.following.length : 0;
 });
+
+// Virtual for profile completion percentage
+userSchema.virtual('profileCompletion').get(function() {
+  let completed = 0;
+  let total = 7; // username, email, firstName, lastName, bio, avatar, skills
+  if (this.username) completed++;
+  if (this.email) completed++;
+  if (this.firstName) completed++;
+  if (this.lastName) completed++;
+  if (this.bio && this.bio.length > 0) completed++;
+  if (this.avatar && this.avatar.length > 0) completed++;
+  if (this.skills && this.skills.length > 0) completed++;
+  // Optionally add socialLinks, location, company
+  return Math.round((completed / total) * 100);
+});
+
+// Helper: Add badge if not already present
+userSchema.methods.addBadge = async function(badge, req = null) {
+  if (!this.badges.includes(badge)) {
+    this.badges.push(badge);
+    await this.save();
+    // Send notification if req (with app/io) is provided
+    if (req && req.app && req.app.get && req.app.get('io')) {
+      const NotificationService = require('../utils/notificationService');
+      const notificationService = new NotificationService(req.app.get('io'));
+      // Badge details
+      const BADGE_DETAILS = {
+        first_post: { title: 'First Post!', message: 'Congratulations! You earned the First Post badge.' },
+        top_commenter: { title: 'Top Commenter!', message: 'You earned the Top Commenter badge for writing 10 comments.' },
+        forked_10: { title: 'Code Forked 10+ times!', message: 'Your code was forked 10 or more times! You earned a badge.' },
+        streak_master: { title: 'Streak Master!', message: 'You logged in 7 days in a row and earned the Streak Master badge!' },
+        helper: { title: 'Helper!', message: 'You answered 5+ questions/comments and earned the Helper badge!' },
+        popular_post: { title: 'Popular Post!', message: 'One of your posts received 50+ likes! You earned the Popular Post badge.' },
+        project_creator: { title: 'Project Creator!', message: 'You created 3+ projects and earned the Project Creator badge!' },
+        collaborator: { title: 'Collaborator!', message: 'You collaborated on 2+ projects and earned the Collaborator badge!' },
+        first_like: { title: 'First Like!', message: 'You received your first like on a post and earned the First Like badge!' },
+        milestone_100_followers: { title: 'Milestone!', message: 'You reached 100 followers and earned the Milestone badge!' }
+      };
+      const badgeInfo = BADGE_DETAILS[badge] || { title: 'Badge Earned!', message: 'You earned a new badge.' };
+      await notificationService.createNotification({
+        recipient: this._id,
+        sender: this._id,
+        type: 'badge_earned',
+        title: badgeInfo.title,
+        message: badgeInfo.message,
+        data: { badge }
+      });
+    }
+  }
+};
+
+// Centralized badge evaluation and awarding
+userSchema.statics.evaluateAndAwardBadges = async function(userId, req) {
+  const User = this;
+  const user = await User.findById(userId);
+  if (!user) return;
+
+  // 0. Profile Completed: 100%
+  // if (user.profileCompletion === 100) {
+  //   await user.addBadge('profile_complete', req);
+  // }
+
+  // Helper functions to check badge conditions
+  const Post = require('./Post');
+  const Comment = require('./Comment');
+  const Project = require('./Project');
+
+  // 1. Streak Master: 7+ day login streak
+  if (user.loginStreak >= 7) {
+    await user.addBadge('streak_master', req);
+  }
+
+  // 2. Helper: Answered 5+ questions/comments (comments on others' posts)
+  const helperCount = await Comment.countDocuments({ author: user._id });
+  if (helperCount >= 5) {
+    await user.addBadge('helper', req);
+  }
+
+  // 3. Popular Post: Any post with 50+ likes
+  const popularPost = await Post.findOne({ author: user._id, likes: { $size: 50 } });
+  if (popularPost) {
+    await user.addBadge('popular_post', req);
+  }
+
+  // 4. Project Creator: Created 3+ projects
+  const projectCount = await Project.countDocuments({ owner: user._id });
+  if (projectCount >= 3) {
+    await user.addBadge('project_creator', req);
+  }
+
+  // 5. Collaborator: Collaborated on 2+ projects
+  const collabCount = await Project.countDocuments({ 'collaborators.user': user._id });
+  if (collabCount >= 2) {
+    await user.addBadge('collaborator', req);
+  }
+
+  // 6. First Like: Received first like on any post
+  const firstLikedPost = await Post.findOne({ author: user._id, 'likes.0': { $exists: true } });
+  if (firstLikedPost) {
+    await user.addBadge('first_like', req);
+  }
+
+  // 7. Milestone: 100+ followers
+  if ((user.followers ? user.followers.length : 0) >= 100) {
+    await user.addBadge('milestone_100_followers', req);
+  }
+};
 
 // Index for search
 userSchema.index({ username: 'text', firstName: 'text', lastName: 'text', skills: 'text' });

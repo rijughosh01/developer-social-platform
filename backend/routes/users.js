@@ -99,17 +99,15 @@ router.get('/:id', auth.optionalAuth, asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if current user is following this user
-  let isFollowing = false;
-  if (req.user) {
-    isFollowing = user.followers.some(f => f._id.toString() === req.user._id.toString());
-  }
+  // Ensure virtuals are included
+  const userObj = user.toObject({ virtuals: true });
 
   res.json({
     success: true,
     data: {
-      ...user.toObject({ virtuals: true }),
-      isFollowing
+      ...userObj,
+      badges: userObj.badges || [],
+      profileCompletion: userObj.profileCompletion || 0
     }
   });
 }));
@@ -147,6 +145,11 @@ router.put('/:id', auth.protect, asyncHandler(async (req, res) => {
   });
 
   const updatedUser = await user.save();
+
+  // Badge: Profile Completed 100%
+  if (updatedUser.profileCompletion === 100) {
+    await updatedUser.addBadge('profile_complete', req);
+  }
 
   res.json({
     success: true,
@@ -197,6 +200,8 @@ router.post('/:id/follow', auth.protect, asyncHandler(async (req, res) => {
     currentUser._id,
     userToFollow._id
   );
+  // Centralized badge evaluation for all badges
+  await User.evaluateAndAwardBadges(userToFollow._id, req);
 
   // Fetch updated user to follow (with virtuals and population)
   const updatedUserToFollow = await User.findById(userToFollow._id)

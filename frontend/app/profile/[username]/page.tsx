@@ -10,8 +10,10 @@ import { chatAPI } from '@/lib/api';
 import { PostCard } from '@/components/posts/PostCard'
 import ProjectDetailsModal from '@/app/projects/ProjectDetailsModal'
 import { getAvatarUrl } from '@/lib/utils'
-import { FiMapPin, FiBriefcase, FiGithub, FiLinkedin, FiGlobe, FiTwitter } from 'react-icons/fi'
+import { FiMapPin, FiBriefcase, FiGithub, FiLinkedin, FiGlobe, FiTwitter, FiAward, FiMessageSquare, FiGitBranch, FiUserCheck, FiCheckCircle, FiStar, FiZap, FiThumbsUp, FiUsers, FiHeart, FiUserPlus } from 'react-icons/fi'
 import { Button } from '@/components/ui/button'
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 
 interface ProfilePageProps {
   params: { username: string }
@@ -135,14 +137,26 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       <div className="relative mb-8" style={{overflow: 'visible'}}>
         {/* Banner */}
         <div className="h-40 w-full rounded-2xl bg-gradient-to-r from-primary-600 to-blue-400 shadow-lg" style={{backgroundImage: 'url(https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80)', backgroundSize: 'cover', backgroundPosition: 'center', overflow: 'visible'}}></div>
-        {/* Avatar - Overlapping */}
-        <div className="absolute left-1/2 -bottom-16 transform -translate-x-1/2 z-20" style={{overflow: 'visible'}}>
-          <img
-            src={getAvatarUrl(user)}
-            alt="Profile Avatar"
-            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg bg-white"
-            style={{zIndex: 20, position: 'relative'}}
-          />
+        {/* Avatar with Circular Progress */}
+        <div className="absolute left-1/2 -bottom-20 transform -translate-x-1/2 z-20 flex flex-col items-center" style={{overflow: 'visible'}}>
+          <div style={{ width: 150, height: 150, position: 'relative' }}>
+            <CircularProgressbar
+              value={user.profileCompletion || 0}
+              strokeWidth={4}
+              styles={buildStyles({
+                pathColor: '#3b82f6', 
+                trailColor: '#e5e7eb',
+                strokeLinecap: 'round',
+              })}
+            />
+            <img
+              src={getAvatarUrl(user)}
+              alt="Profile Avatar"
+              className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg bg-white absolute top-1/2 left-1/2"
+              style={{ transform: 'translate(-50%, -50%)', zIndex: 2 }}
+            />
+          </div>
+          <div className="text-blue-600 font-bold text-lg mt-1 mb-2">{user.profileCompletion || 0}%</div>
         </div>
       </div>
       {/* Profile Card Modernized */}
@@ -201,6 +215,99 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 Message
               </Button>
             </>
+          )}
+        </div>
+      </div>
+      {/* Achievements Section */}
+      <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
+        <h3 className="text-xl font-bold mb-4">Achievements</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          {/* Badges */}
+          {user.badges && user.badges.length > 0 ? (
+            <>
+              {user.badges.includes('first_post') && (
+                <div title="First Post: Create your first post on the platform." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiAward className="text-yellow-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-yellow-800">First Post</span>
+                </div>
+              )}
+              {user.badges.includes('top_commenter') && (
+                <div title="Top Commenter: Write 10 comments on posts." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiMessageSquare className="text-blue-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-blue-800">Top Commenter</span>
+                </div>
+              )}
+              {user.badges.includes('forked_10') && (
+                <div title="Code Forked 10+: Have one of your code posts forked 10 or more times." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiGitBranch className="text-green-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-green-800">Forked 10+</span>
+                </div>
+              )}
+              {user.badges.includes('streak_master') && (
+                <div title="Streak Master: Log in 7 days in a row." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiZap className="text-orange-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-orange-800">Streak Master</span>
+                </div>
+              )}
+              {user.badges.includes('helper') && (
+                <div title="Helper: Answer 5+ questions/comments from others." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-cyan-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiUsers className="text-cyan-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-cyan-800">Helper</span>
+                </div>
+              )}
+              {user.badges.includes('popular_post') && (
+                <div title="Popular Post: A post received 50+ likes." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiThumbsUp className="text-pink-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-pink-800">Popular Post</span>
+                </div>
+              )}
+              {user.badges.includes('project_creator') && (
+                <div title="Project Creator: Create 3+ projects." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiStar className="text-indigo-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-indigo-800">Project Creator</span>
+                </div>
+              )}
+              {user.badges.includes('collaborator') && (
+                <div title="Collaborator: Collaborate on 2+ projects." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-lime-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiUserPlus className="text-lime-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-lime-800">Collaborator</span>
+                </div>
+              )}
+              {user.badges.includes('first_like') && (
+                <div title="First Like: Receive your first like on a post." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiHeart className="text-red-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-red-800">First Like</span>
+                </div>
+              )}
+              {user.badges.includes('milestone_100_followers') && (
+                <div title="Milestone: Reach 100 followers." className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-2 shadow-lg text-3xl">
+                    <FiUserCheck className="text-green-600" />
+                  </div>
+                  <span className="text-xs font-semibold text-green-800">Milestone</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <span className="text-gray-400 col-span-4 text-center">No badges earned yet.</span>
           )}
         </div>
       </div>

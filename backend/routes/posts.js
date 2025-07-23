@@ -427,6 +427,13 @@ router.post('/', protect, [
   
   const post = await Post.create(postData);
   
+  // Badge: First Post
+  const user = await User.findById(req.user._id);
+  const userPostsCount = await Post.countDocuments({ author: req.user._id });
+  if (userPostsCount === 1) {
+    await user.addBadge('first_post', req);
+  }
+
   console.log('Post created with difficulty:', post.difficulty);
 
   await post.populate('author', 'username firstName lastName avatar');
@@ -567,7 +574,9 @@ router.post('/:id/like', protect, asyncHandler(async (req, res) => {
   } else {
     // Like
     await post.addLike(req.user._id);
-    
+    // Badge evaluation for post author
+    const User = require('../models/User');
+    await User.evaluateAndAwardBadges(post.author, req);
     // Create notification for post author (if not liking own post)
     if (post.author.toString() !== req.user._id.toString()) {
       const notificationService = new NotificationService(req.app.get('io'));
@@ -578,7 +587,6 @@ router.post('/:id/like', protect, asyncHandler(async (req, res) => {
         post.title
       );
     }
-    
     res.json({
       success: true,
       message: 'Post liked',
@@ -801,6 +809,13 @@ router.post('/:id/fork', protect, asyncHandler(async (req, res) => {
     path: 'forkedFrom',
     populate: { path: 'author', select: 'username firstName lastName avatar' }
   });
+
+  // Badge: Code Forked 10+ times
+  const forkedCount = await Post.countDocuments({ forkedFrom: originalPost._id });
+  const originalAuthor = await User.findById(originalPost.author._id);
+  if (forkedCount >= 10) {
+    await originalAuthor.addBadge('forked_10', req);
+  }
 
   // Notify the original post author if the forker is not the owner
   if (originalPost.author && originalPost.author._id.toString() !== req.user._id.toString()) {

@@ -13,6 +13,8 @@ import {
 import { NotificationItem } from './NotificationItem'
 import { useSocket } from '@/hooks/useSocket'
 import { Bell, Check, Trash2, Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast';
+import { FiAward, FiMessageSquare, FiGitBranch, FiCheckCircle } from 'react-icons/fi';
 
 export const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -39,6 +41,22 @@ export const NotificationDropdown: React.FC = () => {
         audio.play();
       } catch (err) {
         console.error('Failed to play notification sound:', err);
+      }
+      // Show toast for badge-earned notification
+      if (data.notification && data.notification.type === 'badge_earned') {
+        const badge = data.notification.data?.badge;
+        const BADGE_ICONS = {
+          first_post: <FiAward className="text-yellow-600" />,
+          top_commenter: <FiMessageSquare className="text-blue-600" />,
+          forked_10: <FiGitBranch className="text-green-600" />,
+          profile_complete: <FiCheckCircle className="text-purple-600" />
+        };
+        toast.success(
+          <span className="flex items-center gap-2">
+            {BADGE_ICONS[badge] || <FiAward />} <span>{data.notification.title || 'Badge Earned!'}</span>
+          </span>,
+          { id: `badge-earned-${badge}` }
+        );
       }
     },
     onUnreadCountUpdate: (data) => {

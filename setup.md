@@ -1,27 +1,47 @@
 # DevLink Setup Guide
 
+> For an overview and features, see [README.md](./README.md)
+
+---
+
+## Table of Contents
+1. [Prerequisites](#prerequisites)
+2. [Quick Start](#quick-start)
+   - [Clone the Repository](#1-clone-the-repository)
+   - [Backend Setup](#2-backend-setup)
+   - [Frontend Setup](#3-frontend-setup)
+   - [Access the Application](#4-access-the-application)
+3. [Environment Variables](#environment-variables)
+4. [Features Available](#features-available)
+5. [API Endpoints](#api-endpoints)
+6. [Development Scripts](#development)
+7. [Project Structure](#project-structure)
+8. [Troubleshooting](#troubleshooting)
+9. [Contributing](#contributing)
+10. [License](#license)
+
+---
+
 ## Prerequisites
 
 - Node.js (v18 or higher)
 - MongoDB (local or cloud)
 - Git
 
+---
+
 ## Quick Start
 
 ### 1. Clone the repository
 ```bash
 git clone <repository-url>
-cd devlink
+cd developer-social-platform
 ```
 
 ### 2. Backend Setup
-
 ```bash
 cd backend
-
-# Install dependencies
 npm install
-
 # Create environment file
 cp env.example .env
 # Edit .env with your configuration:
@@ -31,34 +51,27 @@ cp env.example .env
 # NODE_ENV=development
 # JWT_EXPIRE=7d
 # FRONTEND_URL=http://localhost:3000
-
-# Start the development server
 npm run dev
 ```
 
 ### 3. Frontend Setup
-
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
 # Create environment file
 cp env.example .env.local
 # Edit .env.local with your configuration:
 # NEXT_PUBLIC_API_URL=http://localhost:5000/api
 # NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
-
-# Start the development server
 npm run dev
 ```
 
 ### 4. Access the Application
-
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 - API Health Check: http://localhost:5000/api/health
+
+---
 
 ## Environment Variables
 
@@ -78,76 +91,44 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 ```
 
+---
+
 ## Features Available
 
-### Authentication
-- ✅ User registration with validation
-- ✅ User login with JWT
-- ✅ Password hashing with bcrypt
-- ✅ Protected routes
+- User registration, login, and JWT authentication
+- Developer profiles (bio, skills, social links)
+- Follow/unfollow system
+- Post creation, editing, deletion, likes, comments
+- Project showcase and collaboration (add collaborators, roles, forking, review requests)
+- **Collaboration Analytics Dashboard** (track reviews, forks, badges, and more)
+- **Trending Feed** (discover trending posts, projects, and developers)
+- **Advanced Notifications** (mentions, invites, review requests, forks, etc.)
+- **Saved Items** (save posts and projects for later)
+- **Real-time chat and notifications (Socket.IO)**
+- **Badge & Achievement System** (earn badges for key actions, see your progress in the Badge Gallery, and get real-time notifications when you earn a badge)
+- **Responsive UI with Tailwind CSS**
 
-### User Management
-- ✅ User profiles with bio, skills, social links
-- ✅ Follow/unfollow system
-- ✅ User search and discovery
+> For a full and up-to-date list of features and all available badges, see [README.md](./README.md#badges--achievements)
 
-### Posts System
-- ✅ Create, read, update, delete posts
-- ✅ Like/unlike posts
-- ✅ Image upload support
-- ✅ Real-time updates
-
-### Projects
-- ✅ Project showcase
-- ✅ Project collaboration
-- ✅ Project likes and comments
-
-### Real-time Chat
-- ✅ Socket.IO integration
-- ✅ Private messaging
-- ✅ Online status indicators
-
-### UI/UX
-- ✅ Responsive design with Tailwind CSS
-- ✅ Modern component library
-- ✅ Loading states and error handling
-- ✅ Toast notifications
+---
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/profile` - Get user profile
-- `PUT /api/auth/profile` - Update user profile
+See [README.md](./README.md#api-endpoints) for a summary. Main endpoints include:
 
-### Users
-- `GET /api/users` - Get all users (with pagination)
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users/:id/follow` - Follow user
-- `DELETE /api/users/:id/follow` - Unfollow user
+### Analytics
+- `GET /api/analytics/collaboration` - Get collaboration analytics (requires authentication)
 
-### Posts
-- `GET /api/posts` - Get all posts
-- `POST /api/posts` - Create post
-- `GET /api/posts/:id` - Get post by ID
-- `PUT /api/posts/:id` - Update post
-- `DELETE /api/posts/:id` - Delete post
-- `POST /api/posts/:id/like` - Like post
-- `DELETE /api/posts/:id/like` - Unlike post
+### Trending
+- `GET /api/trending` - Get trending posts, projects, and developers
 
-### Projects
-- `GET /api/projects` - Get all projects
-- `POST /api/projects` - Create project
-- `GET /api/projects/:id` - Get project by ID
-- `PUT /api/projects/:id` - Update project
-- `DELETE /api/projects/:id` - Delete project
+### Collaboration & Review
+- `POST /api/projects/:id/collaborators` - Add collaborator to a project
+- `POST /api/posts/:id/review-request` - Request a review on a post
 
-### Chat
-- `GET /api/chat` - Get user chats
-- `POST /api/chat` - Start new chat
-- `GET /api/chat/:id` - Get chat messages
-- `POST /api/chat/:id/messages` - Send message
+### (Other endpoints unchanged...)
+
+---
 
 ## Development
 
@@ -166,10 +147,12 @@ npm start        # Start production server
 npm run lint     # Run ESLint
 ```
 
+---
+
 ## Project Structure
 
-```
-devlink/
+```text
+developer-social-platform/
 ├── backend/
 │   ├── models/          # MongoDB schemas
 │   ├── routes/          # API routes
@@ -186,6 +169,8 @@ devlink/
 │   └── lib/             # Utility libraries
 └── README.md
 ```
+
+---
 
 ## Troubleshooting
 
@@ -208,6 +193,16 @@ devlink/
    - Verify NEXT_PUBLIC_API_URL in .env.local
    - Check CORS settings in backend
 
+5. **Windows-specific Issues**
+   - Use PowerShell or Git Bash for commands
+   - If `cp` fails, use `copy` (Windows) or manually create .env files
+
+6. **npm install errors**
+   - Delete node_modules and package-lock.json, then retry
+   - Ensure Node.js version is >= 18
+
+---
+
 ## Contributing
 
 1. Fork the repository
@@ -215,6 +210,8 @@ devlink/
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+---
 
 ## License
 

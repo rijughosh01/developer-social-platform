@@ -265,6 +265,9 @@ router.post('/', protect, [
 
   await project.populate('owner', 'username firstName lastName avatar');
 
+  // After project creation, call User.evaluateAndAwardBadges for the owner
+  await User.evaluateAndAwardBadges(req.user._id);
+
   res.status(201).json({
     success: true,
     data: project
@@ -396,6 +399,9 @@ router.put('/:id', protect, [
 
   const updatedProject = await project.save();
   await updatedProject.populate('owner', 'username firstName lastName avatar');
+
+  // After project update, call User.evaluateAndAwardBadges for the owner
+  await User.evaluateAndAwardBadges(req.user._id);
 
   res.json({
     success: true,
@@ -530,6 +536,10 @@ router.post('/:id/collaborators', protect, [
   } catch (error) {
     console.error('Error sending project invite notification:', error);
   }
+
+  // After collaborator addition, call User.evaluateAndAwardBadges for the owner and new collaborator
+  await User.evaluateAndAwardBadges(req.user._id);
+  await User.evaluateAndAwardBadges(userId);
 
   res.json({
     success: true,

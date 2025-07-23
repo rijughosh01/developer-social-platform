@@ -47,6 +47,9 @@ router.post('/:postId', auth.protect, async (req, res) => {
       content
     });
     await comment.save();
+    // Centralized badge evaluation for all badges
+    const User = require('../models/User');
+    await User.evaluateAndAwardBadges(req.user._id, req);
     
     console.log('✅ Comment saved successfully');
     
