@@ -1,22 +1,24 @@
-const express = require('express');
-const multer = require('multer');
-const cloudinary = require('../utils/cloudinary');
-const fs = require('fs');
+const express = require("express");
+const multer = require("multer");
+const cloudinary = require("../utils/cloudinary");
+const fs = require("fs");
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' }); // Temporary storage
+const upload = multer({ dest: "uploads/" });
 
-router.post('/', upload.single('image'), async (req, res) => {
+router.post("/", upload.single("image"), async (req, res) => {
   try {
     const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'devlink-posts', // Optional: organize in a folder
+      folder: "devlink-posts",
     });
-    // Remove file from server after upload
+    // Clean up local file after upload
     fs.unlinkSync(req.file.path);
     res.json({ success: true, url: result.secure_url });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Upload failed', error: err.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Upload failed", error: err.message });
   }
 });
 
-module.exports = router; 
+module.exports = router;
