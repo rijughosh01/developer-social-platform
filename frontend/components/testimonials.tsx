@@ -1,4 +1,4 @@
-import { FiStar } from 'react-icons/fi'
+import { FiStar } from "react-icons/fi";
 
 const testimonials = [
   {
@@ -6,7 +6,8 @@ const testimonials = [
     author: {
       name: "Sarah Chen",
       handle: "Full Stack Developer",
-      imageUrl: "https://ui-avatars.com/api/?name=Sarah+Chen&background=3b82f6&color=fff&size=128",
+      imageUrl:
+        "https://ui-avatars.com/api/?name=Sarah+Chen&background=3b82f6&color=fff&size=128",
     },
   },
   {
@@ -14,7 +15,8 @@ const testimonials = [
     author: {
       name: "Marcus Rodriguez",
       handle: "Frontend Developer",
-      imageUrl: "https://ui-avatars.com/api/?name=Marcus+Rodriguez&background=10b981&color=fff&size=128",
+      imageUrl:
+        "https://ui-avatars.com/api/?name=Marcus+Rodriguez&background=10b981&color=fff&size=128",
     },
   },
   {
@@ -22,17 +24,20 @@ const testimonials = [
     author: {
       name: "Emily Johnson",
       handle: "Backend Engineer",
-      imageUrl: "https://ui-avatars.com/api/?name=Emily+Johnson&background=f59e0b&color=fff&size=128",
+      imageUrl:
+        "https://ui-avatars.com/api/?name=Emily+Johnson&background=f59e0b&color=fff&size=128",
     },
   },
-]
+];
 
 export function Testimonials() {
   return (
     <div id="testimonials" className="py-24 bg-white sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-xl text-center">
-          <h2 className="text-lg font-semibold leading-8 tracking-tight text-primary-600">Testimonials</h2>
+          <h2 className="text-lg font-semibold leading-8 tracking-tight text-primary-600">
+            Testimonials
+          </h2>
           <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             Loved by developers worldwide
           </p>
@@ -56,8 +61,12 @@ export function Testimonials() {
                     alt=""
                   />
                   <div>
-                    <div className="font-semibold text-gray-900">{testimonial.author.name}</div>
-                    <div className="text-gray-600">{testimonial.author.handle}</div>
+                    <div className="font-semibold text-gray-900">
+                      {testimonial.author.name}
+                    </div>
+                    <div className="text-gray-600">
+                      {testimonial.author.handle}
+                    </div>
                   </div>
                 </figcaption>
               </div>
@@ -66,5 +75,5 @@ export function Testimonials() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

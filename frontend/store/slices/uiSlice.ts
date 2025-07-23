@@ -1,16 +1,16 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface UIState {
-  sidebarOpen: boolean
-  modalOpen: boolean
-  modalType: string | null
+  sidebarOpen: boolean;
+  modalOpen: boolean;
+  modalType: string | null;
   notifications: Array<{
-    id: string
-    type: 'success' | 'error' | 'info' | 'warning'
-    message: string
-    duration?: number
-  }>
-  loadingStates: Record<string, boolean>
+    id: string;
+    type: "success" | "error" | "info" | "warning";
+    message: string;
+    duration?: number;
+  }>;
+  loadingStates: Record<string, boolean>;
 }
 
 const initialState: UIState = {
@@ -19,44 +19,50 @@ const initialState: UIState = {
   modalType: null,
   notifications: [],
   loadingStates: {},
-}
+};
 
 const uiSlice = createSlice({
-  name: 'ui',
+  name: "ui",
   initialState,
   reducers: {
     toggleSidebar: (state) => {
-      state.sidebarOpen = !state.sidebarOpen
+      state.sidebarOpen = !state.sidebarOpen;
     },
     setSidebarOpen: (state, action: PayloadAction<boolean>) => {
-      state.sidebarOpen = action.payload
+      state.sidebarOpen = action.payload;
     },
     openModal: (state, action: PayloadAction<string>) => {
-      state.modalOpen = true
-      state.modalType = action.payload
+      state.modalOpen = true;
+      state.modalType = action.payload;
     },
     closeModal: (state) => {
-      state.modalOpen = false
-      state.modalType = null
+      state.modalOpen = false;
+      state.modalType = null;
     },
-    addNotification: (state, action: PayloadAction<{
-      id: string
-      type: 'success' | 'error' | 'info' | 'warning'
-      message: string
-      duration?: number
-    }>) => {
-      state.notifications.push(action.payload)
+    addNotification: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        type: "success" | "error" | "info" | "warning";
+        message: string;
+        duration?: number;
+      }>
+    ) => {
+      state.notifications.push(action.payload);
     },
     removeNotification: (state, action: PayloadAction<string>) => {
       state.notifications = state.notifications.filter(
-        notification => notification.id !== action.payload
-      )
+        (notification) => notification.id !== action.payload
+      );
     },
-    setLoadingState: (state, action: PayloadAction<{ key: string; loading: boolean }>) => {
-      state.loadingStates[action.payload.key] = action.payload.loading
+    setLoadingState: (
+      state,
+      action: PayloadAction<{ key: string; loading: boolean }>
+    ) => {
+      state.loadingStates[action.payload.key] = action.payload.loading;
     },
   },
-})
+});
 
 export const {
   toggleSidebar,
@@ -66,6 +72,6 @@ export const {
   addNotification,
   removeNotification,
   setLoadingState,
-} = uiSlice.actions
+} = uiSlice.actions;
 
-export default uiSlice.reducer 
+export default uiSlice.reducer;

@@ -1,50 +1,57 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
-import { register as registerUser } from '@/store/slices/authSlice'
-import { Button } from '@/components/ui/button'
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiUserCheck } from 'react-icons/fi'
-import toast from 'react-hot-toast'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
+import { register as registerUser } from "@/store/slices/authSlice";
+import { Button } from "@/components/ui/button";
+import {
+  FiMail,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiUser,
+  FiUserCheck,
+} from "react-icons/fi";
+import toast from "react-hot-toast";
 
 interface RegisterForm {
-  username: string
-  email: string
-  password: string
-  confirmPassword: string
-  firstName: string
-  lastName: string
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
 }
 
 export default function RegisterPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const dispatch = useAppDispatch()
-  const router = useRouter()
-  const { isLoading, error } = useAppSelector((state) => state.auth)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const { isLoading, error } = useAppSelector((state) => state.auth);
 
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<RegisterForm>()
+  } = useForm<RegisterForm>();
 
-  const password = watch('password')
+  const password = watch("password");
 
   const onSubmit = async (data: RegisterForm) => {
     try {
-      const { confirmPassword, ...registerData } = data
-      await dispatch(registerUser(registerData)).unwrap()
-      toast.success('Registration successful!')
-      router.push('/dashboard')
+      const { confirmPassword, ...registerData } = data;
+      await dispatch(registerUser(registerData)).unwrap();
+      toast.success("Registration successful!");
+      router.push("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed')
+      toast.error(error.message || "Registration failed");
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -57,7 +64,7 @@ export default function RegisterPage() {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
+            Or{" "}
             <Link
               href="/auth/login"
               className="font-medium text-primary-600 hover:text-primary-500"
@@ -78,19 +85,20 @@ export default function RegisterPage() {
                   <FiUser className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  {...register('username', {
-                    required: 'Username is required',
+                  {...register("username", {
+                    required: "Username is required",
                     minLength: {
                       value: 3,
-                      message: 'Username must be at least 3 characters',
+                      message: "Username must be at least 3 characters",
                     },
                     maxLength: {
                       value: 30,
-                      message: 'Username must be less than 30 characters',
+                      message: "Username must be less than 30 characters",
                     },
                     pattern: {
                       value: /^[a-zA-Z0-9_]+$/,
-                      message: 'Username can only contain letters, numbers, and underscores',
+                      message:
+                        "Username can only contain letters, numbers, and underscores",
                     },
                   })}
                   id="username"
@@ -100,7 +108,9 @@ export default function RegisterPage() {
                 />
               </div>
               {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.username.message}
+                </p>
               )}
             </div>
 
@@ -114,11 +124,11 @@ export default function RegisterPage() {
                   <FiUserCheck className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  {...register('firstName', {
-                    required: 'First name is required',
+                  {...register("firstName", {
+                    required: "First name is required",
                     maxLength: {
                       value: 50,
-                      message: 'First name must be less than 50 characters',
+                      message: "First name must be less than 50 characters",
                     },
                   })}
                   id="firstName"
@@ -128,7 +138,9 @@ export default function RegisterPage() {
                 />
               </div>
               {errors.firstName && (
-                <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.firstName.message}
+                </p>
               )}
             </div>
 
@@ -142,11 +154,11 @@ export default function RegisterPage() {
                   <FiUserCheck className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  {...register('lastName', {
-                    required: 'Last name is required',
+                  {...register("lastName", {
+                    required: "Last name is required",
                     maxLength: {
                       value: 50,
-                      message: 'Last name must be less than 50 characters',
+                      message: "Last name must be less than 50 characters",
                     },
                   })}
                   id="lastName"
@@ -156,7 +168,9 @@ export default function RegisterPage() {
                 />
               </div>
               {errors.lastName && (
-                <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.lastName.message}
+                </p>
               )}
             </div>
 
@@ -170,11 +184,11 @@ export default function RegisterPage() {
                   <FiMail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  {...register('email', {
-                    required: 'Email is required',
+                  {...register("email", {
+                    required: "Email is required",
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Invalid email address',
+                      message: "Invalid email address",
                     },
                   })}
                   id="email"
@@ -184,7 +198,9 @@ export default function RegisterPage() {
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -198,15 +214,15 @@ export default function RegisterPage() {
                   <FiLock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  {...register('password', {
-                    required: 'Password is required',
+                  {...register("password", {
+                    required: "Password is required",
                     minLength: {
                       value: 6,
-                      message: 'Password must be at least 6 characters',
+                      message: "Password must be at least 6 characters",
                     },
                   })}
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   className="appearance-none relative block w-full px-3 py-2 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                   placeholder="Password"
                 />
@@ -223,7 +239,9 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -237,13 +255,13 @@ export default function RegisterPage() {
                   <FiLock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  {...register('confirmPassword', {
-                    required: 'Please confirm your password',
+                  {...register("confirmPassword", {
+                    required: "Please confirm your password",
                     validate: (value) =>
-                      value === password || 'Passwords do not match',
+                      value === password || "Passwords do not match",
                   })}
                   id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? "text" : "password"}
                   className="appearance-none relative block w-full px-3 py-2 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                   placeholder="Confirm Password"
                 />
@@ -260,7 +278,9 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
           </div>
@@ -271,11 +291,11 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </div>
         </form>
       </div>
     </div>
-  )
-} 
+  );
+}

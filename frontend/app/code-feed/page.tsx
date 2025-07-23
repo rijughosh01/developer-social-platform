@@ -128,7 +128,6 @@ export default function CodeFeedPage() {
         );
         break;
       case "trending":
-        // Simple trending algorithm: likes + comments + recency
         filteredPosts.sort((a, b) => {
           const aScore =
             (a.likesCount || 0) +

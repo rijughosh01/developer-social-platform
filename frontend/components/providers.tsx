@@ -1,22 +1,22 @@
-'use client'
+"use client";
 
-import { Provider } from 'react-redux'
-import { store } from '@/store'
-import { useEffect } from 'react'
-import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
-import { getProfile } from '@/store/slices/authSlice'
+import { Provider } from "react-redux";
+import { store } from "@/store";
+import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
+import { getProfile } from "@/store/slices/authSlice";
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
-  const dispatch = useAppDispatch()
-  const { token, isAuthenticated } = useAppSelector((state) => state.auth)
+  const dispatch = useAppDispatch();
+  const { token, isAuthenticated } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     if (token) {
-      dispatch(getProfile())
+      dispatch(getProfile());
     }
-  }, [token, dispatch])
+  }, [token, dispatch]);
 
-  return <>{children}</>
+  return <>{children}</>;
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -24,5 +24,5 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <Provider store={store}>
       <AuthProvider>{children}</AuthProvider>
     </Provider>
-  )
-} 
+  );
+}

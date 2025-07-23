@@ -1,115 +1,132 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { useRouter } from 'next/navigation'
-import { useAppDispatch } from '@/hooks/useAppDispatch'
-import { markNotificationAsRead, deleteNotification } from '@/store/slices/notificationSlice'
-import { Notification } from '@/types'
-import { 
-  Bell, 
-  MessageSquare, 
-  Heart, 
-  UserPlus, 
-  MessageCircle, 
-  Users, 
-  AtSign, 
-  FolderOpen, 
+import React from "react";
+import { useRouter } from "next/navigation";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import {
+  markNotificationAsRead,
+  deleteNotification,
+} from "@/store/slices/notificationSlice";
+import { Notification } from "@/types";
+import {
+  Bell,
+  MessageSquare,
+  Heart,
+  UserPlus,
+  MessageCircle,
+  Users,
+  AtSign,
+  FolderOpen,
   Handshake,
   Settings,
   X,
-  Check
-} from 'lucide-react'
+  Check,
+} from "lucide-react";
 
 interface NotificationItemProps {
-  notification: Notification
-  onClose?: () => void
+  notification: Notification;
+  onClose?: () => void;
 }
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
-    case 'message':
-      return <MessageSquare className="w-5 h-5 text-blue-500" title="Message" />
-    case 'like_post':
-    case 'like_project':
-      return <Heart className="w-5 h-5 text-red-500" title="Like" />
-    case 'comment_post':
-    case 'comment_project':
-      return <MessageCircle className="w-5 h-5 text-green-500" title="Comment" />
-    case 'follow':
-      return <UserPlus className="w-5 h-5 text-purple-500" title="Follow" />
-    case 'unfollow':
-      return <UserPlus className="w-5 h-5 text-gray-500" title="Unfollow" />
-    case 'mention':
-      return <AtSign className="w-5 h-5 text-orange-500" title="Mention" />
-    case 'project_invite':
-      return <FolderOpen className="w-5 h-5 text-indigo-500" title="Project Invite" />
-    case 'collaboration_request':
-      return <Handshake className="w-5 h-5 text-teal-500" title="Collaboration Request" />
-    case 'system':
-      return <Settings className="w-5 h-5 text-gray-500" title="System" />
+    case "message":
+      return (
+        <MessageSquare className="w-5 h-5 text-blue-500" title="Message" />
+      );
+    case "like_post":
+    case "like_project":
+      return <Heart className="w-5 h-5 text-red-500" title="Like" />;
+    case "comment_post":
+    case "comment_project":
+      return (
+        <MessageCircle className="w-5 h-5 text-green-500" title="Comment" />
+      );
+    case "follow":
+      return <UserPlus className="w-5 h-5 text-purple-500" title="Follow" />;
+    case "unfollow":
+      return <UserPlus className="w-5 h-5 text-gray-500" title="Unfollow" />;
+    case "mention":
+      return <AtSign className="w-5 h-5 text-orange-500" title="Mention" />;
+    case "project_invite":
+      return (
+        <FolderOpen
+          className="w-5 h-5 text-indigo-500"
+          title="Project Invite"
+        />
+      );
+    case "collaboration_request":
+      return (
+        <Handshake
+          className="w-5 h-5 text-teal-500"
+          title="Collaboration Request"
+        />
+      );
+    case "system":
+      return <Settings className="w-5 h-5 text-gray-500" title="System" />;
     default:
-      return <Bell className="w-5 h-5 text-gray-500" title="Notification" />
+      return <Bell className="w-5 h-5 text-gray-500" title="Notification" />;
   }
-}
+};
 
 const getNotificationColor = (type: string) => {
   switch (type) {
-    case 'message':
-      return 'bg-blue-50 border-blue-200'
-    case 'like_post':
-    case 'like_project':
-      return 'bg-red-50 border-red-200'
-    case 'comment_post':
-    case 'comment_project':
-      return 'bg-green-50 border-green-200'
-    case 'follow':
-      return 'bg-purple-50 border-purple-200'
-    case 'unfollow':
-      return 'bg-gray-50 border-gray-200'
-    case 'mention':
-      return 'bg-orange-50 border-orange-200'
-    case 'project_invite':
-      return 'bg-indigo-50 border-indigo-200'
-    case 'collaboration_request':
-      return 'bg-teal-50 border-teal-200'
-    case 'system':
-      return 'bg-gray-50 border-gray-200'
+    case "message":
+      return "bg-blue-50 border-blue-200";
+    case "like_post":
+    case "like_project":
+      return "bg-red-50 border-red-200";
+    case "comment_post":
+    case "comment_project":
+      return "bg-green-50 border-green-200";
+    case "follow":
+      return "bg-purple-50 border-purple-200";
+    case "unfollow":
+      return "bg-gray-50 border-gray-200";
+    case "mention":
+      return "bg-orange-50 border-orange-200";
+    case "project_invite":
+      return "bg-indigo-50 border-indigo-200";
+    case "collaboration_request":
+      return "bg-teal-50 border-teal-200";
+    case "system":
+      return "bg-gray-50 border-gray-200";
     default:
-      return 'bg-gray-50 border-gray-200'
+      return "bg-gray-50 border-gray-200";
   }
-}
+};
 
-export const NotificationItem: React.FC<NotificationItemProps> = ({ 
-  notification, 
-  onClose 
+export const NotificationItem: React.FC<NotificationItemProps> = ({
+  notification,
+  onClose,
 }) => {
-  const router = useRouter()
-  const dispatch = useAppDispatch()
+  const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const handleClick = async () => {
     if (!notification.isRead) {
-      await dispatch(markNotificationAsRead(notification._id))
+      await dispatch(markNotificationAsRead(notification._id));
     }
 
     // Navigate to the relevant page
     if (notification.data?.url) {
-      router.push(notification.data.url)
+      router.push(notification.data.url);
     }
 
-    onClose?.()
-  }
+    onClose?.();
+  };
 
   const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    await dispatch(deleteNotification(notification._id))
-  }
+    e.stopPropagation();
+    await dispatch(deleteNotification(notification._id));
+  };
 
   const handleMarkAsRead = async (e: React.MouseEvent) => {
-    e.stopPropagation()
+    e.stopPropagation();
     if (!notification.isRead) {
-      await dispatch(markNotificationAsRead(notification._id))
+      await dispatch(markNotificationAsRead(notification._id));
     }
-  }
+  };
 
   // Avatar logic
   const avatar = notification.sender.avatar ? (
@@ -120,23 +137,28 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
     />
   ) : (
     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold border-2 border-white shadow-md">
-      {notification.sender.firstName?.[0]}{notification.sender.lastName?.[0]}
+      {notification.sender.firstName?.[0]}
+      {notification.sender.lastName?.[0]}
     </div>
-  )
+  );
 
   // Icon in colored circle
   const icon = (
     <span className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow border mr-2">
       {getNotificationIcon(notification.type)}
     </span>
-  )
+  );
 
   return (
     <div
       className={`
         relative p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-lg
         ${getNotificationColor(notification.type)}
-        ${notification.isRead ? 'opacity-75' : 'opacity-100 border-2 border-blue-400 shadow-md'}
+        ${
+          notification.isRead
+            ? "opacity-75"
+            : "opacity-100 border-2 border-blue-400 shadow-md"
+        }
         group
         flex flex-col sm:flex-row gap-3 sm:gap-0 w-full
       `}
@@ -198,5 +220,5 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
         </div>
       </div>
     </div>
-  )
-} 
+  );
+};

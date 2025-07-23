@@ -1,18 +1,18 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
-import { User, ApiResponse, PaginationParams } from '@/types'
-import { usersAPI } from '@/lib/api'
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { User, ApiResponse, PaginationParams } from "@/types";
+import { usersAPI } from "@/lib/api";
 
 interface UsersState {
-  users: User[]
-  currentUser: User | null
-  isLoading: boolean
-  error: string | null
+  users: User[];
+  currentUser: User | null;
+  isLoading: boolean;
+  error: string | null;
   pagination: {
-    page: number
-    limit: number
-    total: number
-    pages: number
-  } | null
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  } | null;
 }
 
 const initialState: UsersState = {
@@ -21,220 +21,228 @@ const initialState: UsersState = {
   isLoading: false,
   error: null,
   pagination: null,
-}
+};
 
 // Async thunks
 export const fetchUsers = createAsyncThunk(
-  'users/fetchUsers',
+  "users/fetchUsers",
   async (params?: PaginationParams) => {
-    const response = await usersAPI.getUsers(params)
-    return response.data
+    const response = await usersAPI.getUsers(params);
+    return response.data;
   }
-)
+);
 
 export const fetchUser = createAsyncThunk(
-  'users/fetchUser',
+  "users/fetchUser",
   async (id: string) => {
-    const response = await usersAPI.getUser(id)
-    return response.data
+    const response = await usersAPI.getUser(id);
+    return response.data;
   }
-)
+);
 
 export const updateUser = createAsyncThunk(
-  'users/updateUser',
+  "users/updateUser",
   async ({ id, data }: { id: string; data: any }) => {
-    const response = await usersAPI.updateUser(id, data)
-    return response.data
+    const response = await usersAPI.updateUser(id, data);
+    return response.data;
   }
-)
+);
 
 export const followUser = createAsyncThunk(
-  'users/followUser',
+  "users/followUser",
   async (id: string) => {
-    const response = await usersAPI.followUser(id)
-    return response.data
+    const response = await usersAPI.followUser(id);
+    return response.data;
   }
-)
+);
 
 export const unfollowUser = createAsyncThunk(
-  'users/unfollowUser',
+  "users/unfollowUser",
   async (id: string) => {
-    const response = await usersAPI.unfollowUser(id)
-    return response.data
+    const response = await usersAPI.unfollowUser(id);
+    return response.data;
   }
-)
+);
 
 export const fetchFollowers = createAsyncThunk(
-  'users/fetchFollowers',
+  "users/fetchFollowers",
   async ({ id, params }: { id: string; params?: PaginationParams }) => {
-    const response = await usersAPI.getFollowers(id, params)
-    return response.data
+    const response = await usersAPI.getFollowers(id, params);
+    return response.data;
   }
-)
+);
 
 export const fetchFollowing = createAsyncThunk(
-  'users/fetchFollowing',
+  "users/fetchFollowing",
   async ({ id, params }: { id: string; params?: PaginationParams }) => {
-    const response = await usersAPI.getFollowing(id, params)
-    return response.data
+    const response = await usersAPI.getFollowing(id, params);
+    return response.data;
   }
-)
+);
 
 export const fetchSuggestions = createAsyncThunk(
-  'users/fetchSuggestions',
+  "users/fetchSuggestions",
   async (params?: PaginationParams) => {
-    const response = await usersAPI.getSuggestions(params)
-    return response.data
+    const response = await usersAPI.getSuggestions(params);
+    return response.data;
   }
-)
+);
 
 const usersSlice = createSlice({
-  name: 'users',
+  name: "users",
   initialState,
   reducers: {
     clearError: (state) => {
-      state.error = null
+      state.error = null;
     },
     clearCurrentUser: (state) => {
-      state.currentUser = null
+      state.currentUser = null;
     },
     setUsers: (state, action: PayloadAction<User[]>) => {
-      state.users = action.payload
+      state.users = action.payload;
     },
   },
   extraReducers: (builder) => {
     // Fetch Users
     builder
       .addCase(fetchUsers.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.users = action.payload.data
-        state.pagination = action.payload.pagination || null
+        state.isLoading = false;
+        state.users = action.payload.data;
+        state.pagination = action.payload.pagination || null;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch users'
-      })
+        state.isLoading = false;
+        state.error = action.error.message || "Failed to fetch users";
+      });
 
     // Fetch User
     builder
       .addCase(fetchUser.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchUser.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.currentUser = action.payload.data
+        state.isLoading = false;
+        state.currentUser = action.payload.data;
       })
       .addCase(fetchUser.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch user'
-      })
+        state.isLoading = false;
+        state.error = action.error.message || "Failed to fetch user";
+      });
 
     // Update User
     builder
       .addCase(updateUser.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(updateUser.fulfilled, (state, action) => {
-        state.isLoading = false
-        const updatedUser = action.payload.data
-        state.users = state.users.map(user =>
+        state.isLoading = false;
+        const updatedUser = action.payload.data;
+        state.users = state.users.map((user) =>
           user._id === updatedUser._id ? updatedUser : user
-        )
+        );
         if (state.currentUser?._id === updatedUser._id) {
-          state.currentUser = updatedUser
+          state.currentUser = updatedUser;
         }
       })
       .addCase(updateUser.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.error.message || 'Failed to update user'
-      })
+        state.isLoading = false;
+        state.error = action.error.message || "Failed to update user";
+      });
 
     // Follow User
-    builder
-      .addCase(followUser.fulfilled, (state, action) => {
-        const { isFollowing, followersCount, followingCount } = action.payload.data
-        const userId = action.meta.arg
+    builder.addCase(followUser.fulfilled, (state, action) => {
+      const { isFollowing, followersCount, followingCount } =
+        action.payload.data;
+      const userId = action.meta.arg;
 
-        // Update in users list
-        state.users = state.users.map(user =>
-          user._id === userId ? { ...user, isFollowing, followersCount } : user
-        )
+      // Update in users list
+      state.users = state.users.map((user) =>
+        user._id === userId ? { ...user, isFollowing, followersCount } : user
+      );
 
-        // Update current user if it's the same
-        if (state.currentUser?._id === userId) {
-          state.currentUser = { ...state.currentUser, isFollowing, followersCount }
-        }
-      })
+      // Update current user if it's the same
+      if (state.currentUser?._id === userId) {
+        state.currentUser = {
+          ...state.currentUser,
+          isFollowing,
+          followersCount,
+        };
+      }
+    });
 
     // Unfollow User
-    builder
-      .addCase(unfollowUser.fulfilled, (state, action) => {
-        const { isFollowing, followersCount, followingCount } = action.payload.data
-        const userId = action.meta.arg
+    builder.addCase(unfollowUser.fulfilled, (state, action) => {
+      const { isFollowing, followersCount, followingCount } =
+        action.payload.data;
+      const userId = action.meta.arg;
 
-        // Update in users list
-        state.users = state.users.map(user =>
-          user._id === userId ? { ...user, isFollowing, followersCount } : user
-        )
+      // Update in users list
+      state.users = state.users.map((user) =>
+        user._id === userId ? { ...user, isFollowing, followersCount } : user
+      );
 
-        // Update current user if it's the same
-        if (state.currentUser?._id === userId) {
-          state.currentUser = { ...state.currentUser, isFollowing, followersCount }
-        }
-      })
+      // Update current user if it's the same
+      if (state.currentUser?._id === userId) {
+        state.currentUser = {
+          ...state.currentUser,
+          isFollowing,
+          followersCount,
+        };
+      }
+    });
 
     // Fetch Followers
     builder
       .addCase(fetchFollowers.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchFollowers.fulfilled, (state, action) => {
-        state.isLoading = false
+        state.isLoading = false;
         // Handle followers data as needed
       })
       .addCase(fetchFollowers.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch followers'
-      })
+        state.isLoading = false;
+        state.error = action.error.message || "Failed to fetch followers";
+      });
 
     // Fetch Following
     builder
       .addCase(fetchFollowing.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchFollowing.fulfilled, (state, action) => {
-        state.isLoading = false
+        state.isLoading = false;
         // Handle following data as needed
       })
       .addCase(fetchFollowing.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch following'
-      })
+        state.isLoading = false;
+        state.error = action.error.message || "Failed to fetch following";
+      });
 
     // Fetch Suggestions
     builder
       .addCase(fetchSuggestions.pending, (state) => {
-        state.isLoading = true
-        state.error = null
+        state.isLoading = true;
+        state.error = null;
       })
       .addCase(fetchSuggestions.fulfilled, (state, action) => {
-        state.isLoading = false
-        state.users = action.payload.data
+        state.isLoading = false;
+        state.users = action.payload.data;
       })
       .addCase(fetchSuggestions.rejected, (state, action) => {
-        state.isLoading = false
-        state.error = action.error.message || 'Failed to fetch suggestions'
-      })
+        state.isLoading = false;
+        state.error = action.error.message || "Failed to fetch suggestions";
+      });
   },
-})
+});
 
-export const { clearError, clearCurrentUser, setUsers } = usersSlice.actions
-export default usersSlice.reducer 
+export const { clearError, clearCurrentUser, setUsers } = usersSlice.actions;
+export default usersSlice.reducer;

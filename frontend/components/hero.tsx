@@ -1,6 +1,6 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { FiCode, FiUsers, FiMessageSquare, FiHeart } from 'react-icons/fi'
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { FiCode, FiUsers, FiMessageSquare, FiHeart } from "react-icons/fi";
 
 export function Hero() {
   return (
@@ -18,12 +18,14 @@ export function Hero() {
             </a>
           </div>
           <h1 className="mt-10 text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-            Connect with developers,{' '}
+            Connect with developers,{" "}
             <span className="text-primary-600">showcase your projects</span>
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-600">
-            DevLink is the ultimate platform for developers to connect, collaborate, and showcase their work. 
-            Build your professional network, share your projects, and discover amazing developers from around the world.
+            DevLink is the ultimate platform for developers to connect,
+            collaborate, and showcase their work. Build your professional
+            network, share your projects, and discover amazing developers from
+            around the world.
           </p>
           <div className="mt-10 flex items-center gap-x-6">
             <Link href="/auth/register">
@@ -46,46 +48,58 @@ export function Hero() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600">
                     <FiCode className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Showcase Projects</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Showcase Projects
+                  </h3>
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Display your best work with detailed descriptions, technologies used, and live demos.
+                  Display your best work with detailed descriptions,
+                  technologies used, and live demos.
                 </p>
               </div>
-              
+
               <div className="card p-6">
                 <div className="flex items-center space-x-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-600">
                     <FiUsers className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Build Network</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Build Network
+                  </h3>
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Connect with like-minded developers, follow your favorites, and grow your professional network.
+                  Connect with like-minded developers, follow your favorites,
+                  and grow your professional network.
                 </p>
               </div>
-              
+
               <div className="card p-6">
                 <div className="flex items-center space-x-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600">
                     <FiMessageSquare className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Real-time Chat</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Real-time Chat
+                  </h3>
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Collaborate seamlessly with instant messaging, file sharing, and group conversations.
+                  Collaborate seamlessly with instant messaging, file sharing,
+                  and group conversations.
                 </p>
               </div>
-              
+
               <div className="card p-6">
                 <div className="flex items-center space-x-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600">
                     <FiHeart className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">Share Knowledge</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Share Knowledge
+                  </h3>
                 </div>
                 <p className="mt-4 text-sm text-gray-600">
-                  Write articles, share tutorials, and contribute to the developer community.
+                  Write articles, share tutorials, and contribute to the
+                  developer community.
                 </p>
               </div>
             </div>
@@ -93,5 +107,5 @@ export function Hero() {
         </div>
       </div>
     </div>
-  )
-} 
+  );
+}

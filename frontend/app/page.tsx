@@ -1,9 +1,9 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Hero } from '@/components/hero'
-import { Features } from '@/components/features'
-import { Testimonials } from '@/components/testimonials'
-import { Footer } from '@/components/footer'
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Hero } from "@/components/hero";
+import { Features } from "@/components/features";
+import { Testimonials } from "@/components/testimonials";
+import { Footer } from "@/components/footer";
 
 export default function HomePage() {
   return (
@@ -13,17 +13,28 @@ export default function HomePage() {
         <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8">
           <div className="flex lg:flex-1">
             <Link href="/" className="-m-1.5 p-1.5">
-              <span className="text-2xl font-bold text-primary-600">DevLink</span>
+              <span className="text-2xl font-bold text-primary-600">
+                DevLink
+              </span>
             </Link>
           </div>
           <div className="hidden lg:flex lg:gap-x-12">
-            <Link href="#features" className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600">
+            <Link
+              href="#features"
+              className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600"
+            >
               Features
             </Link>
-            <Link href="#testimonials" className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600">
+            <Link
+              href="#testimonials"
+              className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600"
+            >
               Testimonials
             </Link>
-            <Link href="#about" className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600">
+            <Link
+              href="#about"
+              className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600"
+            >
               About
             </Link>
           </div>
@@ -55,7 +66,8 @@ export default function HomePage() {
               Ready to join the developer community?
             </h2>
             <p className="mt-6 text-lg leading-8 text-gray-600">
-              Start building your developer profile, showcase your projects, and connect with like-minded developers today.
+              Start building your developer profile, showcase your projects, and
+              connect with like-minded developers today.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link href="/auth/register">
@@ -74,5 +86,5 @@ export default function HomePage() {
       {/* Footer */}
       <Footer />
     </div>
-  )
-} 
+  );
+}

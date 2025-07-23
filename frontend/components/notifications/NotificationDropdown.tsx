@@ -1,59 +1,67 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react'
-import { useAppSelector, useAppDispatch } from '@/hooks/useAppDispatch'
-import { 
-  fetchNotifications, 
+import React, { useState, useEffect, useRef } from "react";
+import { useAppSelector, useAppDispatch } from "@/hooks/useAppDispatch";
+import {
+  fetchNotifications,
   markAllNotificationsAsRead,
   deleteMultipleNotifications,
   getUnreadCount,
   addNotification,
-  updateUnreadCount
-} from '@/store/slices/notificationSlice'
-import { NotificationItem } from './NotificationItem'
-import { useSocket } from '@/hooks/useSocket'
-import { Bell, Check, Trash2, Loader2 } from 'lucide-react'
-import toast from 'react-hot-toast';
-import { FiAward, FiMessageSquare, FiGitBranch, FiCheckCircle } from 'react-icons/fi';
+  updateUnreadCount,
+} from "@/store/slices/notificationSlice";
+import { NotificationItem } from "./NotificationItem";
+import { useSocket } from "@/hooks/useSocket";
+import { Bell, Check, Trash2, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
+import {
+  FiAward,
+  FiMessageSquare,
+  FiGitBranch,
+  FiCheckCircle,
+} from "react-icons/fi";
 
 export const NotificationDropdown: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  
-  const dispatch = useAppDispatch()
-  const { notifications = [], unreadCount, isLoading: notificationsLoading } = useAppSelector(
-    (state) => state.notifications
-  )
-  const { token } = useAppSelector((state) => state.auth)
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const dispatch = useAppDispatch();
+  const {
+    notifications = [],
+    unreadCount,
+    isLoading: notificationsLoading,
+  } = useAppSelector((state) => state.notifications);
+  const { token } = useAppSelector((state) => state.auth);
 
   // Socket connection for real-time notifications
   const { markAllNotificationsRead } = useSocket({
-    token: token || '',
+    token: token || "",
     onNewNotification: (data) => {
       // Handle new notification from socket
-      console.log('New notification received:', data)
-      dispatch(addNotification(data.notification))
-      dispatch(updateUnreadCount(data.unreadCount))
+      console.log("New notification received:", data);
+      dispatch(addNotification(data.notification));
+      dispatch(updateUnreadCount(data.unreadCount));
       // Play notification sound
       try {
-        const audio = new Audio('/notification.mp3');
+        const audio = new Audio("/notification.mp3");
         audio.play();
       } catch (err) {
-        console.error('Failed to play notification sound:', err);
+        console.error("Failed to play notification sound:", err);
       }
       // Show toast for badge-earned notification
-      if (data.notification && data.notification.type === 'badge_earned') {
+      if (data.notification && data.notification.type === "badge_earned") {
         const badge = data.notification.data?.badge;
         const BADGE_ICONS = {
           first_post: <FiAward className="text-yellow-600" />,
           top_commenter: <FiMessageSquare className="text-blue-600" />,
           forked_10: <FiGitBranch className="text-green-600" />,
-          profile_complete: <FiCheckCircle className="text-purple-600" />
+          profile_complete: <FiCheckCircle className="text-purple-600" />,
         };
         toast.success(
           <span className="flex items-center gap-2">
-            {BADGE_ICONS[badge] || <FiAward />} <span>{data.notification.title || 'Badge Earned!'}</span>
+            {BADGE_ICONS[badge] || <FiAward />}{" "}
+            <span>{data.notification.title || "Badge Earned!"}</span>
           </span>,
           { id: `badge-earned-${badge}` }
         );
@@ -61,66 +69,69 @@ export const NotificationDropdown: React.FC = () => {
     },
     onUnreadCountUpdate: (data) => {
       // Handle unread count update from socket
-      console.log('Unread count updated:', data)
-      dispatch(updateUnreadCount(data.unreadCount))
-    }
-  })
+      console.log("Unread count updated:", data);
+      dispatch(updateUnreadCount(data.unreadCount));
+    },
+  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Fetch notifications when dropdown opens
   useEffect(() => {
     if (isOpen && notifications.length === 0) {
-      dispatch(fetchNotifications({ page: 1, limit: 20 }))
+      dispatch(fetchNotifications({ page: 1, limit: 20 }));
     }
-  }, [isOpen, dispatch, notifications.length])
+  }, [isOpen, dispatch, notifications.length]);
 
   // Fetch unread count on mount
   useEffect(() => {
-    dispatch(getUnreadCount())
-  }, [dispatch])
+    dispatch(getUnreadCount());
+  }, [dispatch]);
 
   const handleToggle = () => {
-    setIsOpen(!isOpen)
-  }
+    setIsOpen(!isOpen);
+  };
 
   const handleMarkAllAsRead = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await dispatch(markAllNotificationsAsRead())
-      markAllNotificationsRead()
+      await dispatch(markAllNotificationsAsRead());
+      markAllNotificationsRead();
     } catch (error) {
-      console.error('Error marking all notifications as read:', error)
+      console.error("Error marking all notifications as read:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleClearAll = async () => {
-    if (notifications.length === 0) return
-    
-    setIsLoading(true)
-    try {
-      const notificationIds = notifications.map(n => n._id)
-      await dispatch(deleteMultipleNotifications(notificationIds))
-    } catch (error) {
-      console.error('Error clearing notifications:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    if (notifications.length === 0) return;
 
-  const unreadNotifications = notifications.filter(n => !n.isRead)
+    setIsLoading(true);
+    try {
+      const notificationIds = notifications.map((n) => n._id);
+      await dispatch(deleteMultipleNotifications(notificationIds));
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const unreadNotifications = notifications.filter((n) => !n.isRead);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -131,11 +142,11 @@ export const NotificationDropdown: React.FC = () => {
         title="Notifications"
       >
         <Bell className="w-6 h-6" />
-        
+
         {/* Unread count badge */}
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
@@ -154,7 +165,7 @@ export const NotificationDropdown: React.FC = () => {
                   </span>
                 )}
               </h3>
-              
+
               <div className="flex items-center space-x-2">
                 {unreadNotifications.length > 0 && (
                   <button
@@ -170,7 +181,7 @@ export const NotificationDropdown: React.FC = () => {
                     )}
                   </button>
                 )}
-                
+
                 {notifications.length > 0 && (
                   <button
                     onClick={handleClearAll}
@@ -194,13 +205,17 @@ export const NotificationDropdown: React.FC = () => {
             {notificationsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
-                <span className="ml-2 text-gray-500">Loading notifications...</span>
+                <span className="ml-2 text-gray-500">
+                  Loading notifications...
+                </span>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                 <Bell className="w-12 h-12 mb-2 opacity-50" />
                 <p className="text-sm">No notifications yet</p>
-                <p className="text-xs text-gray-400">We'll notify you when something happens</p>
+                <p className="text-xs text-gray-400">
+                  We'll notify you when something happens
+                </p>
               </div>
             ) : (
               <div className="p-4 space-y-3">
@@ -221,7 +236,7 @@ export const NotificationDropdown: React.FC = () => {
               <button
                 onClick={() => {
                   // Navigate to full notifications page
-                  window.location.href = '/notifications'
+                  window.location.href = "/notifications";
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
@@ -232,5 +247,5 @@ export const NotificationDropdown: React.FC = () => {
         </div>
       )}
     </div>
-  )
-} 
+  );
+};

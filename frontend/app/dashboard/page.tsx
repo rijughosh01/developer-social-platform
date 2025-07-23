@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAppSelector } from '@/hooks/useAppDispatch'
-import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
-import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
-import { Feed } from '@/components/dashboard/Feed'
-import { TrendingDevelopers } from '@/components/dashboard/TrendingDevelopers'
-import { SuggestedProjects } from '@/components/dashboard/SuggestedProjects'
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/hooks/useAppDispatch";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { Feed } from "@/components/dashboard/Feed";
+import { TrendingDevelopers } from "@/components/dashboard/TrendingDevelopers";
+import { SuggestedProjects } from "@/components/dashboard/SuggestedProjects";
 
 export default function DashboardPage() {
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
-  const router = useRouter()
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const router = useRouter();
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/auth/login')
+      router.push("/auth/login");
     }
-  }, [isAuthenticated, router])
+  }, [isAuthenticated, router]);
 
   if (!isAuthenticated || !user) {
-    return null
+    return null;
   }
 
   return (
@@ -34,7 +34,7 @@ export default function DashboardPage() {
             <div className="lg:col-span-2">
               <Feed />
             </div>
-            
+
             {/* Sidebar */}
             <div className="space-y-6">
               <TrendingDevelopers />
@@ -44,5 +44,5 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
-  )
-} 
+  );
+}

@@ -1,47 +1,47 @@
-import Link from 'next/link'
-import { FiGithub, FiTwitter, FiLinkedin, FiMail } from 'react-icons/fi'
+import Link from "next/link";
+import { FiGithub, FiTwitter, FiLinkedin, FiMail } from "react-icons/fi";
 
 const navigation = {
   product: [
-    { name: 'Features', href: '#features' },
-    { name: 'Projects', href: '/projects' },
-    { name: 'Developers', href: '/developers' },
-    { name: 'Blog', href: '/blog' },
+    { name: "Features", href: "#features" },
+    { name: "Projects", href: "/projects" },
+    { name: "Developers", href: "/developers" },
+    { name: "Blog", href: "/blog" },
   ],
   company: [
-    { name: 'About', href: '/about' },
-    { name: 'Careers', href: '/careers' },
-    { name: 'Contact', href: '/contact' },
-    { name: 'Support', href: '/support' },
+    { name: "About", href: "/about" },
+    { name: "Careers", href: "/careers" },
+    { name: "Contact", href: "/contact" },
+    { name: "Support", href: "/support" },
   ],
   legal: [
-    { name: 'Privacy', href: '/privacy' },
-    { name: 'Terms', href: '/terms' },
-    { name: 'Cookie Policy', href: '/cookies' },
+    { name: "Privacy", href: "/privacy" },
+    { name: "Terms", href: "/terms" },
+    { name: "Cookie Policy", href: "/cookies" },
   ],
   social: [
     {
-      name: 'GitHub',
-      href: '#',
+      name: "GitHub",
+      href: "#",
       icon: FiGithub,
     },
     {
-      name: 'Twitter',
-      href: '#',
+      name: "Twitter",
+      href: "#",
       icon: FiTwitter,
     },
     {
-      name: 'LinkedIn',
-      href: '#',
+      name: "LinkedIn",
+      href: "#",
       icon: FiLinkedin,
     },
     {
-      name: 'Email',
-      href: 'mailto:hello@devlink.com',
+      name: "Email",
+      href: "mailto:hello@devlink.com",
       icon: FiMail,
     },
   ],
-}
+};
 
 export function Footer() {
   return (
@@ -54,11 +54,16 @@ export function Footer() {
           <div className="space-y-8">
             <span className="text-2xl font-bold text-white">DevLink</span>
             <p className="text-sm leading-6 text-gray-300">
-              The ultimate platform for developers to connect, collaborate, and showcase their work.
+              The ultimate platform for developers to connect, collaborate, and
+              showcase their work.
             </p>
             <div className="flex space-x-6">
               {navigation.social.map((item) => (
-                <a key={item.name} href={item.href} className="text-gray-500 hover:text-gray-400">
+                <a
+                  key={item.name}
+                  href={item.href}
+                  className="text-gray-500 hover:text-gray-400"
+                >
                   <span className="sr-only">{item.name}</span>
                   <item.icon className="h-6 w-6" aria-hidden="true" />
                 </a>
@@ -68,11 +73,16 @@ export function Footer() {
           <div className="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
             <div className="md:grid md:grid-cols-2 md:gap-8">
               <div>
-                <h3 className="text-sm font-semibold leading-6 text-white">Product</h3>
+                <h3 className="text-sm font-semibold leading-6 text-white">
+                  Product
+                </h3>
                 <ul role="list" className="mt-6 space-y-4">
                   {navigation.product.map((item) => (
                     <li key={item.name}>
-                      <a href={item.href} className="text-sm leading-6 text-gray-300 hover:text-white">
+                      <a
+                        href={item.href}
+                        className="text-sm leading-6 text-gray-300 hover:text-white"
+                      >
                         {item.name}
                       </a>
                     </li>
@@ -80,11 +90,16 @@ export function Footer() {
                 </ul>
               </div>
               <div className="mt-10 md:mt-0">
-                <h3 className="text-sm font-semibold leading-6 text-white">Company</h3>
+                <h3 className="text-sm font-semibold leading-6 text-white">
+                  Company
+                </h3>
                 <ul role="list" className="mt-6 space-y-4">
                   {navigation.company.map((item) => (
                     <li key={item.name}>
-                      <a href={item.href} className="text-sm leading-6 text-gray-300 hover:text-white">
+                      <a
+                        href={item.href}
+                        className="text-sm leading-6 text-gray-300 hover:text-white"
+                      >
                         {item.name}
                       </a>
                     </li>
@@ -94,11 +109,16 @@ export function Footer() {
             </div>
             <div className="md:grid md:grid-cols-2 md:gap-8">
               <div>
-                <h3 className="text-sm font-semibold leading-6 text-white">Legal</h3>
+                <h3 className="text-sm font-semibold leading-6 text-white">
+                  Legal
+                </h3>
                 <ul role="list" className="mt-6 space-y-4">
                   {navigation.legal.map((item) => (
                     <li key={item.name}>
-                      <a href={item.href} className="text-sm leading-6 text-gray-300 hover:text-white">
+                      <a
+                        href={item.href}
+                        className="text-sm leading-6 text-gray-300 hover:text-white"
+                      >
                         {item.name}
                       </a>
                     </li>
@@ -115,5 +135,5 @@ export function Footer() {
         </div>
       </div>
     </footer>
-  )
-} 
+  );
+}

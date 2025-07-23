@@ -1,32 +1,32 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch'
-import { logout } from '@/store/slices/authSlice'
-import { Button } from '@/components/ui/button'
-import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
-import { 
-  FiSearch, 
-  FiBell, 
-  FiMessageSquare, 
-  FiUser, 
-  FiSettings, 
+import { useState } from "react";
+import Link from "next/link";
+import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
+import { logout } from "@/store/slices/authSlice";
+import { Button } from "@/components/ui/button";
+import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import {
+  FiSearch,
+  FiBell,
+  FiMessageSquare,
+  FiUser,
+  FiSettings,
   FiLogOut,
   FiMenu,
-  FiX
-} from 'react-icons/fi'
-import { getAvatarUrl } from '@/lib/utils'
+  FiX,
+} from "react-icons/fi";
+import { getAvatarUrl } from "@/lib/utils";
 
 export function DashboardHeader() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const dispatch = useAppDispatch()
-  const { user } = useAppSelector((state) => state.auth)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
 
   const handleLogout = () => {
-    dispatch(logout())
-  }
+    dispatch(logout());
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -35,7 +35,9 @@ export function DashboardHeader() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/dashboard" className="flex items-center">
-              <span className="text-2xl font-bold text-primary-600">DevLink</span>
+              <span className="text-2xl font-bold text-primary-600">
+                DevLink
+              </span>
             </Link>
           </div>
 
@@ -59,7 +61,10 @@ export function DashboardHeader() {
             <NotificationDropdown />
 
             {/* Messages */}
-            <Link href="/messages" className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            <Link
+              href="/messages"
+              className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
               <FiMessageSquare className="h-6 w-6" />
             </Link>
 
@@ -78,7 +83,8 @@ export function DashboardHeader() {
                     />
                   ) : (
                     <span className="text-white text-sm font-medium">
-                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                      {user?.firstName?.charAt(0)}
+                      {user?.lastName?.charAt(0)}
                     </span>
                   )}
                 </div>
@@ -91,7 +97,7 @@ export function DashboardHeader() {
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                   <Link
-                    href={user ? `/profile/${user.username}` : '/profile'}
+                    href={user ? `/profile/${user.username}` : "/profile"}
                     className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
@@ -108,8 +114,8 @@ export function DashboardHeader() {
                   </Link>
                   <button
                     onClick={() => {
-                      handleLogout()
-                      setIsUserMenuOpen(false)
+                      handleLogout();
+                      setIsUserMenuOpen(false);
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
@@ -150,7 +156,8 @@ export function DashboardHeader() {
                     />
                   ) : (
                     <span className="text-white text-sm font-medium">
-                      {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                      {user?.firstName?.charAt(0)}
+                      {user?.lastName?.charAt(0)}
                     </span>
                   )}
                 </div>
@@ -159,7 +166,7 @@ export function DashboardHeader() {
                 </span>
               </div>
               <Link
-                href={user ? `/profile/${user.username}` : '/profile'}
+                href={user ? `/profile/${user.username}` : "/profile"}
                 className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -176,8 +183,8 @@ export function DashboardHeader() {
               </Link>
               <button
                 onClick={() => {
-                  handleLogout()
-                  setIsMenuOpen(false)
+                  handleLogout();
+                  setIsMenuOpen(false);
                 }}
                 className="flex items-center w-full px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
               >
@@ -189,5 +196,5 @@ export function DashboardHeader() {
         )}
       </div>
     </header>
-  )
-} 
+  );
+}
