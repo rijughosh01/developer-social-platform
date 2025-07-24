@@ -17,7 +17,7 @@ import { api } from "@/lib/api";
 import ProjectDetailsModal from "@/app/projects/ProjectDetailsModal";
 import { getAvatarUrl } from "@/lib/utils";
 
-export function SuggestedProjects() {
+export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
   const dispatch = useAppDispatch();
   const { projects, isLoading } = useAppSelector((state) => state.projects);
   const { user } = useAppSelector((state) => state.auth);
@@ -26,8 +26,8 @@ export function SuggestedProjects() {
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchProjects({ limit: 5 }));
-  }, [dispatch]);
+    dispatch(fetchProjects({ limit }));
+  }, [dispatch, limit]);
 
   useEffect(() => {
     setLocalProjects(projects);
@@ -73,7 +73,7 @@ export function SuggestedProjects() {
     }
   };
 
-  const suggestedProjects = localProjects.slice(0, 5);
+  const suggestedProjects = localProjects.slice(0, limit);
 
   return (
     <div className="bg-white rounded-lg shadow">

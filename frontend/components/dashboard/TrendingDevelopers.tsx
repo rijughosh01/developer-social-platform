@@ -6,7 +6,7 @@ import { FiTrendingUp, FiMapPin, FiBriefcase } from "react-icons/fi";
 import { usersAPI } from "@/lib/api";
 import { getAvatarUrl } from "@/lib/utils";
 
-export function TrendingDevelopers() {
+export function TrendingDevelopers({ limit = 5 }: { limit?: number }) {
   const [trendingUsers, setTrendingUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -14,7 +14,7 @@ export function TrendingDevelopers() {
     async function fetchTrending() {
       setIsLoading(true);
       try {
-        const res = await usersAPI.getUsers({ limit: 5 });
+        const res = await usersAPI.getUsers({ limit });
         setTrendingUsers(res.data.data);
       } catch (err) {
         setTrendingUsers([]);
@@ -22,7 +22,7 @@ export function TrendingDevelopers() {
       setIsLoading(false);
     }
     fetchTrending();
-  }, []);
+  }, [limit]);
 
   return (
     <div className="bg-white rounded-lg shadow">
