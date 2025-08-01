@@ -223,3 +223,70 @@ export const settingsAPI = {
   deleteAccount: (userId: string) =>
     api.delete<ApiResponse>(`/users/${userId}`),
 };
+
+export const aiAPI = {
+  // Get available AI contexts
+  getContexts: () => api.get<ApiResponse>("/ai/contexts"),
+
+  // Get user's AI usage statistics
+  getStats: () => api.get<ApiResponse>("/ai/stats"),
+
+  // General chat
+  chat: (data: {
+    message: string;
+    context?: string;
+    conversationId?: string;
+  }) => api.post<ApiResponse>("/ai/chat", data),
+
+  // Code review
+  codeReview: (data: { code: string; language: string }) =>
+    api.post<ApiResponse>("/ai/code-review", data),
+
+  // Debugging
+  debugCode: (data: { code: string; error: string; language: string }) =>
+    api.post<ApiResponse>("/ai/debug", data),
+
+  // Learning assistance
+  learn: (data: { topic: string }) => api.post<ApiResponse>("/ai/learn", data),
+
+  // Project advice
+  projectAdvice: (data: { description: string }) =>
+    api.post<ApiResponse>("/ai/project-advice", data),
+
+  // Conversation History
+  getConversations: (params?: {
+    page?: number;
+    limit?: number;
+    context?: string;
+    sort?: string;
+    order?: string;
+    search?: string;
+    includeArchived?: boolean;
+  }) => api.get<ApiResponse>("/ai/conversations", { params }),
+
+  getConversation: (id: string) =>
+    api.get<ApiResponse>(`/ai/conversations/${id}`),
+
+  createConversation: (data: {
+    title: string;
+    context: string;
+    projectId?: string;
+    tags?: string[];
+  }) => api.post<ApiResponse>("/ai/conversations", data),
+
+  updateConversation: (
+    id: string,
+    data: {
+      title?: string;
+      tags?: string[];
+    }
+  ) => api.put<ApiResponse>(`/ai/conversations/${id}`, data),
+
+  searchConversations: (params: {
+    q: string;
+    context?: string;
+    limit?: number;
+  }) => api.get<ApiResponse>("/ai/conversations/search", { params }),
+
+  getConversationStats: () => api.get<ApiResponse>("/ai/conversations/stats"),
+};

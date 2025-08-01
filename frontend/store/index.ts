@@ -6,6 +6,7 @@ import usersReducer from "./slices/usersSlice";
 import chatReducer from "./slices/chatSlice";
 import uiReducer from "./slices/uiSlice";
 import notificationReducer from "./slices/notificationSlice";
+import aiReducer from "./slices/aiSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     chat: chatReducer,
     ui: uiReducer,
     notifications: notificationReducer,
+    ai: aiReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

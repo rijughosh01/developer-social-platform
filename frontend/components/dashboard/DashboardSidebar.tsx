@@ -12,6 +12,8 @@ import {
   FiSettings,
   FiCode,
   FiGitBranch,
+  FiZap,
+  FiMessageCircle,
 } from "react-icons/fi";
 
 const navigation = [
@@ -23,6 +25,8 @@ const navigation = [
   { name: "Trending", href: "/trending", icon: FiTrendingUp },
   { name: "Code Feed", href: "/code-feed", icon: FiCode },
   { name: "Collaboration", href: "/collaboration", icon: FiGitBranch },
+  { name: "AI Assistant", href: "/ai", icon: FiZap },
+  { name: "Conversations", href: "/conversations", icon: FiMessageCircle },
   { name: "Settings", href: "/settings", icon: FiSettings },
 ];
 

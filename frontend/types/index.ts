@@ -260,3 +260,99 @@ export interface SocketListeners {
   "unread-count-update": (data: { unreadCount: number }) => void;
   error: (data: { message: string }) => void;
 }
+
+// AI Types
+export interface AIResponse {
+  content: string;
+  model: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  timestamp: string;
+  context: string;
+  cached?: boolean;
+}
+
+export interface AIStats {
+  totalRequests: number;
+  requestsToday: number;
+  favoriteContext: string;
+  lastUsed: string | null;
+}
+
+export interface AIContext {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface AIConversation {
+  _id: string;
+  user: string;
+  title: string;
+  context: 'general' | 'codeReview' | 'debugging' | 'learning' | 'projectHelp';
+  messages: AIConversationMessage[];
+  totalTokens: number;
+  totalCost: number;
+  lastActivity: string;
+  tags: string[];
+  project?: {
+    _id: string;
+    title: string;
+  };
+  messageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AIConversationMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  metadata?: {
+    tokens?: number;
+    model?: string;
+    processingTime?: number;
+  };
+}
+
+export interface AIConversationStats {
+  totalConversations: number;
+  totalMessages: number;
+  totalTokens: number;
+  totalCost: number;
+  averageMessagesPerConversation: number;
+  contextStats: Array<{
+    _id: string;
+    count: number;
+    totalMessages: number;
+  }>;
+  recentActivity: Array<{
+    _id: string;
+    title: string;
+    context: string;
+    lastActivity: string;
+    messageCount: number;
+  }>;
+}
+
+export interface AIState {
+  responses: AIResponse[];
+  stats: AIStats | null;
+  contexts: AIContext[];
+  conversations: AIConversation[];
+  conversationStats: AIConversationStats | null;
+  currentConversation: AIConversation | null;
+  isLoading: boolean;
+  error: string | null;
+  currentContext: string;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
