@@ -273,43 +273,43 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       <main className="lg:ml-64 p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="bg-white rounded-lg shadow mb-6">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 mb-6">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
                 <button
                   onClick={onBack}
-                  className="flex items-center text-gray-600 transition-colors"
+                  className="flex items-center gap-3 text-gray-600 hover:text-gray-900 transition-all duration-200 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl"
                 >
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  Back to Conversations
+                  <ArrowLeft className="w-5 h-5" />
+                  <span className="font-medium">Back to Conversations</span>
                 </button>
                 <button
                   onClick={handleDeleteConversation}
-                  className="flex items-center text-red-600 transition-colors"
+                  className="flex items-center gap-3 text-red-600 hover:text-red-700 transition-all duration-200 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl"
                   title="Delete conversation"
                 >
-                  <Trash2 className="w-5 h-5 mr-2" />
-                  Delete
+                  <Trash2 className="w-5 h-5" />
+                  <span className="font-medium">Delete</span>
                 </button>
               </div>
 
               {/* Title and Context */}
-              <div className="mb-4">
+              <div className="mb-6">
                 {isEditing ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <input
                       aria-label="Conversation Title"
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="flex-1 text-xl font-bold text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 text-2xl font-bold text-gray-900 border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     />
                     <button
                       type="button"
                       onClick={handleSaveEdit}
-                      className="p-2 text-green-600 rounded-lg transition-colors"
+                      className="p-3 text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition-all duration-200"
                     >
-                      <Save className="w-4 h-4" />
+                      <Save className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => {
@@ -317,35 +317,35 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                         setEditTitle(currentConversation.title);
                         setEditTags(currentConversation.tags?.join(", ") || "");
                       }}
-                      className="p-2 text-gray-400 rounded-lg transition-colors"
+                      className="p-3 text-gray-400 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <h1 className="text-xl font-bold text-gray-900">
+                    <h1 className="text-2xl font-bold text-gray-900">
                       {currentConversation.title}
                     </h1>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="p-1 text-gray-400 rounded transition-colors"
+                      className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-3 mt-4">
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${getContextColor(
+                    className={`px-4 py-2 text-sm font-semibold rounded-xl shadow-sm ${getContextColor(
                       currentConversation.context
                     )}`}
                   >
                     {currentConversation.context}
                   </span>
                   {currentConversation.project && (
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                    <span className="px-4 py-2 text-sm font-semibold rounded-xl shadow-sm bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800">
                       {currentConversation.project.title}
                     </span>
                   )}
@@ -354,8 +354,8 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
               {/* Tags */}
               {isEditing ? (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
                     Tags
                   </label>
                   <input
@@ -363,17 +363,17 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     value={editTags}
                     onChange={(e) => setEditTags(e.target.value)}
                     placeholder="Enter tags separated by commas"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   />
                 </div>
               ) : (
                 currentConversation.tags &&
                 currentConversation.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-6">
                     {currentConversation.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                        className="px-3 py-1 text-sm bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-lg shadow-sm"
                       >
                         {tag}
                       </span>
@@ -383,33 +383,53 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               )}
 
               {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">
-                    {currentConversation.messageCount} messages
-                  </span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-blue-900">
+                      {currentConversation.messageCount}
+                    </div>
+                    <div className="text-xs text-blue-700">messages</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">
-                    {currentConversation.totalTokens.toLocaleString()} tokens
-                  </span>
+                <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-green-900">
+                      {currentConversation.totalTokens.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-green-700">tokens</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">
-                    ${currentConversation.totalCost.toFixed(2)}
-                  </span>
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-purple-900">
+                      ${currentConversation.totalCost.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-purple-700">cost</div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">
-                    {formatDistanceToNow(
-                      new Date(currentConversation.lastActivity),
-                      { addSuffix: true }
-                    )}
-                  </span>
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-orange-900">
+                      {formatDistanceToNow(
+                        new Date(currentConversation.lastActivity),
+                        { addSuffix: true }
+                      )}
+                    </div>
+                    <div className="text-xs text-orange-700">last activity</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -423,151 +443,213 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           />
 
           {/* Messages */}
-          <div className="bg-white rounded-lg shadow mb-6">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 mb-6">
+            <div className="p-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-white" />
+                </div>
                 Conversation History
               </h2>
 
               {!currentConversation?.messages ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading messages...</p>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+                  </div>
+                  <p className="text-gray-600 font-medium">
+                    Loading messages...
+                  </p>
                 </div>
               ) : currentConversation.messages.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <MessageCircle className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 font-medium">
                     No messages in this conversation yet.
+                  </p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    Start the conversation below!
                   </p>
                 </div>
               ) : (
                 <>
                   {/* Regular Messages */}
-                  <div className="space-y-6 max-h-96 overflow-y-auto">
+                  <div className="space-y-10 max-h-96 overflow-y-auto pr-4">
                     {currentConversation.messages.map((msg, index) => (
                       <div
                         key={index}
                         className={`flex ${
                           msg.role === "user" ? "justify-end" : "justify-start"
-                        }`}
+                        } animate-fade-in`}
+                        style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div
-                          className={`max-w-3xl rounded-lg p-4 relative ${
-                            msg.role === "user"
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-100 text-gray-900"
+                          className={`max-w-3xl relative group ${
+                            msg.role === "user" ? "order-2" : "order-1"
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <ReactMarkdown
-                                components={{
-                                  code({
-                                    node,
-                                    inline,
-                                    className,
-                                    children,
-                                    ...props
-                                  }) {
-                                    const match = /language-(\w+)/.exec(
-                                      className || ""
-                                    );
-                                    return !inline && match ? (
-                                      <div className="relative">
-                                        <SyntaxHighlighter
-                                          style={tomorrow}
-                                          language={match[1]}
-                                          PreTag="div"
-                                          className="rounded-lg"
-                                          {...props}
-                                        >
-                                          {String(children).replace(/\n$/, "")}
-                                        </SyntaxHighlighter>
-                                        <button
-                                          onClick={() =>
-                                            copyToClipboard(
-                                              String(children),
-                                              `code-${index}`
-                                            )
-                                          }
-                                          className="absolute top-2 right-2 p-1 bg-gray-800 text-white rounded opacity-0 transition-opacity"
-                                        >
-                                          {copiedId === `code-${index}` ? (
-                                            <Check className="w-3 h-3" />
-                                          ) : (
-                                            <Copy className="w-3 h-3" />
-                                          )}
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <code className={className} {...props}>
-                                        {children}
-                                      </code>
-                                    );
-                                  },
-                                }}
-                              >
-                                {msg.content}
-                              </ReactMarkdown>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {msg.role === "assistant" && msg.metadata && (
-                                <div className="flex-shrink-0 text-xs opacity-75">
-                                  <div>{msg.metadata.tokens} tokens</div>
-                                  {msg.metadata.processingTime && (
-                                    <div>{msg.metadata.processingTime}ms</div>
-                                  )}
-                                </div>
-                              )}
-                              <button
-                                onClick={() =>
-                                  copyToClipboard(msg.content, `msg-${index}`)
-                                }
-                                className="p-1 rounded transition-colors"
-                                title="Copy message"
-                              >
-                                {copiedId === `msg-${index}` ? (
-                                  <Check className="w-3 h-3" />
-                                ) : (
-                                  <Copy className="w-3 h-3" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  msg.pinned
-                                    ? handleUnpinMessage(index)
-                                    : handlePinMessage(index)
-                                }
-                                className={`p-1 rounded transition-colors ${
-                                  msg.pinned
-                                    ? "text-yellow-600"
-                                    : "text-gray-400"
-                                }`}
-                                title={
-                                  msg.pinned ? "Unpin message" : "Pin message"
-                                }
-                              >
-                                {msg.pinned ? (
-                                  <PinOff className="w-3 h-3" />
-                                ) : (
-                                  <Pin className="w-3 h-3" />
-                                )}
-                              </button>
-                            </div>
-                          </div>
-
+                          {/* Message Bubble */}
                           <div
-                            className={`text-xs mt-2 ${
+                            className={`relative rounded-2xl p-6 shadow-soft border ${
                               msg.role === "user"
-                                ? "text-blue-100"
-                                : "text-gray-500"
+                                ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white border-blue-500/20"
+                                : "bg-gradient-to-r from-gray-50 to-white text-gray-900 border-gray-200/50"
+                            } transition-all duration-300 hover:shadow-glow ${
+                              msg.pinned ? "ring-2 ring-yellow-400/50" : ""
                             }`}
                           >
-                            {formatDistanceToNow(new Date(msg.timestamp), {
-                              addSuffix: true,
-                            })}
+                            {/* Pinned Indicator */}
+                            {msg.pinned && (
+                              <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg z-10">
+                                <Pin className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+
+                            {/* Message Content */}
+                            <div className="space-y-4">
+                              <div className="flex-1">
+                                <ReactMarkdown
+                                  components={{
+                                    code({
+                                      node,
+                                      inline,
+                                      className,
+                                      children,
+                                      ...props
+                                    }) {
+                                      const match = /language-(\w+)/.exec(
+                                        className || ""
+                                      );
+                                      return !inline && match ? (
+                                        <div className="relative my-4">
+                                          <SyntaxHighlighter
+                                            style={tomorrow}
+                                            language={match[1]}
+                                            PreTag="div"
+                                            className="rounded-xl shadow-inner"
+                                            {...props}
+                                          >
+                                            {String(children).replace(
+                                              /\n$/,
+                                              ""
+                                            )}
+                                          </SyntaxHighlighter>
+                                          <button
+                                            onClick={() =>
+                                              copyToClipboard(
+                                                String(children),
+                                                `code-${index}`
+                                              )
+                                            }
+                                            className="absolute top-3 right-3 p-2 bg-gray-800/90 backdrop-blur-sm text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-700 shadow-lg"
+                                          >
+                                            {copiedId === `code-${index}` ? (
+                                              <Check className="w-4 h-4" />
+                                            ) : (
+                                              <Copy className="w-4 h-4" />
+                                            )}
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <code
+                                          className={`${className} bg-gray-800/10 px-2 py-1 rounded-md text-sm`}
+                                          {...props}
+                                        >
+                                          {children}
+                                        </code>
+                                      );
+                                    },
+                                  }}
+                                >
+                                  {msg.content}
+                                </ReactMarkdown>
+                              </div>
+
+                              {/* Message Footer */}
+                              <div className="flex items-center justify-between pt-3 border-t border-gray-200/30">
+                                {/* Timestamp */}
+                                <div
+                                  className={`text-xs flex items-center gap-2 ${
+                                    msg.role === "user"
+                                      ? "text-blue-100"
+                                      : "text-gray-500"
+                                  }`}
+                                >
+                                  <Clock className="w-3 h-3" />
+                                  {formatDistanceToNow(
+                                    new Date(msg.timestamp),
+                                    {
+                                      addSuffix: true,
+                                    }
+                                  )}
+                                </div>
+
+                                {/* Action Buttons and Metadata */}
+                                <div className="flex items-center gap-3">
+                                  {/* Metadata for AI messages */}
+                                  {msg.role === "assistant" && msg.metadata && (
+                                    <div className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-300 shadow-sm">
+                                      <div className="font-semibold text-gray-900">
+                                        {msg.metadata.tokens} tokens
+                                      </div>
+                                      {msg.metadata.processingTime && (
+                                        <>
+                                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                                          <div className="text-gray-600 font-medium">
+                                            {msg.metadata.processingTime}ms
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-300 shadow-sm">
+                                    <button
+                                      onClick={() =>
+                                        copyToClipboard(
+                                          msg.content,
+                                          `msg-${index}`
+                                        )
+                                      }
+                                      className="p-2 rounded-md transition-all duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-700"
+                                      title="Copy message"
+                                    >
+                                      {copiedId === `msg-${index}` ? (
+                                        <Check className="w-4 h-4" />
+                                      ) : (
+                                        <Copy className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        msg.pinned
+                                          ? handleUnpinMessage(index)
+                                          : handlePinMessage(index)
+                                      }
+                                      className={`p-2 rounded-md transition-all duration-200 ${
+                                        msg.pinned
+                                          ? "text-yellow-600 hover:bg-yellow-50"
+                                          : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                                      }`}
+                                      title={
+                                        msg.pinned
+                                          ? "Unpin message"
+                                          : "Pin message"
+                                      }
+                                    >
+                                      {msg.pinned ? (
+                                        <PinOff className="w-4 h-4" />
+                                      ) : (
+                                        <Pin className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -580,40 +662,46 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           </div>
 
           {/* Continue Conversation */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20">
+            <div className="p-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                  <Send className="w-4 h-4 text-white" />
+                </div>
                 Continue Conversation
               </h3>
 
-              <form onSubmit={handleSendMessage} className="space-y-4">
-                <div>
+              <form onSubmit={handleSendMessage} className="space-y-6">
+                <div className="relative">
                   <textarea
                     ref={inputRef}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    rows={3}
+                    placeholder="Type your message here... Ask me anything about programming, code review, debugging, or project help!"
+                    className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-500"
+                    rows={4}
                     disabled={isLoading}
                   />
+                  <div className="absolute bottom-4 right-4 text-xs text-gray-400">
+                    {message.length}/4000
+                  </div>
                 </div>
 
                 <div className="flex justify-end">
                   <button
                     type="submit"
                     disabled={!message.trim() || isLoading}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-glow hover:scale-105 transform"
                   >
                     {isLoading ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Sending...
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span className="font-medium">Sending...</span>
                       </>
                     ) : (
                       <>
-                        <Send className="w-4 h-4" />
-                        Send Message
+                        <Send className="w-5 h-5" />
+                        <span className="font-medium">Send Message</span>
                       </>
                     )}
                   </button>
