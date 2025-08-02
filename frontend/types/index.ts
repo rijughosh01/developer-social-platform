@@ -297,6 +297,7 @@ export interface AIConversation {
   messages: AIConversationMessage[];
   totalTokens: number;
   totalCost: number;
+  pinnedMessagesCount: number;
   lastActivity: string;
   tags: string[];
   project?: {
@@ -312,6 +313,8 @@ export interface AIConversationMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: string;
+  pinned?: boolean;
+  pinnedAt?: string;
   metadata?: {
     tokens?: number;
     model?: string;

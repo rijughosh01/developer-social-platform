@@ -4,11 +4,13 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
+import toast from "react-hot-toast";
 import {
   fetchConversations,
   fetchConversationStats,
   searchConversations,
   setCurrentConversation,
+  deleteConversation,
 } from "@/store/slices/aiSlice";
 import { getProfile } from "@/store/slices/authSlice";
 import {
@@ -23,6 +25,8 @@ import {
   MessageSquare,
   DollarSign,
   TrendingUp,
+  Pin,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import dynamic from "next/dynamic";
@@ -66,6 +70,7 @@ const ConversationsPage: React.FC = () => {
   const [selectedContext, setSelectedContext] = useState("");
   const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [showOnlyPinned, setShowOnlyPinned] = useState(false);
 
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
@@ -109,6 +114,7 @@ const ConversationsPage: React.FC = () => {
     selectedContext,
     sortBy,
     sortOrder,
+    showOnlyPinned,
     pagination.page,
     isAuthenticated,
     user,
@@ -124,6 +130,10 @@ const ConversationsPage: React.FC = () => {
 
     if (selectedContext) {
       params.context = selectedContext;
+    }
+
+    if (showOnlyPinned) {
+      params.hasPinned = true;
     }
 
     if (searchQuery.trim()) {
@@ -154,6 +164,22 @@ const ConversationsPage: React.FC = () => {
   const handleBackToList = () => {
     setSelectedConversationId(null);
     dispatch(setCurrentConversation(null));
+  };
+
+  const handleDeleteConversation = async (conversationId: string, conversationTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete the conversation "${conversationTitle}"? This action cannot be undone.`)) {
+      try {
+        await dispatch(deleteConversation(conversationId)).unwrap();
+        toast.success("Conversation deleted successfully!");
+        // Refresh conversations list
+        loadConversations();
+        // Refresh stats
+        dispatch(fetchConversationStats());
+      } catch (error) {
+        console.error("Failed to delete conversation:", error);
+        toast.error("Failed to delete conversation");
+      }
+    }
   };
 
   const getContextIcon = (context: string) => {
@@ -366,10 +392,20 @@ const ConversationsPage: React.FC = () => {
                     onClick={() =>
                       setSortOrder(sortOrder === "desc" ? "asc" : "desc")
                     }
-                    className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="px-3 py-2 border border-gray-300 rounded-lg"
                   >
                     {sortOrder === "desc" ? "↓" : "↑"}
                   </button>
+
+                  <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showOnlyPinned}
+                      onChange={(e) => setShowOnlyPinned(e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm">With Pinned</span>
+                  </label>
                 </div>
               </form>
             </div>
@@ -399,77 +435,91 @@ const ConversationsPage: React.FC = () => {
                 {conversations.map((conversation) => (
                   <div
                     key={conversation._id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="p-6"
                   >
-                    <div
-                      onClick={() => handleConversationSelect(conversation._id)}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-medium text-gray-900 truncate">
-                              {conversation.title}
-                            </h3>
-                            <span
-                              className={`px-2 py-1 text-xs font-medium rounded-full ${getContextColor(
-                                conversation.context
-                              )}`}
-                            >
-                              {conversation.context}
-                            </span>
-                          </div>
+                    <div className="flex items-start justify-between">
+                      <div
+                        onClick={() => handleConversationSelect(conversation._id)}
+                        className="cursor-pointer flex-1 min-w-0"
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-medium text-gray-900 truncate">
+                            {conversation.title}
+                          </h3>
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${getContextColor(
+                              conversation.context
+                            )}`}
+                          >
+                            {conversation.context}
+                          </span>
+                        </div>
 
-                          <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+                          <div className="flex items-center gap-1">
+                            <MessageSquare className="w-4 h-4" />
+                            {conversation.messageCount} messages
+                          </div>
+                          {conversation.pinnedMessagesCount > 0 && (
                             <div className="flex items-center gap-1">
-                              <MessageSquare className="w-4 h-4" />
-                              {conversation.messageCount} messages
+                              <Pin className="w-4 h-4 text-yellow-600" />
+                              {conversation.pinnedMessagesCount} pinned
                             </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {formatDistanceToNow(
+                              new Date(conversation.lastActivity),
+                              { addSuffix: true }
+                            )}
+                          </div>
+                          {conversation.project && (
                             <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              {formatDistanceToNow(
-                                new Date(conversation.lastActivity),
-                                { addSuffix: true }
+                              <Tag className="w-4 h-4" />
+                              {conversation.project.title}
+                            </div>
+                          )}
+                        </div>
+
+                        {conversation.tags &&
+                          conversation.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {conversation.tags
+                                .slice(0, 3)
+                                .map((tag, index) => (
+                                  <span
+                                    key={index}
+                                    className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              {conversation.tags.length > 3 && (
+                                <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                                  +{conversation.tags.length - 3} more
+                                </span>
                               )}
                             </div>
-                            {conversation.project && (
-                              <div className="flex items-center gap-1">
-                                <Tag className="w-4 h-4" />
-                                {conversation.project.title}
-                              </div>
-                            )}
-                          </div>
+                          )}
+                      </div>
 
-                          {conversation.tags &&
-                            conversation.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {conversation.tags
-                                  .slice(0, 3)
-                                  .map((tag, index) => (
-                                    <span
-                                      key={index}
-                                      className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                                {conversation.tags.length > 3 && (
-                                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
-                                    +{conversation.tags.length - 3} more
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                        </div>
-
-                        <div className="ml-4 flex-shrink-0">
-                          <div className="text-right text-sm text-gray-500">
-                            <div>${conversation.totalCost.toFixed(2)}</div>
-                            <div>
-                              {conversation.totalTokens.toLocaleString()} tokens
-                            </div>
+                      <div className="ml-4 flex-shrink-0 flex items-start gap-2">
+                        <div className="text-right text-sm text-gray-500">
+                          <div>${conversation.totalCost.toFixed(2)}</div>
+                          <div>
+                            {conversation.totalTokens.toLocaleString()} tokens
                           </div>
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteConversation(conversation._id, conversation.title);
+                          }}
+                          className="p-2 text-gray-400 rounded transition-colors"
+                          title="Delete conversation"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -492,7 +542,7 @@ const ConversationsPage: React.FC = () => {
                     )
                   }
                   disabled={pagination.page === 1}
-                  className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
@@ -511,7 +561,7 @@ const ConversationsPage: React.FC = () => {
                     )
                   }
                   disabled={pagination.page === pagination.pages}
-                  className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

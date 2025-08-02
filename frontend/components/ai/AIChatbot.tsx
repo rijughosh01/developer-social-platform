@@ -27,6 +27,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import Image from "next/image";
 
 interface AIChatbotProps {
   isOpen: boolean;
@@ -47,7 +48,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
   // Context configurations
   const contextConfigs = {
-    general: { icon: Bot, label: "General", color: "bg-blue-500" },
+    general: {
+      icon: Bot,
+      label: "General",
+      color: "bg-blue-500",
+    },
     codeReview: { icon: Code, label: "Code Review", color: "bg-green-500" },
     debugging: { icon: Bug, label: "Debugging", color: "bg-red-500" },
     learning: { icon: BookOpen, label: "Learning", color: "bg-purple-500" },
@@ -128,7 +133,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
           <div className="flex items-center space-x-3">
-            <Bot className="w-6 h-6" />
+            <Bot className="w-8 h-8" />
             <div>
               <h2 className="text-lg font-semibold">DevLink AI Assistant</h2>
               <p className="text-sm opacity-90">Powered by GPT-4o-mini</p>
@@ -195,7 +200,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {responses.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
-              <Bot className="w-16 h-16 mb-4 opacity-50" />
+              <Bot className="w-24 h-24 mb-6 opacity-70" />
               <h3 className="text-lg font-medium mb-2">
                 Welcome to DevLink AI!
               </h3>
@@ -234,8 +239,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                 {/* AI Response */}
                 <div className="flex space-x-3">
                   <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-white" />
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                      <Bot className="w-6 h-6 text-white" />
                     </div>
                   </div>
                   <div className="flex-1 bg-gray-50 rounded-lg p-4">
@@ -314,8 +319,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
           {isLoading && (
             <div className="flex space-x-3">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
                 </div>
               </div>
               <div className="flex-1 bg-gray-50 rounded-lg p-4">

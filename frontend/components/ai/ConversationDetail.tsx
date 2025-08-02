@@ -4,11 +4,16 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
+import toast from "react-hot-toast";
 import {
   fetchConversation,
   updateConversation,
   sendAIMessage,
   clearResponses,
+  pinMessage,
+  unpinMessage,
+  fetchPinnedMessages,
+  deleteConversation,
 } from "@/store/slices/aiSlice";
 import {
   ArrowLeft,
@@ -23,12 +28,16 @@ import {
   Tag,
   DollarSign,
   BarChart3,
+  Pin,
+  PinOff,
+  Trash2,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { formatDistanceToNow } from "date-fns";
 import dynamic from "next/dynamic";
+import PinnedMessagesSection from "./PinnedMessagesSection";
 
 // Dynamic imports to prevent hydration errors
 const DashboardHeader = dynamic(
@@ -72,6 +81,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [editTags, setEditTags] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -82,12 +92,17 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   useEffect(() => {
     dispatch(fetchConversation(conversationId));
     dispatch(clearResponses());
+    dispatch(fetchPinnedMessages(conversationId));
   }, [conversationId, dispatch]);
 
   useEffect(() => {
     if (currentConversation) {
       setEditTitle(currentConversation.title);
       setEditTags(currentConversation.tags?.join(", ") || "");
+      // Update pinned messages from conversation
+      const pinned =
+        currentConversation.messages?.filter((msg: any) => msg.pinned) || [];
+      setPinnedMessages(pinned);
     }
   }, [currentConversation]);
 
@@ -97,6 +112,30 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePinMessage = async (messageIndex: number) => {
+    try {
+      await dispatch(pinMessage({ conversationId, messageIndex })).unwrap();
+
+      dispatch(fetchConversation(conversationId));
+      toast.success("Message pinned successfully!");
+    } catch (error) {
+      console.error("Failed to pin message:", error);
+      toast.error("Failed to pin message");
+    }
+  };
+
+  const handleUnpinMessage = async (messageIndex: number) => {
+    try {
+      await dispatch(unpinMessage({ conversationId, messageIndex })).unwrap();
+
+      dispatch(fetchConversation(conversationId));
+      toast.success("Message unpinned successfully!");
+    } catch (error) {
+      console.error("Failed to unpin message:", error);
+      toast.error("Failed to unpin message");
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -139,8 +178,29 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
+      toast.success("Message copied to clipboard!");
     } catch (err) {
       console.error("Failed to copy text: ", err);
+      toast.error("Failed to copy message");
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!currentConversation) return;
+
+    if (
+      window.confirm(
+        `Are you sure you want to delete the conversation "${currentConversation.title}"? This action cannot be undone.`
+      )
+    ) {
+      try {
+        await dispatch(deleteConversation(conversationId)).unwrap();
+        toast.success("Conversation deleted successfully!");
+        onBack();
+      } catch (error) {
+        console.error("Failed to delete conversation:", error);
+        toast.error("Failed to delete conversation");
+      }
     }
   };
 
@@ -185,7 +245,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
           </p>
           <button
             onClick={onBack}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Back to Conversations
           </button>
@@ -218,10 +278,18 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <button
                   onClick={onBack}
-                  className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                  className="flex items-center text-gray-600 transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5 mr-2" />
                   Back to Conversations
+                </button>
+                <button
+                  onClick={handleDeleteConversation}
+                  className="flex items-center text-red-600 transition-colors"
+                  title="Delete conversation"
+                >
+                  <Trash2 className="w-5 h-5 mr-2" />
+                  Delete
                 </button>
               </div>
 
@@ -239,7 +307,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     <button
                       type="button"
                       onClick={handleSaveEdit}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      className="p-2 text-green-600 rounded-lg transition-colors"
                     >
                       <Save className="w-4 h-4" />
                     </button>
@@ -249,7 +317,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                         setEditTitle(currentConversation.title);
                         setEditTags(currentConversation.tags?.join(", ") || "");
                       }}
-                      className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors"
+                      className="p-2 text-gray-400 rounded-lg transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -261,7 +329,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     </h1>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                      className="p-1 text-gray-400 rounded transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
@@ -347,6 +415,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
             </div>
           </div>
 
+          {/* Pinned Messages Section */}
+          <PinnedMessagesSection
+            conversationId={conversationId}
+            pinnedMessages={pinnedMessages}
+            onUnpin={handleUnpinMessage}
+          />
+
           {/* Messages */}
           <div className="bg-white rounded-lg shadow mb-6">
             <div className="p-6">
@@ -416,7 +491,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                                               `code-${index}`
                                             )
                                           }
-                                          className="absolute top-2 right-2 p-1 bg-gray-800 text-white rounded opacity-0 hover:opacity-100 transition-opacity"
+                                          className="absolute top-2 right-2 p-1 bg-gray-800 text-white rounded opacity-0 transition-opacity"
                                         >
                                           {copiedId === `code-${index}` ? (
                                             <Check className="w-3 h-3" />
@@ -446,6 +521,40 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                                   )}
                                 </div>
                               )}
+                              <button
+                                onClick={() =>
+                                  copyToClipboard(msg.content, `msg-${index}`)
+                                }
+                                className="p-1 rounded transition-colors"
+                                title="Copy message"
+                              >
+                                {copiedId === `msg-${index}` ? (
+                                  <Check className="w-3 h-3" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  msg.pinned
+                                    ? handleUnpinMessage(index)
+                                    : handlePinMessage(index)
+                                }
+                                className={`p-1 rounded transition-colors ${
+                                  msg.pinned
+                                    ? "text-yellow-600"
+                                    : "text-gray-400"
+                                }`}
+                                title={
+                                  msg.pinned ? "Unpin message" : "Pin message"
+                                }
+                              >
+                                {msg.pinned ? (
+                                  <PinOff className="w-3 h-3" />
+                                ) : (
+                                  <Pin className="w-3 h-3" />
+                                )}
+                              </button>
                             </div>
                           </div>
 
@@ -494,7 +603,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <button
                     type="submit"
                     disabled={!message.trim() || isLoading}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                   >
                     {isLoading ? (
                       <>

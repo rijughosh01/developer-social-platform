@@ -98,7 +98,11 @@ export const debugCode = createAsyncThunk(
       code,
       error,
       language,
-    }: { code: string; error: string; language: string },
+    }: {
+      code: string;
+      error: string;
+      language: string;
+    },
     { rejectWithValue }
   ) => {
     try {
@@ -107,6 +111,66 @@ export const debugCode = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to debug code"
+      );
+    }
+  }
+);
+
+export const pinMessage = createAsyncThunk(
+  "ai/pinMessage",
+  async (
+    {
+      conversationId,
+      messageIndex,
+    }: {
+      conversationId: string;
+      messageIndex: number;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await aiAPI.pinMessage(conversationId, messageIndex);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to pin message"
+      );
+    }
+  }
+);
+
+export const unpinMessage = createAsyncThunk(
+  "ai/unpinMessage",
+  async (
+    {
+      conversationId,
+      messageIndex,
+    }: {
+      conversationId: string;
+      messageIndex: number;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await aiAPI.unpinMessage(conversationId, messageIndex);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to unpin message"
+      );
+    }
+  }
+);
+
+export const fetchPinnedMessages = createAsyncThunk(
+  "ai/fetchPinnedMessages",
+  async (conversationId: string, { rejectWithValue }) => {
+    try {
+      const response = await aiAPI.getPinnedMessages(conversationId);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch pinned messages"
       );
     }
   }
@@ -225,6 +289,20 @@ export const updateConversation = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to update conversation"
+      );
+    }
+  }
+);
+
+export const deleteConversation = createAsyncThunk(
+  "ai/deleteConversation",
+  async (conversationId: string, { rejectWithValue }) => {
+    try {
+      const response = await aiAPI.deleteConversation(conversationId);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete conversation"
       );
     }
   }
@@ -402,6 +480,48 @@ const aiSlice = createSlice({
         state.error = action.payload as string;
       });
 
+    // Pin message
+    builder
+      .addCase(pinMessage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(pinMessage.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(pinMessage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Unpin message
+    builder
+      .addCase(unpinMessage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(unpinMessage.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(unpinMessage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch pinned messages
+    builder
+      .addCase(fetchPinnedMessages.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPinnedMessages.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(fetchPinnedMessages.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
     // Learn topic
     builder
       .addCase(learnTopic.pending, (state) => {
@@ -502,6 +622,28 @@ const aiSlice = createSlice({
         }
       })
       .addCase(updateConversation.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Delete conversation
+    builder
+      .addCase(deleteConversation.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(deleteConversation.fulfilled, (state, action) => {
+        state.isLoading = false;
+
+        state.conversations = state.conversations.filter(
+          (conv) => conv._id !== action.payload.conversationId
+        );
+
+        if (state.currentConversation?._id === action.payload.conversationId) {
+          state.currentConversation = null;
+        }
+      })
+      .addCase(deleteConversation.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

@@ -93,7 +93,7 @@
 }
 
 /* Card styles */
-.card, .bg-white.rounded-xl.shadow, .bg-gray-50.rounded-xl.shadow, .bg-white.rounded-lg.shadow {
+/* .card, .bg-white.rounded-xl.shadow, .bg-gray-50.rounded-xl.shadow, .bg-white.rounded-lg.shadow {
   box-shadow: 0 4px 24px 0 rgba(80, 80, 180, 0.08), 0 1.5px 6px 0 rgba(0,0,0,0.03);
   border-radius: 1rem;
   transition: box-shadow 0.2s, transform 0.2s;
@@ -101,7 +101,7 @@
 .card:hover, .bg-white.rounded-xl.shadow:hover, .bg-gray-50.rounded-xl.shadow:hover, .bg-white.rounded-lg.shadow:hover {
   box-shadow: 0 8px 32px 0 rgba(80, 80, 180, 0.14), 0 3px 12px 0 rgba(0,0,0,0.06);
   transform: translateY(-4px) scale(1.02);
-}
+} */
 
 /* Button styles */
 button, .btn, .Button {

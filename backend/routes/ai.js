@@ -62,6 +62,7 @@ router.get(
       sort = "lastActivity",
       order = "desc",
       search,
+      hasPinned,
     } = req.query;
 
     const query = { user: req.user._id };
@@ -74,6 +75,11 @@ router.get(
         { "messages.content": { $regex: search, $options: "i" } },
         { tags: { $in: [new RegExp(search, "i")] } },
       ];
+    }
+
+    // Add pinned filter
+    if (hasPinned === "true") {
+      query.pinnedMessagesCount = { $gt: 0 };
     }
 
     const sortObj = {};
@@ -155,6 +161,120 @@ router.get(
   })
 );
 
+// Pin a message in a conversation
+router.post(
+  "/conversations/:conversationId/pin/:messageIndex",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { conversationId, messageIndex } = req.params;
+    const index = parseInt(messageIndex);
+
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid message index",
+      });
+    }
+
+    const conversation = await AIConversation.findOne({
+      _id: conversationId,
+      user: req.user._id,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
+
+    await conversation.pinMessage(index);
+
+    res.json({
+      success: true,
+      message: "Message pinned successfully",
+      data: {
+        conversationId,
+        messageIndex: index,
+        pinnedMessagesCount: conversation.pinnedMessagesCount,
+      },
+    });
+  })
+);
+
+// Unpin a message in a conversation
+router.delete(
+  "/conversations/:conversationId/pin/:messageIndex",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { conversationId, messageIndex } = req.params;
+    const index = parseInt(messageIndex);
+
+    if (isNaN(index) || index < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid message index",
+      });
+    }
+
+    const conversation = await AIConversation.findOne({
+      _id: conversationId,
+      user: req.user._id,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
+
+    await conversation.unpinMessage(index);
+
+    res.json({
+      success: true,
+      message: "Message unpinned successfully",
+      data: {
+        conversationId,
+        messageIndex: index,
+        pinnedMessagesCount: conversation.pinnedMessagesCount,
+      },
+    });
+  })
+);
+
+// Get pinned messages for a conversation
+router.get(
+  "/conversations/:conversationId/pinned",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { conversationId } = req.params;
+
+    const conversation = await AIConversation.findOne({
+      _id: conversationId,
+      user: req.user._id,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
+
+    const pinnedMessages = conversation.getPinnedMessages();
+
+    res.json({
+      success: true,
+      data: {
+        conversationId,
+        pinnedMessages,
+        pinnedCount: conversation.pinnedMessagesCount,
+      },
+    });
+  })
+);
+
 // Get specific conversation
 router.get(
   "/conversations/:conversationId",
@@ -231,6 +351,33 @@ router.put(
     res.json({
       success: true,
       data: conversation,
+    });
+  })
+);
+
+// Delete conversation
+router.delete(
+  "/conversations/:conversationId",
+  [protect, validateConversationId, handleValidationErrors],
+  asyncHandler(async (req, res) => {
+    const conversation = await AIConversation.findOneAndDelete({
+      _id: req.params.conversationId,
+      user: req.user._id,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Conversation deleted successfully",
+      data: {
+        conversationId: req.params.conversationId,
+      },
     });
   })
 );

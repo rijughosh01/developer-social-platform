@@ -289,4 +289,18 @@ export const aiAPI = {
   }) => api.get<ApiResponse>("/ai/conversations/search", { params }),
 
   getConversationStats: () => api.get<ApiResponse>("/ai/conversations/stats"),
+
+  // Pin/Unpin Messages
+  pinMessage: (conversationId: string, messageIndex: number) =>
+    api.post<ApiResponse>(`/ai/conversations/${conversationId}/pin/${messageIndex}`),
+
+  unpinMessage: (conversationId: string, messageIndex: number) =>
+    api.delete<ApiResponse>(`/ai/conversations/${conversationId}/pin/${messageIndex}`),
+
+  getPinnedMessages: (conversationId: string) =>
+    api.get<ApiResponse>(`/ai/conversations/${conversationId}/pinned`),
+
+  // Delete conversation
+  deleteConversation: (conversationId: string) =>
+    api.delete<ApiResponse>(`/ai/conversations/${conversationId}`),
 };

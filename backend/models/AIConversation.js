@@ -34,7 +34,13 @@ const aiConversationSchema = new mongoose.Schema(
           type: Date,
           default: Date.now,
         },
-
+        pinned: {
+          type: Boolean,
+          default: false,
+        },
+        pinnedAt: {
+          type: Date,
+        },
         metadata: {
           tokens: Number,
           model: String,
@@ -50,7 +56,10 @@ const aiConversationSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
+    pinnedMessagesCount: {
+      type: Number,
+      default: 0,
+    },
     lastActivity: {
       type: Date,
       default: Date.now,
@@ -76,6 +85,11 @@ aiConversationSchema.virtual("messageCount").get(function () {
   return this.messages.length;
 });
 
+// Virtual for pinned message count
+aiConversationSchema.virtual("pinnedCount").get(function () {
+  return this.messages.filter((msg) => msg.pinned).length;
+});
+
 // Method to add a message
 aiConversationSchema.methods.addMessage = function (
   role,
@@ -86,6 +100,7 @@ aiConversationSchema.methods.addMessage = function (
     role,
     content,
     timestamp: new Date(),
+    pinned: false,
     metadata,
   });
 
@@ -95,6 +110,35 @@ aiConversationSchema.methods.addMessage = function (
 
   this.lastActivity = new Date();
   return this.save();
+};
+
+// Method to pin a message
+aiConversationSchema.methods.pinMessage = function (messageIndex) {
+  if (messageIndex >= 0 && messageIndex < this.messages.length) {
+    this.messages[messageIndex].pinned = true;
+    this.messages[messageIndex].pinnedAt = new Date();
+    this.pinnedMessagesCount = this.messages.filter((msg) => msg.pinned).length;
+    this.lastActivity = new Date();
+    return this.save();
+  }
+  throw new Error("Invalid message index");
+};
+
+// Method to unpin a message
+aiConversationSchema.methods.unpinMessage = function (messageIndex) {
+  if (messageIndex >= 0 && messageIndex < this.messages.length) {
+    this.messages[messageIndex].pinned = false;
+    this.messages[messageIndex].pinnedAt = undefined;
+    this.pinnedMessagesCount = this.messages.filter((msg) => msg.pinned).length;
+    this.lastActivity = new Date();
+    return this.save();
+  }
+  throw new Error("Invalid message index");
+};
+
+// Method to get pinned messages
+aiConversationSchema.methods.getPinnedMessages = function () {
+  return this.messages.filter((msg) => msg.pinned);
 };
 
 // Method to update conversation title
