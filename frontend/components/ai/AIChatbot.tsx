@@ -23,6 +23,10 @@ import {
   X,
   Copy,
   Check,
+  Sparkles,
+  Zap,
+  Brain,
+  Cpu,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -46,20 +50,52 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Context configurations
+  // Context configurations with enhanced styling
   const contextConfigs = {
     general: {
-      icon: Bot,
+      icon: Brain,
       label: "General",
-      color: "bg-blue-500",
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      textColor: "text-blue-700",
+      description: "General coding assistance",
     },
-    codeReview: { icon: Code, label: "Code Review", color: "bg-green-500" },
-    debugging: { icon: Bug, label: "Debugging", color: "bg-red-500" },
-    learning: { icon: BookOpen, label: "Learning", color: "bg-purple-500" },
+    codeReview: {
+      icon: Code,
+      label: "Code Review",
+      color: "from-emerald-500 to-teal-500",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      textColor: "text-emerald-700",
+      description: "Code analysis and improvements",
+    },
+    debugging: {
+      icon: Bug,
+      label: "Debugging",
+      color: "from-red-500 to-pink-500",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+      textColor: "text-red-700",
+      description: "Bug fixing and troubleshooting",
+    },
+    learning: {
+      icon: BookOpen,
+      label: "Learning",
+      color: "from-purple-500 to-indigo-500",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
+      textColor: "text-purple-700",
+      description: "Educational content and tutorials",
+    },
     projectHelp: {
       icon: Lightbulb,
       label: "Project Help",
-      color: "bg-orange-500",
+      color: "from-orange-500 to-amber-500",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
+      textColor: "text-orange-700",
+      description: "Project planning and guidance",
     },
   };
 
@@ -123,111 +159,182 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   };
 
   const CurrentContextIcon =
-    contextConfigs[currentContext as keyof typeof contextConfigs]?.icon || Bot;
+    contextConfigs[currentContext as keyof typeof contextConfigs]?.icon ||
+    Brain;
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative w-full max-w-4xl h-[80vh] bg-white rounded-lg shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
-          <div className="flex items-center space-x-3">
-            <Bot className="w-8 h-8" />
-            <div>
-              <h2 className="text-lg font-semibold">DevLink AI Assistant</h2>
-              <p className="text-sm opacity-90">Powered by GPT-4o-mini</p>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Main Modal */}
+      <div className="relative w-full max-w-5xl h-[85vh] bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
+        <div className="relative p-6 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
           </div>
 
-          <div className="flex items-center space-x-2">
-            {/* Context Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowContexts(!showContexts)}
-                className="flex items-center space-x-2 px-3 py-1.5 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all"
-              >
-                <CurrentContextIcon className="w-4 h-4" />
-                <span className="text-sm">
-                  {contextConfigs[currentContext as keyof typeof contextConfigs]
-                    ?.label || "General"}
-                </span>
-                <Settings className="w-3 h-3" />
-              </button>
-
-              {showContexts && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
-                  {Object.entries(contextConfigs).map(([key, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => handleContextChange(key)}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                          currentContext === key
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        <Icon
-                          className={`w-4 h-4 ${config.color.replace(
-                            "bg-",
-                            "text-"
-                          )}`}
-                        />
-                        <span className="text-sm font-medium">
-                          {config.label}
-                        </span>
-                      </button>
-                    );
-                  })}
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Bot className="w-7 h-7 text-white" />
                 </div>
-              )}
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                  DevLink AI Assistant
+                </h2>
+                <p className="text-sm text-blue-200 flex items-center gap-2">
+                  <Sparkles className="w-3 h-3" />
+                  Powered by GPT-4o-mini
+                </p>
+              </div>
             </div>
 
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={onClose}
-              className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <button
+                  onClick={() => setShowContexts(!showContexts)}
+                  className="flex items-center space-x-3 px-4 py-2.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+                >
+                  <div
+                    className={`w-8 h-8 bg-gradient-to-r ${
+                      contextConfigs[
+                        currentContext as keyof typeof contextConfigs
+                      ]?.color
+                    } rounded-lg flex items-center justify-center`}
+                  >
+                    <CurrentContextIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-medium">
+                      {contextConfigs[
+                        currentContext as keyof typeof contextConfigs
+                      ]?.label || "General"}
+                    </span>
+                    <p className="text-xs text-blue-200">
+                      {
+                        contextConfigs[
+                          currentContext as keyof typeof contextConfigs
+                        ]?.description
+                      }
+                    </p>
+                  </div>
+                  <Settings className="w-4 h-4 text-blue-200 group-hover:rotate-90 transition-transform duration-200" />
+                </button>
+
+                {showContexts && (
+                  <div className="absolute right-0 top-full mt-3 w-72 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 z-10 overflow-hidden">
+                    <div className="p-4">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        Choose Context
+                      </h3>
+                      {Object.entries(contextConfigs).map(([key, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => handleContextChange(key)}
+                            className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-all duration-200 mb-2 ${
+                              currentContext === key
+                                ? `${config.bgColor} ${config.borderColor} border-2`
+                                : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <div
+                              className={`w-10 h-10 bg-gradient-to-r ${config.color} rounded-xl flex items-center justify-center`}
+                            >
+                              <Icon className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="text-left flex-1">
+                              <span
+                                className={`text-sm font-semibold ${
+                                  currentContext === key
+                                    ? config.textColor
+                                    : "text-gray-700"
+                                }`}
+                              >
+                                {config.label}
+                              </span>
+                              <p className="text-xs text-gray-500">
+                                {config.description}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={onClose}
+                className="p-2.5 hover:bg-white/10 rounded-xl transition-all duration-200 group"
+              >
+                <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {responses.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
-              <Bot className="w-24 h-24 mb-6 opacity-70" />
-              <h3 className="text-lg font-medium mb-2">
+              <div className="relative mb-8">
+                <div className="w-32 h-32 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full flex items-center justify-center">
+                  <Bot className="w-16 h-16 text-blue-500" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+              </div>
+
+              <h3 className="text-2xl font-bold mb-3 bg-gradient-to-r from-gray-700 to-gray-500 bg-clip-text text-transparent">
                 Welcome to DevLink AI!
               </h3>
-              <p className="text-center max-w-md">
-                I'm here to help you with coding questions, debugging, learning,
-                and project advice. Choose a context above and start chatting!
+              <p className="text-center max-w-lg text-gray-600 leading-relaxed">
+                I'm your intelligent coding companion. Choose a context below
+                and let's build something amazing together!
               </p>
 
-              {/* Quick Actions */}
-              <div className="mt-6 grid grid-cols-2 gap-3 w-full max-w-md">
+              {/* Quick Actions Grid */}
+              <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-lg">
                 {Object.entries(contextConfigs).map(([key, config]) => {
                   const Icon = config.icon;
                   return (
                     <button
                       key={key}
                       onClick={() => handleContextChange(key)}
-                      className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      className="group relative p-4 border-2 border-gray-200 rounded-2xl hover:border-blue-300 transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
                     >
-                      <Icon
-                        className={`w-4 h-4 ${config.color.replace(
-                          "bg-",
-                          "text-"
-                        )}`}
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-r ${config.color} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-200`}
                       />
-                      <span className="text-sm font-medium">
-                        {config.label}
-                      </span>
+                      <div className="relative flex items-center space-x-3">
+                        <div
+                          className={`w-10 h-10 bg-gradient-to-r ${config.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}
+                        >
+                          <Icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">
+                            {config.label}
+                          </span>
+                          <p className="text-xs text-gray-500">
+                            {config.description}
+                          </p>
+                        </div>
+                      </div>
                     </button>
                   );
                 })}
@@ -235,28 +342,28 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
             </div>
           ) : (
             responses.map((response, index) => (
-              <div key={response.timestamp} className="space-y-3">
-                {/* AI Response */}
-                <div className="flex space-x-3">
+              <div key={response.timestamp} className="space-y-4">
+                {/* Enhanced AI Response */}
+                <div className="flex space-x-4 group">
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
                       <Bot className="w-6 h-6 text-white" />
                     </div>
                   </div>
-                  <div className="flex-1 bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-700">
+                  <div className="flex-1 bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-semibold text-gray-700">
                           DevLink AI
                         </span>
                         {response.cached && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                            Cached
+                          <span className="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">
+                            Cached Response
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs text-gray-500 font-medium">
                           {formatTimestamp(response.timestamp)}
                         </span>
                         <button
@@ -266,12 +373,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                               response.timestamp
                             )
                           }
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          className="p-2 hover:bg-gray-200 rounded-xl transition-all duration-200 group/copy"
                         >
                           {copiedId === response.timestamp ? (
-                            <Check className="w-3 h-3 text-green-600" />
+                            <Check className="w-4 h-4 text-green-600" />
                           ) : (
-                            <Copy className="w-3 h-3 text-gray-500" />
+                            <Copy className="w-4 h-4 text-gray-500 group-hover/copy:text-gray-700" />
                           )}
                         </button>
                       </div>
@@ -291,16 +398,37 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                               className || ""
                             );
                             return !inline && match ? (
-                              <SyntaxHighlighter
-                                style={tomorrow}
-                                language={match[1]}
-                                PreTag="div"
+                              <div className="relative group/code">
+                                <SyntaxHighlighter
+                                  style={tomorrow}
+                                  language={match[1]}
+                                  PreTag="div"
+                                  className="rounded-xl border border-gray-200"
+                                  {...props}
+                                >
+                                  {String(children).replace(/\n$/, "")}
+                                </SyntaxHighlighter>
+                                <button
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      String(children),
+                                      `code-${index}`
+                                    )
+                                  }
+                                  className="absolute top-3 right-3 p-2 bg-gray-800/80 text-white rounded-lg opacity-0 group-hover/code:opacity-100 transition-opacity duration-200"
+                                >
+                                  {copiedId === `code-${index}` ? (
+                                    <Check className="w-4 h-4" />
+                                  ) : (
+                                    <Copy className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <code
+                                className={`${className} bg-gray-100 px-2 py-1 rounded-md text-sm`}
                                 {...props}
                               >
-                                {String(children).replace(/\n$/, "")}
-                              </SyntaxHighlighter>
-                            ) : (
-                              <code className={className} {...props}>
                                 {children}
                               </code>
                             );
@@ -316,19 +444,20 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
             ))
           )}
 
+          {/* Enhanced Loading State */}
           {isLoading && (
-            <div className="flex space-x-3">
+            <div className="flex space-x-4">
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
                   <Bot className="w-6 h-6 text-white" />
                 </div>
               </div>
-              <div className="flex-1 bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center space-x-2">
+              <div className="flex-1 bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-2xl p-6 border border-gray-100">
+                <div className="flex items-center space-x-3">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                     <div
-                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                      className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
                       style={{ animationDelay: "0.1s" }}
                     ></div>
                     <div
@@ -336,7 +465,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       style={{ animationDelay: "0.2s" }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm font-medium text-gray-600">
                     AI is thinking...
                   </span>
                 </div>
@@ -347,53 +476,73 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Error Display */}
+        {/* Enhanced Error Display */}
         {error && (
-          <div className="mx-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mx-6 mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <p className="text-sm text-red-700 font-medium">{error}</p>
+            </div>
           </div>
         )}
 
         {/* Input Form */}
-        <form onSubmit={handleSendMessage} className="p-4 border-t bg-gray-50">
-          <div className="flex space-x-3">
-            <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={`Ask me anything about ${contextConfigs[
-                  currentContext as keyof typeof contextConfigs
-                ]?.label.toLowerCase()}...`}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={1}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(e);
-                  }
-                }}
-                disabled={isLoading}
-              />
+        <div className="p-6 bg-gradient-to-r from-gray-50 to-blue-50/30 border-t border-gray-100">
+          <form onSubmit={handleSendMessage} className="space-y-4">
+            <div className="flex space-x-4">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={inputRef}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={`Ask me anything about ${contextConfigs[
+                    currentContext as keyof typeof contextConfigs
+                  ]?.label.toLowerCase()}...`}
+                  className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                  rows={1}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(e);
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+              </div>
+              <button
+                type="submit"
+                aria-label="Send message"
+                disabled={!message.trim() || isLoading}
+                className="px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center"
+              >
+                <Send className="w-5 h-5" />
+              </button>
             </div>
-            <button
-              type="submit"
-              aria-label="Send message"
-              disabled={!message.trim() || isLoading}
-              className="px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </div>
 
-          {/* Stats */}
-          {stats && (
-            <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-              <span>Requests today: {stats.requestsToday}</span>
-              <span>Total requests: {stats.totalRequests}</span>
-            </div>
-          )}
-        </form>
+            {/* Enhanced Stats */}
+            {stats && (
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <Cpu className="w-4 h-4" />
+                    <span className="font-medium">
+                      Today: {stats.requestsToday}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="font-medium">
+                      Total: {stats.totalRequests}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Press Enter to send • Shift+Enter for new line
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
       </div>
     </div>
   );

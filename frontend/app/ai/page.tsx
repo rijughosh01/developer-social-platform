@@ -1,38 +1,47 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store';
-import { AppDispatch } from '@/store';
-import { 
-  fetchAIContexts, 
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { AppDispatch } from "@/store";
+import {
+  fetchAIContexts,
   fetchAIStats,
-  setCurrentContext 
-} from '@/store/slices/aiSlice';
-import { 
-  Bot, 
-  Code, 
-  Bug, 
-  BookOpen, 
-  Lightbulb, 
-  MessageCircle, 
-  Zap, 
-  TrendingUp, 
-  Users, 
+  setCurrentContext,
+} from "@/store/slices/aiSlice";
+import {
+  Bot,
+  Code,
+  Bug,
+  BookOpen,
+  Lightbulb,
+  MessageCircle,
+  Zap,
+  TrendingUp,
+  Users,
   Clock,
   Star,
-  ArrowRight
-} from 'lucide-react';
-import AIChatbot from '@/components/ai/AIChatbot';
-import CodeReviewForm from '@/components/ai/CodeReviewForm';
-import DebugForm from '@/components/ai/DebugForm';
+  ArrowRight,
+  Sparkles,
+  Brain,
+  Cpu,
+  ChevronRight,
+  Play,
+  Target,
+  CheckCircle,
+} from "lucide-react";
+import AIChatbot from "@/components/ai/AIChatbot";
+import CodeReviewForm from "@/components/ai/CodeReviewForm";
+import DebugForm from "@/components/ai/DebugForm";
 
 const AIPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { contexts, stats, isLoading } = useSelector((state: RootState) => state.ai);
-  const { user, isAuthenticated, token } = useSelector((state: RootState) => state.auth);
-  
-
+  const { contexts, stats, isLoading } = useSelector(
+    (state: RootState) => state.ai
+  );
+  const { user, isAuthenticated, token } = useSelector(
+    (state: RootState) => state.auth
+  );
 
   const [showChatbot, setShowChatbot] = useState(false);
   const [showCodeReview, setShowCodeReview] = useState(false);
@@ -45,7 +54,7 @@ const AIPage: React.FC = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Refresh stats when they become null (after AI interactions)
+  // Refresh stats when they become null
   useEffect(() => {
     if (stats === null && isAuthenticated) {
       dispatch(fetchAIStats());
@@ -54,51 +63,65 @@ const AIPage: React.FC = () => {
 
   const aiFeatures = [
     {
-      id: 'chat',
+      id: "chat",
       icon: MessageCircle,
-      title: 'AI Chat Assistant',
-      description: 'Get instant help with coding questions, explanations, and guidance',
-      color: 'from-blue-500 to-purple-600',
-      action: () => setShowChatbot(true)
+      title: "AI Chat Assistant",
+      description:
+        "Get instant help with coding questions, explanations, and guidance",
+      color: "from-blue-500 to-purple-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      action: () => setShowChatbot(true),
     },
     {
-      id: 'codeReview',
+      id: "codeReview",
       icon: Code,
-      title: 'Code Review',
-      description: 'Get expert feedback on your code for bugs, performance, and best practices',
-      color: 'from-green-500 to-emerald-600',
-      action: () => setShowCodeReview(true)
+      title: "Code Review",
+      description:
+        "Get expert feedback on your code for bugs, performance, and best practices",
+      color: "from-emerald-500 to-teal-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      action: () => setShowCodeReview(true),
     },
     {
-      id: 'debug',
+      id: "debug",
       icon: Bug,
-      title: 'Debug Code',
-      description: 'Get help fixing errors and debugging issues in your code',
-      color: 'from-red-500 to-pink-600',
-      action: () => setShowDebugForm(true)
+      title: "Debug Code",
+      description: "Get help fixing errors and debugging issues in your code",
+      color: "from-red-500 to-pink-600",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+      action: () => setShowDebugForm(true),
     },
     {
-      id: 'learn',
+      id: "learn",
       icon: BookOpen,
-      title: 'Learning Assistant',
-      description: 'Learn new programming concepts, frameworks, and technologies',
-      color: 'from-purple-500 to-indigo-600',
+      title: "Learning Assistant",
+      description:
+        "Learn new programming concepts, frameworks, and technologies",
+      color: "from-purple-500 to-indigo-600",
+      bgColor: "bg-purple-50",
+      borderColor: "border-purple-200",
       action: () => {
-        dispatch(setCurrentContext('learning'));
+        dispatch(setCurrentContext("learning"));
         setShowChatbot(true);
-      }
+      },
     },
     {
-      id: 'project',
+      id: "project",
       icon: Lightbulb,
-      title: 'Project Advice',
-      description: 'Get guidance on project architecture, tech stack, and best practices',
-      color: 'from-orange-500 to-yellow-600',
+      title: "Project Advice",
+      description:
+        "Get guidance on project architecture, tech stack, and best practices",
+      color: "from-orange-500 to-amber-600",
+      bgColor: "bg-orange-50",
+      borderColor: "border-orange-200",
       action: () => {
-        dispatch(setCurrentContext('projectHelp'));
+        dispatch(setCurrentContext("projectHelp"));
         setShowChatbot(true);
-      }
-    }
+      },
+    },
   ];
 
   const quickPrompts = [
@@ -107,78 +130,126 @@ const AIPage: React.FC = () => {
     "How to optimize database queries?",
     "Best practices for API design",
     "How to handle errors in async functions?",
-    "What is dependency injection?"
+    "What is dependency injection?",
+  ];
+
+  const howItWorksSteps = [
+    {
+      number: 1,
+      icon: Target,
+      title: "Choose Your Need",
+      description:
+        "Select from code review, debugging, learning, or general assistance",
+      color: "from-blue-500 to-cyan-500",
+    },
+    {
+      number: 2,
+      icon: MessageCircle,
+      title: "Ask Your Question",
+      description: "Describe your problem or paste your code for analysis",
+      color: "from-emerald-500 to-teal-500",
+    },
+    {
+      number: 3,
+      icon: CheckCircle,
+      title: "Get Instant Help",
+      description:
+        "Receive detailed explanations, code examples, and solutions",
+      color: "from-purple-500 to-indigo-500",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mr-4">
-                <Bot className="w-8 h-8 text-white" />
+      <div className="relative bg-white/80 backdrop-blur-xl shadow-soft border-b border-white/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center animate-fade-in">
+            <div className="flex items-center justify-center mb-6">
+              <div className="relative">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg mr-6">
+                  <Bot className="w-10 h-10 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-white" />
+                </div>
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-gray-900">DevLink AI</h1>
-                <p className="text-lg text-gray-600">Your AI-powered development assistant</p>
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  DevLink AI
+                </h1>
+                <p className="text-xl text-gray-600 mt-2">
+                  Your AI-powered development assistant
+                </p>
               </div>
             </div>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Get instant help with coding, debugging, learning, and project guidance. 
-              Powered by advanced AI to accelerate your development journey.
+            <p className="text-gray-600 max-w-3xl mx-auto text-lg leading-relaxed">
+              Get instant help with coding, debugging, learning, and project
+              guidance. Powered by advanced AI to accelerate your development
+              journey.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-slide-in-up">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Zap className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Requests</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalRequests}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Requests
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.totalRequests}
+                  </p>
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
               <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Today's Requests</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.requestsToday}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Today's Requests
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.requestsToday}
+                  </p>
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
               <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Star className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Star className="w-6 h-6 text-white" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Favorite Context</p>
-                  <p className="text-2xl font-bold text-gray-900 capitalize">{stats.favoriteContext}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Favorite Context
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 capitalize">
+                    {stats.favoriteContext}
+                  </p>
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
               <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Clock className="w-6 h-6 text-orange-600" />
+                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Last Used</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {stats.lastUsed ? 'Today' : 'Never'}
+                    {stats.lastUsed ? "Today" : "Never"}
                   </p>
                 </div>
               </div>
@@ -187,27 +258,37 @@ const AIPage: React.FC = () => {
         )}
 
         {/* AI Features Grid */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">AI Features</h2>
+        <div className="mb-16 animate-slide-in-up">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              AI Features
+            </h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {aiFeatures.map((feature) => {
+            {aiFeatures.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={feature.id}
-                  className="bg-white rounded-lg p-6 shadow-sm border hover:shadow-md transition-shadow cursor-pointer group"
+                  className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift cursor-pointer group"
                   onClick={feature.action}
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 bg-gradient-to-r ${feature.color} rounded-lg`}>
+                    <div
+                      className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200`}
+                    >
                       <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all duration-200" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 text-sm leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -216,38 +297,51 @@ const AIPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Start */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        {/* Quick Start Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16 animate-slide-in-up">
           {/* Quick Chat */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Chat</h3>
-            <p className="text-gray-600 mb-4">
-              Start a conversation with our AI assistant for instant help.
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-8 hover-lift">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+                <MessageCircle className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Quick Chat</h3>
+            </div>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Start a conversation with our AI assistant for instant help with
+              any coding question or problem.
             </p>
             <button
               onClick={() => setShowChatbot(true)}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl hover:-translate-y-0.5 font-semibold"
             >
-              <MessageCircle className="w-5 h-5" />
+              <Play className="w-5 h-5" />
               <span>Start Chat</span>
             </button>
           </div>
 
           {/* Quick Prompts */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Prompts</h3>
-            <p className="text-gray-600 mb-4">
-              Try these common questions to get started:
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-8 hover-lift">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">
+                Quick Prompts
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Try these common questions to get started with AI assistance:
             </p>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {quickPrompts.map((prompt, index) => (
                 <button
                   key={index}
                   onClick={() => {
-                    dispatch(setCurrentContext('general'));
+                    dispatch(setCurrentContext("general"));
                     setShowChatbot(true);
                   }}
-                  className="w-full text-left p-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="w-full text-left p-4 text-sm text-gray-700 hover:bg-gray-50 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-200 font-medium"
                 >
                   {prompt}
                 </button>
@@ -257,53 +351,63 @@ const AIPage: React.FC = () => {
         </div>
 
         {/* How It Works */}
-        <div className="bg-white rounded-lg p-8 shadow-sm border">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">How It Works</h2>
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-12 animate-slide-in-up">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Cpu className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                How It Works
+              </h2>
+            </div>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              Get started with DevLink AI in just three simple steps
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-blue-600 font-bold text-lg">1</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Choose Your Need</h3>
-              <p className="text-gray-600">
-                Select from code review, debugging, learning, or general assistance
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-green-600 font-bold text-lg">2</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ask Your Question</h3>
-              <p className="text-gray-600">
-                Describe your problem or paste your code for analysis
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-purple-600 font-bold text-lg">3</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Get Instant Help</h3>
-              <p className="text-gray-600">
-                Receive detailed explanations, code examples, and solutions
-              </p>
-            </div>
+            {howItWorksSteps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div
+                  key={step.number}
+                  className="text-center group"
+                  style={{ animationDelay: `${index * 200}ms` }}
+                >
+                  <div
+                    className={`w-16 h-16 bg-gradient-to-r ${step.color} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200`}
+                  >
+                    <Icon className="w-8 h-8 text-white" />
+                  </div>
+                  <div className="w-8 h-8 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-sm">
+                    {step.number}
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                    {step.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Modals */}
       <AIChatbot isOpen={showChatbot} onClose={() => setShowChatbot(false)} />
-      
+
       {showCodeReview && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50 p-2 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
           <div className="w-full max-w-4xl my-4">
             <CodeReviewForm onClose={() => setShowCodeReview(false)} />
           </div>
         </div>
       )}
-      
+
       {showDebugForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50 p-2 sm:p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/20 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
           <div className="w-full max-w-4xl my-4">
             <DebugForm onClose={() => setShowDebugForm(false)} />
           </div>
@@ -313,4 +417,4 @@ const AIPage: React.FC = () => {
   );
 };
 
-export default AIPage; 
+export default AIPage;

@@ -147,7 +147,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
   useEffect(() => {
     if (showComments) fetchComments();
     if (user && post._id) {
-      setIsSaved(post.isSaved || false);
+      setIsSaved(Boolean(post.isSaved));
     }
     if (showComments && commentInputRef.current) {
       commentInputRef.current.focus();
@@ -206,32 +206,29 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
 
   const handleSave = async () => {
     if (!user) return;
-    if (onUnsave && isSaved) {
-      setIsSaved(false);
-      setUnsaving(true);
-      onUnsave();
-      try {
-        await savedAPI.unsavePost(user._id, post._id);
-        toast.success("Post unsaved");
-      } catch (err) {
-        toast.error("Failed to update saved status");
-      }
-      setUnsaving(false);
-      return;
-    }
+
+    // Set loading state
+    setUnsaving(true);
+
     try {
       if (isSaved) {
+        // Unsave the post
         await savedAPI.unsavePost(user._id, post._id);
         setIsSaved(false);
         toast.success("Post unsaved");
+
         if (onUnsave) onUnsave();
       } else {
+        // Save the post
         await savedAPI.savePost(user._id, post._id);
         setIsSaved(true);
         toast.success("Post saved");
       }
     } catch (err) {
       toast.error("Failed to update saved status");
+      setIsSaved(isSaved);
+    } finally {
+      setUnsaving(false);
     }
   };
 

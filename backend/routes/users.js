@@ -489,7 +489,14 @@ router.get(
         select: "firstName lastName username avatar",
       },
     });
-    res.json({ success: true, data: user.savedPosts });
+
+    // Add isSaved: true to all posts since they are from the saved posts list
+    const savedPostsWithFlag = user.savedPosts.map((post) => ({
+      ...post.toObject(),
+      isSaved: true,
+    }));
+
+    res.json({ success: true, data: savedPostsWithFlag });
   })
 );
 
@@ -716,13 +723,11 @@ router.post(
       await req.user.save();
       res.json({ success: true, avatar: result.secure_url });
     } catch (err) {
-      res
-        .status(500)
-        .json({
-          success: false,
-          message: "Avatar upload failed",
-          error: err.message,
-        });
+      res.status(500).json({
+        success: false,
+        message: "Avatar upload failed",
+        error: err.message,
+      });
     }
   })
 );

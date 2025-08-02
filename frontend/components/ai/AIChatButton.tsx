@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Bot, X, GripVertical } from "lucide-react";
+import { Bot, X, GripVertical, Sparkles, Zap } from "lucide-react";
 import AIChatbot from "./AIChatbot";
 
 interface AIChatButtonProps {
@@ -27,6 +27,7 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
   });
   const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
   const [showDragHint, setShowDragHint] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -53,7 +54,7 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
 
   const getDefaultPosition = (pos: string): Position => {
     const padding = 24;
-    const buttonSize = 64;
+    const buttonSize = 72;
 
     switch (pos) {
       case "bottom-right":
@@ -100,7 +101,6 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
       y: touch.clientY - rect.top,
     });
     setIsDragging(true);
-    e.preventDefault();
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -109,8 +109,8 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
 
-    const maxX = window.innerWidth - 64;
-    const maxY = window.innerHeight - 64;
+    const maxX = window.innerWidth - 72;
+    const maxY = window.innerHeight - 72;
 
     const constrainedX = Math.max(0, Math.min(newX, maxX));
     const constrainedY = Math.max(0, Math.min(newY, maxY));
@@ -126,15 +126,18 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
     const newX = touch.clientX - dragOffset.x;
     const newY = touch.clientY - dragOffset.y;
 
-    const maxX = window.innerWidth - 64;
-    const maxY = window.innerHeight - 64;
+    const maxX = window.innerWidth - 72;
+    const maxY = window.innerHeight - 72;
 
     const constrainedX = Math.max(0, Math.min(newX, maxX));
     const constrainedY = Math.max(0, Math.min(newY, maxY));
 
     const newPosition = { x: constrainedX, y: constrainedY };
     setButtonPosition(newPosition);
-    e.preventDefault();
+
+    if (isDragging) {
+      e.preventDefault();
+    }
   };
 
   const handleMouseUp = () => {
@@ -164,7 +167,9 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
       document.addEventListener("touchmove", handleTouchMove, {
         passive: false,
       });
-      document.addEventListener("touchend", handleTouchEnd);
+      document.addEventListener("touchend", handleTouchEnd, {
+        passive: false,
+      });
 
       return () => {
         document.removeEventListener("mousemove", handleMouseMove);
@@ -178,8 +183,8 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      const maxX = window.innerWidth - 64;
-      const maxY = window.innerHeight - 64;
+      const maxX = window.innerWidth - 72;
+      const maxY = window.innerHeight - 72;
 
       const constrainedX = Math.max(0, Math.min(buttonPosition.x, maxX));
       const constrainedY = Math.max(0, Math.min(buttonPosition.y, maxY));
@@ -206,53 +211,88 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         onDoubleClick={handleDoubleClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           left: `${buttonPosition.x}px`,
           top: `${buttonPosition.y}px`,
           cursor: isDragging ? "grabbing" : "grab",
         }}
-        className={`fixed z-40 w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transform transition-all duration-200 flex items-center justify-center ${className} ${
-          isDragging ? "scale-110 shadow-2xl" : "hover:scale-110"
+        className={`fixed z-40 w-18 h-18 bg-white/90 backdrop-blur-xl border border-white/20 text-gray-700 rounded-3xl shadow-2xl hover:shadow-3xl transform transition-all duration-300 flex items-center justify-center group ${className} ${
+          isDragging
+            ? "scale-110 shadow-3xl rotate-3"
+            : isHovered
+            ? "scale-105 hover:shadow-3xl"
+            : "hover:scale-105"
         } ${!isDragging && !isOpen ? "animate-pulse" : ""}`}
         aria-label="Open AI Chat Assistant"
         title="Drag to move • Click to open AI Assistant • Double-click to reset position"
       >
-        <div className="relative">
-          {isOpen ? <X className="w-6 h-6" /> : <Bot className="w-8 h-8" />}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-3xl" />
+
+        {/* Main content */}
+        <div className="relative z-10 flex items-center justify-center">
+          {isOpen ? (
+            <X className="w-7 h-7 text-gray-700 group-hover:text-gray-900 transition-colors duration-200" />
+          ) : (
+            <div className="relative">
+              <Bot className="w-8 h-8 text-gray-700 group-hover:text-gray-900 transition-colors duration-200" />
+
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-pulse" />
+            </div>
+          )}
+
           {/* Drag indicator */}
           <GripVertical
-            className={`absolute -bottom-1 -right-1 w-3 h-3 text-white/70 transition-opacity ${
-              isDragging ? "opacity-100" : "opacity-0"
+            className={`absolute -bottom-2 -right-2 w-4 h-4 text-gray-400/60 transition-all duration-200 ${
+              isDragging
+                ? "opacity-100 scale-110"
+                : "opacity-0 group-hover:opacity-60"
             }`}
           />
         </div>
+
+        <div
+          className={`absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-3xl transition-opacity duration-300 ${
+            isHovered ? "opacity-100" : "opacity-0"
+          }`}
+        />
       </button>
 
       {/* AI Chatbot Modal */}
       <AIChatbot isOpen={isOpen} onClose={() => setIsOpen(false)} />
 
-      {/* Drag Hint Tooltip */}
+      {/* Modern Drag Hint Tooltip */}
       {showDragHint && (
         <div
           style={{
-            left: `${buttonPosition.x + 80}px`,
+            left: `${buttonPosition.x + 90}px`,
             top: `${buttonPosition.y}px`,
           }}
-          className="fixed z-50 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg max-w-xs animate-fade-in"
+          className="fixed z-50 bg-white/95 backdrop-blur-xl border border-white/20 text-gray-700 text-sm px-4 py-3 rounded-2xl shadow-2xl max-w-xs animate-fade-in"
         >
-          <div className="flex items-center gap-2">
-            <GripVertical className="w-4 h-4" />
-            <span>Drag me anywhere!</span>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+              <GripVertical className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-gray-800">
+                Drag me anywhere!
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Double-click to reset position
+              </div>
+            </div>
             <button
               onClick={() => setShowDragHint(false)}
-              className="ml-2 text-gray-400 hover:text-white"
+              className="p-1 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
-              ×
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           </div>
-          <div className="text-xs text-gray-300 mt-1">
-            Double-click to reset position
-          </div>
+
+          {/* Arrow pointing to button */}
+          <div className="absolute left-0 top-1/2 transform -translate-x-2 -translate-y-1/2 w-0 h-0 border-l-0 border-r-8 border-t-4 border-b-4 border-transparent border-r-white/95" />
         </div>
       )}
     </>
