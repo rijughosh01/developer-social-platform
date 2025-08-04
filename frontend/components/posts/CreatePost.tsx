@@ -22,6 +22,7 @@ import php from "react-syntax-highlighter/dist/esm/languages/hljs/php";
 import sql from "react-syntax-highlighter/dist/esm/languages/hljs/sql";
 import bash from "react-syntax-highlighter/dist/esm/languages/hljs/bash";
 import { getAvatarUrl } from "@/lib/utils";
+import { uploadImage, validateImageFile } from "@/lib/uploadUtils";
 
 SyntaxHighlighter.registerLanguage("javascript", js);
 SyntaxHighlighter.registerLanguage("typescript", ts);
@@ -66,12 +67,19 @@ export function CreatePost() {
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        validateImageFile(file, 5);
+        setSelectedImage(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Invalid image file"
+        );
+      }
     }
   };
 
@@ -105,7 +113,7 @@ export function CreatePost() {
     let imageUrl = "";
     try {
       if (postType === "regular" && selectedImage) {
-        imageUrl = await uploadImageToBackend(selectedImage);
+        imageUrl = await uploadImage(selectedImage);
       }
       const tags = tagsInput
         .split(",")
@@ -146,26 +154,6 @@ export function CreatePost() {
       setIsCreating(false);
     }
   };
-
-  // Move uploadImageToBackend inside the component
-  async function uploadImageToBackend(file: File): Promise<string> {
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await fetch("http://localhost:5000/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error("Image upload failed");
-      }
-      const data = await response.json();
-      return data.url;
-    } finally {
-      setIsUploading(false);
-    }
-  }
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-100">

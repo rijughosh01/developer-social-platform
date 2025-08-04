@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
+import { uploadImage, validateImageFile } from "@/lib/uploadUtils";
 
 interface ProjectDetailsModalProps {
   project: any;
@@ -67,19 +68,25 @@ export default function ProjectDetailsModal({
     try {
       const files = Array.from(e.target.files);
       const uploaded: { url: string; caption: string }[] = [];
+
       for (const file of files) {
-        const formData = new FormData();
-        formData.append("image", file);
-        const response = await fetch("http://localhost:5000/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!response.ok) throw new Error("Upload failed");
-        const data = await response.json();
-        uploaded.push({ url: data.url, caption: "" });
+        try {
+          validateImageFile(file, 5);
+          const url = await uploadImage(file);
+          uploaded.push({ url, caption: "" });
+        } catch (error) {
+          toast.error(
+            `Failed to upload ${file.name}: ${
+              error instanceof Error ? error.message : "Invalid file"
+            }`
+          );
+        }
       }
-      setScreenshots((prev) => [...prev, ...uploaded]);
-      toast.success("Screenshots uploaded!");
+
+      if (uploaded.length > 0) {
+        setScreenshots((prev) => [...prev, ...uploaded]);
+        toast.success(`${uploaded.length} screenshot(s) uploaded!`);
+      }
     } catch (err) {
       toast.error("Failed to upload screenshots");
     }
@@ -146,6 +153,24 @@ export default function ProjectDetailsModal({
                 onChange={handleFormChange}
                 required
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Short Description
+              </label>
+              <textarea
+                aria-label="Project Short Description"
+                className="w-full border rounded px-3 py-2"
+                name="shortDescription"
+                value={form.shortDescription || ""}
+                onChange={handleFormChange}
+                rows={2}
+                placeholder="A brief summary of your project (optional)"
+                maxLength={200}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                A concise summary that appears before the full description
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -247,39 +272,83 @@ export default function ProjectDetailsModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Screenshots
+              <label className="block text-sm font-medium mb-2">
+                <FiUpload className="inline w-4 h-4 mr-1" />
+                Project Screenshots
               </label>
-              <input
-                aria-label="Project Screenshots"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleScreenshotUpload}
-                disabled={uploadingScreenshots}
-              />
-              {uploadingScreenshots && (
-                <div className="text-xs text-blue-600 mt-1">Uploading...</div>
-              )}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {screenshots.map((s) => (
-                  <div key={s.url} className="relative group">
-                    <img
-                      src={s.url}
-                      alt="screenshot"
-                      className="w-20 h-20 object-cover rounded border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveScreenshot(s.url)}
-                      className="absolute top-1 right-1 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-600 group-hover:opacity-100 opacity-0 transition"
-                      title="Remove"
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-400 transition-colors">
+                <input
+                  aria-label="Project Screenshots"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleScreenshotUpload}
+                  disabled={uploadingScreenshots}
+                  className="hidden"
+                  id="screenshot-upload"
+                />
+                <label htmlFor="screenshot-upload" className="cursor-pointer">
+                  <FiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 mb-1">
+                    Click to upload screenshots
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Max 5MB per image, up to 10 screenshots
+                  </p>
+                </label>
               </div>
+              {uploadingScreenshots && (
+                <div className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  Uploading screenshots...
+                </div>
+              )}
+
+              {/* Screenshots Preview */}
+              {screenshots.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    Uploaded Screenshots ({screenshots.length}/10)
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {screenshots.map((s, index) => (
+                      <div
+                        key={s.url}
+                        className="relative group border border-gray-200 rounded-lg overflow-hidden"
+                      >
+                        <img
+                          src={s.url}
+                          alt={`Screenshot ${index + 1}`}
+                          className="w-full h-32 object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveScreenshot(s.url)}
+                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove screenshot"
+                        >
+                          <FiX className="w-3 h-3" />
+                        </button>
+                        <div className="p-3">
+                          <input
+                            type="text"
+                            value={s.caption}
+                            onChange={(e) => {
+                              const updatedScreenshots = [...screenshots];
+                              updatedScreenshots[index].caption =
+                                e.target.value;
+                              setScreenshots(updatedScreenshots);
+                            }}
+                            placeholder="Add caption (optional)"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                            maxLength={100}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">
@@ -346,6 +415,27 @@ export default function ProjectDetailsModal({
                 {project.owner?.firstName} {project.owner?.lastName}
               </span>
             </div>
+
+            {/* Project Image */}
+            {project.image && (
+              <div className="mb-4">
+                <img
+                  src={project.image}
+                  alt={project.title}
+                  className="w-full h-48 object-cover rounded-lg border border-gray-200 shadow-sm"
+                />
+              </div>
+            )}
+            {/* Short Description */}
+            {project.shortDescription && (
+              <div className="mb-3">
+                <p className="text-gray-600 text-sm italic bg-gray-50 p-3 rounded-lg border-l-4 border-primary-200">
+                  {project.shortDescription}
+                </p>
+              </div>
+            )}
+
+            {/* Full Description */}
             <p className="text-gray-700 mb-4 whitespace-pre-line">
               {project.description}
             </p>
@@ -407,18 +497,71 @@ export default function ProjectDetailsModal({
               )}
             </div>
             {project.screenshots && project.screenshots.length > 0 && (
-              <div className="mb-4">
-                <div className="text-xs text-gray-500 mb-1">Screenshots</div>
-                <div className="flex flex-wrap gap-2">
-                  {project.screenshots.map((s: any) => (
-                    <img
-                      key={s.url}
-                      src={s.url}
-                      alt="screenshot"
-                      className="w-24 h-24 object-cover rounded border"
-                    />
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <FiUpload className="w-5 h-5" />
+                  Project Screenshots ({project.screenshots.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {project.screenshots.map((s: any, index: number) => (
+                    <div key={s.url} className="group relative">
+                      <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 hover:border-primary-300 transition-colors">
+                        <img
+                          src={s.url}
+                          alt={s.caption || `Screenshot ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                          onClick={() => {
+                            // Open image in full screen
+                            const newWindow = window.open(s.url, "_blank");
+                            if (newWindow) {
+                              newWindow.document.write(`
+                                <html>
+                                  <head>
+                                    <title>${
+                                      s.caption || `Screenshot ${index + 1}`
+                                    }</title>
+                                    <style>
+                                      body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                                      img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+                                      .caption { color: white; text-align: center; margin-top: 10px; font-size: 16px; }
+                                    </style>
+                                  </head>
+                                  <body>
+                                    <div>
+                                      <img src="${s.url}" alt="${
+                                s.caption || `Screenshot ${index + 1}`
+                              }" />
+                                      ${
+                                        s.caption
+                                          ? `<div class="caption">${s.caption}</div>`
+                                          : ""
+                                      }
+                                    </div>
+                                  </body>
+                                </html>
+                              `);
+                            }
+                          }}
+                        />
+                      </div>
+                      {s.caption && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-700 font-medium">
+                            {s.caption}
+                          </p>
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                          Click to view
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Click on any screenshot to view it in full size
+                </p>
               </div>
             )}
             {project.tags && project.tags.length > 0 && (

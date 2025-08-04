@@ -174,18 +174,20 @@ router.post(
     body("title")
       .trim()
       .isLength({ min: 1, max: 100 })
-      .withMessage("Title is required and must be less than 100 characters"),
+      .withMessage("Title is required and must be less than 100 characters")
+      .matches(/^[a-zA-Z0-9\s\-_.,!?()]+$/)
+      .withMessage("Title contains invalid characters"),
     body("description")
       .trim()
-      .isLength({ min: 1, max: 1000 })
+      .isLength({ min: 10, max: 1000 })
       .withMessage(
-        "Description is required and must be less than 1000 characters"
+        "Description is required, must be at least 10 characters and less than 1000 characters"
       ),
     body("shortDescription")
       .optional()
       .trim()
-      .isLength({ max: 200 })
-      .withMessage("Short description cannot exceed 200 characters"),
+      .isLength({ min: 5, max: 200 })
+      .withMessage("Short description must be between 5 and 200 characters"),
     body("category")
       .optional()
       .isIn([
@@ -205,23 +207,60 @@ router.post(
       .withMessage("Invalid status"),
     body("technologies")
       .optional()
-      .isArray()
-      .withMessage("Technologies must be an array"),
+      .isArray({ min: 0, max: 20 })
+      .withMessage("Technologies must be an array with maximum 20 items"),
+    body("technologies.*")
+      .optional()
+      .isString()
+      .trim()
+      .isLength({ min: 1, max: 50 })
+      .withMessage("Each technology must be between 1 and 50 characters"),
     body("githubUrl")
       .optional()
       .isURL()
-      .withMessage("GitHub URL must be valid"),
+      .matches(/^https:\/\/(www\.)?github\.com\//)
+      .withMessage("Must be a valid GitHub URL"),
     body("liveUrl").optional().isURL().withMessage("Live URL must be valid"),
     body("image").optional().isURL().withMessage("Image URL must be valid"),
-    body("tags").optional().isArray().withMessage("Tags must be an array"),
+    body("tags")
+      .optional()
+      .isArray({ min: 0, max: 10 })
+      .withMessage("Tags must be an array with maximum 10 items"),
+    body("tags.*")
+      .optional()
+      .isString()
+      .trim()
+      .isLength({ min: 1, max: 30 })
+      .matches(/^[a-zA-Z0-9\s\-_]+$/)
+      .withMessage(
+        "Tags can only contain letters, numbers, spaces, hyphens, and underscores"
+      ),
     body("screenshots")
       .optional()
-      .isArray()
-      .withMessage("Screenshots must be an array"),
+      .isArray({ min: 0, max: 10 })
+      .withMessage("Screenshots must be an array with maximum 10 items"),
+    body("screenshots.*.url")
+      .optional()
+      .isURL()
+      .withMessage("Screenshot URL must be valid"),
+    body("screenshots.*.caption")
+      .optional()
+      .isString()
+      .trim()
+      .isLength({ max: 100 })
+      .withMessage("Screenshot caption cannot exceed 100 characters"),
     body("collaborators")
       .optional()
-      .isArray()
-      .withMessage("Collaborators must be an array"),
+      .isArray({ min: 0, max: 10 })
+      .withMessage("Collaborators must be an array with maximum 10 items"),
+    body("collaborators.*")
+      .optional()
+      .isString()
+      .trim()
+      .isLength({ min: 1, max: 100 })
+      .withMessage(
+        "Each collaborator identifier must be between 1 and 100 characters"
+      ),
   ],
   validate,
   asyncHandler(async (req, res) => {
@@ -290,6 +329,27 @@ router.post(
 
     await project.populate("owner", "username firstName lastName avatar");
     await User.evaluateAndAwardBadges(req.user._id);
+
+    // Track project creation analytics
+    try {
+      const analyticsData = {
+        userId: req.user._id,
+        projectId: project._id,
+        category: project.category,
+        status: project.status,
+        hasTechnologies: project.technologies.length > 0,
+        hasCollaborators: project.collaborators.length > 0,
+        hasImage: !!project.image,
+        hasScreenshots: project.screenshots.length > 0,
+        hasGitHubUrl: !!project.githubUrl,
+        hasLiveUrl: !!project.liveUrl,
+        createdAt: new Date(),
+      };
+
+      console.log("Project Creation Analytics:", analyticsData);
+    } catch (error) {
+      console.error("Error tracking project creation analytics:", error);
+    }
 
     res.status(201).json({
       success: true,

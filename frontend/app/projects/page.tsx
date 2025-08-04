@@ -15,6 +15,7 @@ import {
   FiMessageSquare,
 } from "react-icons/fi";
 import ProjectDetailsModal from "./ProjectDetailsModal";
+import CreateProjectModal from "@/components/projects/CreateProjectModal";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import Link from "next/link";
@@ -24,6 +25,7 @@ interface Project {
   _id: string;
   title: string;
   description: string;
+  shortDescription?: string;
   githubUrl?: string;
   liveUrl?: string;
   likesCount?: number;
@@ -38,6 +40,7 @@ interface Project {
   category: string;
   status: string;
   technologies?: string[];
+  screenshots?: { url: string; caption: string }[];
 }
 
 export default function ProjectsPage() {
@@ -46,30 +49,10 @@ export default function ProjectsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    githubUrl: "",
-    liveUrl: "",
-    technologies: "",
-    category: "web",
-    status: "completed",
-    image: "",
-  });
   const { user } = useAppSelector((state) => state.auth);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModal, setEditModal] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [screenshots, setScreenshots] = useState<
-    { url: string; caption: string }[]
-  >([]);
-  const [uploadingScreenshots, setUploadingScreenshots] = useState(false);
-  const [tagsInput, setTagsInput] = useState("");
-  const [collaboratorsInput, setCollaboratorsInput] = useState("");
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -91,131 +74,6 @@ export default function ProjectsPage() {
       project.title.toLowerCase().includes(search.toLowerCase()) ||
       project.description.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleFormChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
-  async function uploadImageToBackend(file: File): Promise<string> {
-    setIsUploadingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await fetch("http://localhost:5000/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) {
-        throw new Error("Image upload failed");
-      }
-      const data = await response.json();
-      return data.url;
-    } finally {
-      setIsUploadingImage(false);
-    }
-  }
-
-  const handleScreenshotUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (!e.target.files) return;
-    setUploadingScreenshots(true);
-    try {
-      const files = Array.from(e.target.files);
-      const uploaded: { url: string; caption: string }[] = [];
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("image", file);
-        const response = await fetch("http://localhost:5000/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!response.ok) throw new Error("Upload failed");
-        const data = await response.json();
-        uploaded.push({ url: data.url, caption: "" });
-      }
-      setScreenshots((prev) => [...prev, ...uploaded]);
-      toast.success("Screenshots uploaded!");
-    } catch (err) {
-      toast.error("Failed to upload screenshots");
-    }
-    setUploadingScreenshots(false);
-  };
-
-  const handleRemoveScreenshot = (url: string) => {
-    setScreenshots((prev) => prev.filter((s) => s.url !== url));
-  };
-
-  const handleCreateProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreating(true);
-    try {
-      let imageUrl = form.image;
-      if (imageFile) {
-        imageUrl = await uploadImageToBackend(imageFile);
-      }
-      const payload = {
-        ...form,
-        image: imageUrl,
-        screenshots,
-        tags: tagsInput
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-        collaborators: collaboratorsInput
-          .split(",")
-          .map((c) => c.trim())
-          .filter(Boolean),
-        technologies: form.technologies
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-      };
-      const res = await api.post("/projects", payload);
-      setProjects([res.data.data, ...projects]);
-      setShowModal(false);
-      setForm({
-        title: "",
-        description: "",
-        githubUrl: "",
-        liveUrl: "",
-        technologies: "",
-        category: "web",
-        status: "completed",
-        image: "",
-      });
-      setImageFile(null);
-      setImagePreview(null);
-      setScreenshots([]);
-      setTagsInput("");
-      setCollaboratorsInput("");
-      toast.success("Project created!");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to create project");
-    }
-    setCreating(false);
-  };
 
   const handleStar = async (projectId: string) => {
     try {
@@ -362,6 +220,87 @@ export default function ProjectsPage() {
                   <div className="text-gray-700 mb-3 line-clamp-3 min-h-[48px]">
                     {project.description}
                   </div>
+
+                  {/* Screenshots Preview */}
+                  {project.screenshots && project.screenshots.length > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-gray-500 font-medium">
+                          Screenshots
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          ({project.screenshots.length})
+                        </span>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {project.screenshots
+                          .slice(0, 3)
+                          .map((screenshot: any, index: number) => (
+                            <div
+                              key={screenshot.url}
+                              className="flex-shrink-0 relative group"
+                            >
+                              <img
+                                src={screenshot.url}
+                                alt={
+                                  screenshot.caption ||
+                                  `Screenshot ${index + 1}`
+                                }
+                                className="w-16 h-12 object-cover rounded border border-gray-200 hover:border-primary-300 transition-colors cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Open image in full screen
+                                  const newWindow = window.open(
+                                    screenshot.url,
+                                    "_blank"
+                                  );
+                                  if (newWindow) {
+                                    newWindow.document.write(`
+                                    <html>
+                                      <head>
+                                        <title>${
+                                          screenshot.caption ||
+                                          `Screenshot ${index + 1}`
+                                        }</title>
+                                        <style>
+                                          body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                                          img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px; }
+                                          .caption { color: white; text-align: center; margin-top: 10px; font-size: 16px; }
+                                        </style>
+                                      </head>
+                                      <body>
+                                        <div>
+                                          <img src="${screenshot.url}" alt="${
+                                      screenshot.caption ||
+                                      `Screenshot ${index + 1}`
+                                    }" />
+                                          ${
+                                            screenshot.caption
+                                              ? `<div class="caption">${screenshot.caption}</div>`
+                                              : ""
+                                          }
+                                        </div>
+                                      </body>
+                                    </html>
+                                  `);
+                                  }
+                                }}
+                              />
+                              {screenshot.caption && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded-b opacity-0 group-hover:opacity-100 transition-opacity truncate">
+                                  {screenshot.caption}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        {project.screenshots.length > 3 && (
+                          <div className="flex-shrink-0 w-16 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center text-xs text-gray-500 font-medium">
+                            +{project.screenshots.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {/* Technologies */}
                   {project.technologies && project.technologies.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -486,242 +425,15 @@ export default function ProjectsPage() {
               No projects found.
             </div>
           )}
-          {/* Create Project Modal */}
-          {showModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg max-h-[90vh] overflow-y-auto my-8">
-                <h2 className="text-xl font-bold mb-4">Create New Project</h2>
-                <form onSubmit={handleCreateProject} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Title
-                    </label>
-                    <input
-                      aria-label="Project Title"
-                      className="w-full border rounded px-3 py-2"
-                      name="title"
-                      value={form.title}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      aria-label="Project Description"
-                      className="w-full border rounded px-3 py-2"
-                      name="description"
-                      value={form.description}
-                      onChange={handleFormChange}
-                      rows={3}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      GitHub URL
-                    </label>
-                    <input
-                      aria-label="Project GitHub URL"
-                      className="w-full border rounded px-3 py-2"
-                      name="githubUrl"
-                      value={form.githubUrl}
-                      onChange={handleFormChange}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Live URL
-                    </label>
-                    <input
-                      aria-label="Project Live URL"
-                      className="w-full border rounded px-3 py-2"
-                      name="liveUrl"
-                      value={form.liveUrl}
-                      onChange={handleFormChange}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Technologies (comma separated)
-                    </label>
-                    <input
-                      aria-label="Project Technologies"
-                      className="w-full border rounded px-3 py-2"
-                      name="technologies"
-                      value={form.technologies}
-                      onChange={handleFormChange}
-                      placeholder="e.g. React, Node.js, MongoDB"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Category
-                    </label>
-                    <select
-                      aria-label="Project Category"
-                      className="w-full border rounded px-3 py-2"
-                      name="category"
-                      value={form.category}
-                      onChange={handleFormChange}
-                    >
-                      <option value="web">Web</option>
-                      <option value="mobile">Mobile</option>
-                      <option value="desktop">Desktop</option>
-                      <option value="api">API</option>
-                      <option value="library">Library</option>
-                      <option value="tool">Tool</option>
-                      <option value="game">Game</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Status
-                    </label>
-                    <select
-                      aria-label="Project Status"
-                      className="w-full border rounded px-3 py-2"
-                      name="status"
-                      value={form.status}
-                      onChange={handleFormChange}
-                    >
-                      <option value="completed">Completed</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="planning">Planning</option>
-                      <option value="archived">Archived</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Main Image
-                    </label>
-                    {imagePreview && (
-                      <div className="mt-2 relative group w-fit">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="max-h-40 rounded-lg object-cover border border-gray-200 shadow"
-                        />
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          className="absolute top-2 right-2 p-1 bg-gray-900 bg-opacity-60 rounded-full text-white opacity-0 group-hover:opacity-100 transition"
-                          title="Remove image"
-                          disabled={isUploadingImage || creating}
-                        >
-                          <FiX className="h-4 w-4" />
-                        </button>
-                        {isUploadingImage && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-60 rounded-lg">
-                            <FiLoader className="animate-spin h-8 w-8 text-primary-600" />
-                            <span className="ml-2 text-primary-600 font-medium">
-                              Uploading...
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <label className="cursor-pointer flex items-center gap-2 text-gray-500 hover:text-primary-600 mt-2">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageSelect}
-                        className="hidden"
-                        disabled={isUploadingImage || creating}
-                      />
-                      <div className="p-2 hover:bg-primary-50 rounded-full transition-colors">
-                        <FiImage className="h-5 w-5" />
-                      </div>
-                      <span className="text-sm font-medium hidden sm:inline">
-                        Add main image
-                      </span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Screenshots
-                    </label>
-                    <input
-                      aria-label="Project Screenshots"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleScreenshotUpload}
-                      disabled={uploadingScreenshots || creating}
-                    />
-                    {uploadingScreenshots && (
-                      <div className="text-xs text-blue-600 mt-1">
-                        Uploading...
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {screenshots.map((s) => (
-                        <div key={s.url} className="relative group">
-                          <img
-                            src={s.url}
-                            alt="screenshot"
-                            className="w-20 h-20 object-cover rounded border"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveScreenshot(s.url)}
-                            className="absolute top-1 right-1 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-600 group-hover:opacity-100 opacity-0 transition"
-                            title="Remove"
-                          >
-                            &times;
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Tags (comma separated)
-                    </label>
-                    <input
-                      className="w-full border rounded px-3 py-2"
-                      name="tags"
-                      value={tagsInput}
-                      onChange={(e) => setTagsInput(e.target.value)}
-                      placeholder="e.g. open source, video, editor"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Collaborators (comma separated usernames or emails)
-                    </label>
-                    <input
-                      className="w-full border rounded px-3 py-2"
-                      name="collaborators"
-                      value={collaboratorsInput}
-                      onChange={(e) => setCollaboratorsInput(e.target.value)}
-                      placeholder="e.g. alice, bob@example.com"
-                    />
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      type="button"
-                      className="px-4 py-2 rounded bg-gray-200"
-                      onClick={() => setShowModal(false)}
-                      disabled={creating}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded bg-primary-600 text-white"
-                      disabled={creating}
-                    >
-                      {creating ? "Creating..." : "Create Project"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+          {/* Enhanced Create Project Modal */}
+          <CreateProjectModal
+            open={showModal}
+            onClose={() => setShowModal(false)}
+            onProjectCreated={(newProject) => {
+              setProjects([newProject, ...projects]);
+              setShowModal(false);
+            }}
+          />
           <ProjectDetailsModal
             project={selectedProject}
             open={modalOpen}
