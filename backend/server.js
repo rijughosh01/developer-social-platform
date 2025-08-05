@@ -19,6 +19,8 @@ const uploadRoute = require("./routes/upload");
 const notificationRoutes = require("./routes/notifications");
 const analyticsRoutes = require("./routes/analytics");
 const aiRoutes = require("./routes/ai");
+const discussionRoutes = require("./routes/discussions");
+
 
 const { setupSocketIO } = require("./socket/socket");
 
@@ -74,6 +76,8 @@ app.use("/api/upload", uploadRoute);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/discussions", discussionRoutes);
+
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

@@ -293,7 +293,7 @@ export interface AIConversation {
   _id: string;
   user: string;
   title: string;
-  context: 'general' | 'codeReview' | 'debugging' | 'learning' | 'projectHelp';
+  context: "general" | "codeReview" | "debugging" | "learning" | "projectHelp";
   messages: AIConversationMessage[];
   totalTokens: number;
   totalCost: number;
@@ -310,7 +310,7 @@ export interface AIConversation {
 }
 
 export interface AIConversationMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
   pinned?: boolean;
@@ -352,6 +352,115 @@ export interface AIState {
   isLoading: boolean;
   error: string | null;
   currentContext: string;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+// Discussion Types
+export interface DiscussionComment {
+  _id: string;
+  author: User;
+  content: string;
+  richContent?: string;
+  contentType: "plain" | "rich";
+  parentComment?: string;
+  replies: DiscussionComment[];
+  upvotes: string[];
+  downvotes: string[];
+  isEdited: boolean;
+  editedAt?: string;
+  isDeleted: boolean;
+  deletedAt?: string;
+  deletedBy?: User;
+  flags: Array<{
+    user: string;
+    reason: string;
+    createdAt: string;
+  }>;
+  mentions: string[];
+  userVote?: "upvote" | "downvote" | null;
+  canEdit?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Discussion {
+  _id: string;
+  author: User;
+  title: string;
+  content: string;
+  category:
+    | "general"
+    | "help"
+    | "discussion"
+    | "showcase"
+    | "question"
+    | "tutorial"
+    | "news"
+    | "meta"
+    | "off-topic";
+  tags: string[];
+  status: "open" | "closed" | "locked" | "archived";
+  isSticky: boolean;
+  isFeatured: boolean;
+  views: number;
+  upvotes: string[];
+  downvotes: string[];
+  comments: DiscussionComment[];
+  acceptedAnswer?: DiscussionComment;
+  lastActivity: string;
+  lastCommentBy?: User;
+  flags: Array<{
+    user: string;
+    reason: string;
+    createdAt: string;
+  }>;
+  mentions: string[];
+  userVote?: "upvote" | "downvote" | null;
+  voteScore: number;
+  commentCount: number;
+  totalRepliesCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DiscussionCategory {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface DiscussionTag {
+  tag: string;
+  count: number;
+}
+
+export interface DiscussionFilters {
+  category?: string;
+  tags?: string[];
+  status?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  limit?: number;
+  search?: string;
+  author?: string;
+  isSticky?: boolean;
+}
+
+export interface DiscussionState {
+  discussions: Discussion[];
+  currentDiscussion: Discussion | null;
+  categories: DiscussionCategory[];
+  tags: DiscussionTag[];
+
+  filters: DiscussionFilters;
+  isLoading: boolean;
+  error: string | null;
   pagination: {
     page: number;
     limit: number;

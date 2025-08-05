@@ -7,6 +7,7 @@ import chatReducer from "./slices/chatSlice";
 import uiReducer from "./slices/uiSlice";
 import notificationReducer from "./slices/notificationSlice";
 import aiReducer from "./slices/aiSlice";
+import discussionsReducer from "./slices/discussionsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     ui: uiReducer,
     notifications: notificationReducer,
     ai: aiReducer,
+    discussions: discussionsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

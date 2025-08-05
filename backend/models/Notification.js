@@ -20,6 +20,10 @@ const notificationSchema = new mongoose.Schema(
         "like_project",
         "comment_post",
         "comment_project",
+        "comment_discussion",
+        "answer_accepted",
+        "discussion_vote",
+
         "follow",
         "unfollow",
         "mention",
@@ -44,6 +48,7 @@ const notificationSchema = new mongoose.Schema(
       postId: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
       projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
       commentId: { type: mongoose.Schema.Types.ObjectId, ref: "Comment" },
+      discussionId: { type: mongoose.Schema.Types.ObjectId, ref: "Discussion" },
       chatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
       messageId: { type: mongoose.Schema.Types.ObjectId },
       url: { type: String },

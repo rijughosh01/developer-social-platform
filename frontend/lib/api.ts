@@ -304,3 +304,24 @@ export const aiAPI = {
   deleteConversation: (conversationId: string) =>
     api.delete<ApiResponse>(`/ai/conversations/${conversationId}`),
 };
+
+// Discussions API
+export const discussionsAPI = {
+  getDiscussions: (params?: any) => api.get<ApiResponse>("/discussions", { params }),
+  getDiscussion: (id: string) => api.get<ApiResponse>(`/discussions/${id}`),
+  createDiscussion: (data: { title: string; content: string; category?: string; tags?: string; templateId?: string; templateData?: any }) => api.post<ApiResponse>("/discussions", data),
+  updateDiscussion: (id: string, data: { title?: string; content?: string; category?: string; tags?: string }) => api.put<ApiResponse>(`/discussions/${id}`, data),
+  deleteDiscussion: (id: string) => api.delete<ApiResponse>(`/discussions/${id}`),
+  voteDiscussion: (id: string, voteType: "upvote" | "downvote" | "remove") => api.post<ApiResponse>(`/discussions/${id}/vote`, { voteType }),
+
+  flagDiscussion: (id: string, reason: string) => api.post<ApiResponse>(`/discussions/${id}/flag`, { reason }),
+  moderateDiscussion: (id: string, data: { status?: string; isSticky?: boolean; isFeatured?: boolean }) => api.patch<ApiResponse>(`/discussions/${id}/moderate`, data),
+  getCategories: () => api.get<ApiResponse>("/discussions/categories"),
+  getTags: () => api.get<ApiResponse>("/discussions/tags"),
+  addComment: (discussionId: string, data: { content: string; parentCommentId?: string; richContent?: string; contentType?: "plain" | "rich" }) => api.post<ApiResponse>(`/discussions/${discussionId}/comments`, data),
+  voteComment: (discussionId: string, commentId: string, voteType: "upvote" | "downvote" | "remove") => api.post<ApiResponse>(`/discussions/${discussionId}/comments/${commentId}/vote`, { voteType }),
+  editComment: (discussionId: string, commentId: string, data: { content: string; richContent?: string; contentType?: "plain" | "rich" }) => api.put<ApiResponse>(`/discussions/${discussionId}/comments/${commentId}`, data),
+  acceptAnswer: (discussionId: string, commentId: string) => api.post<ApiResponse>(`/discussions/${discussionId}/accept-answer`, { commentId }),
+};
+
+

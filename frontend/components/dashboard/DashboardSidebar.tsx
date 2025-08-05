@@ -14,12 +14,14 @@ import {
   FiGitBranch,
   FiZap,
   FiMessageCircle,
+  FiMessageSquare as FiDiscussions,
 } from "react-icons/fi";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: FiHome },
   { name: "Developers", href: "/developers", icon: FiUsers },
   { name: "Projects", href: "/projects", icon: FiFolder },
+  { name: "Discussions", href: "/discussions", icon: FiDiscussions },
   { name: "Messages", href: "/messages", icon: FiMessageSquare },
   { name: "Saved", href: "/saved", icon: FiBookmark },
   { name: "Trending", href: "/trending", icon: FiTrendingUp },
