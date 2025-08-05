@@ -108,6 +108,7 @@ const userSchema = new mongoose.Schema(
       default: Date.now,
     },
     savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+    savedDiscussions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Discussion" }],
     // Privacy
     isPrivate: {
       type: Boolean,

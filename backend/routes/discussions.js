@@ -679,4 +679,50 @@ router.patch(
   })
 );
 
+// Save a discussion
+router.post(
+  "/:id/save",
+  protect,
+  asyncHandler(async (req, res) => {
+    const discussionId = req.params.id;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    if (!user.savedDiscussions.includes(discussionId)) {
+      user.savedDiscussions.push(discussionId);
+      await user.save();
+    }
+
+    res.json({ success: true, message: "Discussion saved" });
+  })
+);
+
+// Unsave a discussion
+router.delete(
+  "/:id/save",
+  protect,
+  asyncHandler(async (req, res) => {
+    const discussionId = req.params.id;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    user.savedDiscussions = user.savedDiscussions.filter(
+      (id) => id.toString() !== discussionId.toString()
+    );
+    await user.save();
+
+    res.json({ success: true, message: "Discussion unsaved" });
+  })
+);
+
 module.exports = router;

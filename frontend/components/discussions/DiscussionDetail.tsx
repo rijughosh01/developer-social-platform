@@ -29,9 +29,18 @@ import {
   Award,
   Share2,
   Bookmark,
+  Copy,
+  X,
+  ExternalLink,
+  Mail,
+  Twitter,
+  Facebook,
+  Linkedin,
+  Link,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { getAvatarUrl } from "@/lib/utils";
+import { savedAPI } from "@/lib/api";
 import toast from "react-hot-toast";
 import { EnhancedComment } from "./EnhancedComment";
 import { RichTextEditor } from "./RichTextEditor";
@@ -52,6 +61,144 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
   >("plain");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [parentCommentId, setParentCommentId] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [isCopying, setIsCopying] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+
+  // Generate share URL when component mounts
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/discussions/${discussion._id}`;
+      setShareUrl(url);
+    }
+  }, [discussion._id]);
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showShareModal) {
+        setShowShareModal(false);
+      }
+    };
+
+    if (showShareModal) {
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [showShareModal]);
+
+  const handleShare = () => {
+    setShowShareModal(true);
+  };
+
+  const copyToClipboard = async () => {
+    setIsCopying(true);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied to clipboard!");
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      toast.error("Failed to copy link");
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  const shareOnSocialMedia = (platform: string) => {
+    const title = encodeURIComponent(discussion.title);
+    const url = encodeURIComponent(shareUrl);
+    const text = encodeURIComponent(
+      `Check out this discussion: ${discussion.title}`
+    );
+
+    let socialShareUrl = "";
+    let platformName = "";
+
+    switch (platform) {
+      case "twitter":
+        socialShareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+        platformName = "Twitter";
+        break;
+      case "facebook":
+        socialShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+        platformName = "Facebook";
+        break;
+      case "linkedin":
+        socialShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+        platformName = "LinkedIn";
+        break;
+      case "email":
+        socialShareUrl = `mailto:?subject=${title}&body=${text}%0A%0A${url}`;
+        platformName = "Email";
+        break;
+      default:
+        return;
+    }
+
+    const popup = window.open(socialShareUrl, "_blank", "width=600,height=400");
+
+    toast.success(`Opening ${platformName}...`);
+
+    setTimeout(() => {
+      setShowShareModal(false);
+    }, 1000);
+  };
+
+  const shareViaNativeAPI = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: discussion.title,
+          text: `Check out this discussion: ${discussion.title}`,
+          url: shareUrl,
+        });
+        toast.success("Shared successfully!");
+        setShowShareModal(false);
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Error sharing:", error);
+          toast.error("Failed to share");
+        }
+      }
+    } else {
+      copyToClipboard();
+    }
+  };
+
+  const handleModalClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setShowShareModal(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!user) {
+      toast.error("Please log in to bookmark discussions");
+      return;
+    }
+
+    setIsBookmarking(true);
+    try {
+      if (!discussion.isSaved) {
+        await savedAPI.saveDiscussion(discussion._id);
+        toast.success("Discussion saved to your bookmarks!");
+      } else {
+        await savedAPI.unsaveDiscussion(discussion._id);
+        toast.success("Discussion removed from bookmarks!");
+      }
+    } catch (error) {
+      console.error("Failed to bookmark discussion:", error);
+      toast.error("Failed to bookmark discussion");
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
 
   const handleVote = async (voteType: "upvote" | "downvote" | "remove") => {
     if (!user) {
@@ -272,6 +419,7 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
             {/*  Action Buttons */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Button
+                onClick={handleShare}
                 variant="outline"
                 size="sm"
                 className="flex items-center space-x-2 border-gray-200 hover:bg-gray-50"
@@ -280,12 +428,28 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
                 <span className="hidden sm:inline">Share</span>
               </Button>
               <Button
+                onClick={handleBookmark}
+                disabled={isBookmarking}
                 variant="outline"
                 size="sm"
-                className="flex items-center space-x-2 border-gray-200 hover:bg-gray-50"
+                className={`flex items-center space-x-2 ${
+                  discussion.isSaved
+                    ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
               >
-                <Bookmark className="h-4 w-4" />
-                <span className="hidden sm:inline">Bookmark</span>
+                <Bookmark
+                  className={`h-4 w-4 ${
+                    discussion.isSaved ? "fill-current" : ""
+                  }`}
+                />
+                <span className="hidden sm:inline">
+                  {isBookmarking
+                    ? "..."
+                    : discussion.isSaved
+                    ? "Saved"
+                    : "Bookmark"}
+                </span>
               </Button>
               <Button
                 onClick={handleFlagDiscussion}
@@ -531,6 +695,134 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
           </div>
         )}
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={handleModalClick}
+        >
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900">
+                Share Discussion
+              </h3>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Discussion Preview */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                  {discussion.title}
+                </h4>
+                <p className="text-sm text-gray-600 line-clamp-3">
+                  {discussion.content.substring(0, 150)}
+                  {discussion.content.length > 150 && "..."}
+                </p>
+                <div className="flex items-center space-x-2 mt-3 text-xs text-gray-500">
+                  <span>
+                    By{" "}
+                    {discussion.author
+                      ? `${discussion.author.firstName || "Unknown"} ${
+                          discussion.author.lastName || "User"
+                        }`
+                      : "Unknown User"}
+                  </span>
+                  <span>•</span>
+                  <span>{discussion.views} views</span>
+                </div>
+              </div>
+
+              {/* Share URL */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Share this link
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={shareUrl}
+                    readOnly
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50"
+                  />
+                  <Button
+                    onClick={copyToClipboard}
+                    disabled={isCopying}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {isCopying ? "Copied!" : "Copy"}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Social Media Buttons */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Share on social media
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => shareOnSocialMedia("twitter")}
+                    variant="outline"
+                    className="flex items-center space-x-2 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Twitter className="h-4 w-4 text-blue-500" />
+                    <span>Twitter</span>
+                  </Button>
+                  <Button
+                    onClick={() => shareOnSocialMedia("facebook")}
+                    variant="outline"
+                    className="flex items-center space-x-2 border-blue-600 hover:bg-blue-50"
+                  >
+                    <Facebook className="h-4 w-4 text-blue-600" />
+                    <span>Facebook</span>
+                  </Button>
+                  <Button
+                    onClick={() => shareOnSocialMedia("linkedin")}
+                    variant="outline"
+                    className="flex items-center space-x-2 border-blue-700 hover:bg-blue-50"
+                  >
+                    <Linkedin className="h-4 w-4 text-blue-700" />
+                    <span>LinkedIn</span>
+                  </Button>
+                  <Button
+                    onClick={() => shareOnSocialMedia("email")}
+                    variant="outline"
+                    className="flex items-center space-x-2 border-gray-300 hover:bg-gray-50"
+                  >
+                    <Mail className="h-4 w-4 text-gray-600" />
+                    <span>Email</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Native Share Button */}
+              <div className="pt-4 border-t border-gray-100">
+                <Button
+                  onClick={shareViaNativeAPI}
+                  className="w-full bg-blue-600 hover:bg-blue-700 flex items-center space-x-2"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span>Share via System</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

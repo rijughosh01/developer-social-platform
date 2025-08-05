@@ -482,21 +482,42 @@ router.get(
         .status(403)
         .json({ success: false, message: "Not authorized" });
     }
-    const user = await User.findById(req.user._id).populate({
-      path: "savedPosts",
-      populate: {
-        path: "author",
-        select: "firstName lastName username avatar",
-      },
-    });
+    const user = await User.findById(req.user._id)
+      .populate({
+        path: "savedPosts",
+        populate: {
+          path: "author",
+          select: "firstName lastName username avatar",
+        },
+      })
+      .populate({
+        path: "savedDiscussions",
+        populate: {
+          path: "author",
+          select: "firstName lastName username avatar",
+        },
+      });
 
     // Add isSaved: true to all posts since they are from the saved posts list
     const savedPostsWithFlag = user.savedPosts.map((post) => ({
       ...post.toObject(),
       isSaved: true,
+      type: "post",
     }));
 
-    res.json({ success: true, data: savedPostsWithFlag });
+    // Add isSaved: true to all discussions since they are from the saved discussions list
+    const savedDiscussionsWithFlag = user.savedDiscussions.map((discussion) => ({
+      ...discussion.toObject(),
+      isSaved: true,
+      type: "discussion",
+    }));
+
+    // Combine and sort by creation date
+    const allSavedItems = [...savedPostsWithFlag, ...savedDiscussionsWithFlag].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    res.json({ success: true, data: allSavedItems });
   })
 );
 

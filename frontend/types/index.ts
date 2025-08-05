@@ -86,6 +86,8 @@ export interface Project {
   tags: string[];
   likesCount: number;
   isLiked?: boolean;
+  isSaved?: boolean;
+  type?: "post";
   createdAt: string;
   updatedAt: string;
 }
@@ -421,6 +423,7 @@ export interface Discussion {
   }>;
   mentions: string[];
   userVote?: "upvote" | "downvote" | null;
+  isSaved?: boolean;
   voteScore: number;
   commentCount: number;
   totalRepliesCount: number;

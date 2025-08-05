@@ -197,6 +197,10 @@ export const savedAPI = {
     api.delete<ApiResponse>(`/users/${userId}/save/${postId}`),
   getSavedPosts: (userId: string) =>
     api.get<ApiResponse>(`/users/${userId}/saved`),
+  saveDiscussion: (discussionId: string) =>
+    api.post<ApiResponse>(`/discussions/${discussionId}/save`),
+  unsaveDiscussion: (discussionId: string) =>
+    api.delete<ApiResponse>(`/discussions/${discussionId}/save`),
 };
 
 export const settingsAPI = {
