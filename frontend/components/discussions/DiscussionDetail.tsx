@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
-import { voteDiscussion, addComment } from "@/store/slices/discussionsSlice";
+import { voteDiscussion, addComment, flagDiscussion } from "@/store/slices/discussionsSlice";
 import { Discussion } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +65,10 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
   const [shareUrl, setShareUrl] = useState("");
   const [isCopying, setIsCopying] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
+  const [showFlagModal, setShowFlagModal] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagDescription, setFlagDescription] = useState("");
+  const [isFlagging, setIsFlagging] = useState(false);
 
   // Generate share URL when component mounts
   useEffect(() => {
@@ -74,15 +78,20 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
     }
   }, [discussion._id]);
 
-  // Handle escape key to close modal
+  // Handle escape key to close modals
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && showShareModal) {
-        setShowShareModal(false);
+      if (e.key === "Escape") {
+        if (showShareModal) {
+          setShowShareModal(false);
+        }
+        if (showFlagModal) {
+          setShowFlagModal(false);
+        }
       }
     };
 
-    if (showShareModal) {
+    if (showShareModal || showFlagModal) {
       document.addEventListener("keydown", handleEscape);
       document.body.style.overflow = "hidden";
     }
@@ -91,7 +100,7 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [showShareModal]);
+  }, [showShareModal, showFlagModal]);
 
   const handleShare = () => {
     setShowShareModal(true);
@@ -231,21 +240,39 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
     }
   };
 
-  const handleFlagDiscussion = async () => {
+  const handleFlagDiscussion = () => {
     if (!user) {
       toast.error("Please log in to flag discussions");
       return;
     }
+    setShowFlagModal(true);
+  };
 
-    const reason = prompt(
-      "Please provide a reason for flagging this discussion:"
-    );
-    if (!reason || reason.trim() === "") {
+  const handleSubmitFlag = async () => {
+    if (!flagReason) {
+      toast.error("Please select a reason for flagging");
       return;
     }
 
-    // TODO: Implement flag discussion functionality
-    toast.success("Discussion flagged successfully");
+    setIsFlagging(true);
+    try {
+      await dispatch(
+        flagDiscussion({
+          id: discussion._id,
+          reason: flagReason,
+        })
+      ).unwrap();
+
+      toast.success("Discussion flagged successfully");
+      setShowFlagModal(false);
+      setFlagReason("");
+      setFlagDescription("");
+    } catch (error) {
+      console.error("Failed to flag discussion:", error);
+      toast.error("Failed to flag discussion. Please try again.");
+    } finally {
+      setIsFlagging(false);
+    }
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -817,6 +844,121 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
                 >
                   <Share2 className="h-4 w-4" />
                   <span>Share via System</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Flag Modal */}
+      {showFlagModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowFlagModal(false);
+            }
+          }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h3 className="text-xl font-bold text-gray-900">
+                Flag Discussion
+              </h3>
+              <button
+                onClick={() => setShowFlagModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Discussion Preview */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                  {discussion.title}
+                </h4>
+                <p className="text-sm text-gray-600 line-clamp-3">
+                  {discussion.content.substring(0, 150)}
+                  {discussion.content.length > 150 && "..."}
+                </p>
+              </div>
+
+              {/* Flag Reason Selection */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Reason for flagging *
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { value: "spam", label: "Spam", description: "Unwanted promotional content" },
+                    { value: "inappropriate", label: "Inappropriate", description: "Content that violates community guidelines" },
+                    { value: "offensive", label: "Offensive", description: "Hate speech or offensive language" },
+                    { value: "duplicate", label: "Duplicate", description: "This discussion already exists" },
+                    { value: "other", label: "Other", description: "Other reasons not listed above" },
+                  ].map((reason) => (
+                    <label
+                      key={reason.value}
+                      className="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <input
+                        type="radio"
+                        name="flagReason"
+                        value={reason.value}
+                        checked={flagReason === reason.value}
+                        onChange={(e) => setFlagReason(e.target.value)}
+                        className="text-red-600 mt-1"
+                      />
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {reason.label}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {reason.description}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Additional Description */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Additional details (optional)
+                </label>
+                <textarea
+                  value={flagDescription}
+                  onChange={(e) => setFlagDescription(e.target.value)}
+                  placeholder="Please provide any additional context..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                  rows={3}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-4 border-t border-gray-100">
+                <Button
+                  onClick={() => {
+                    setShowFlagModal(false);
+                    setFlagReason("");
+                    setFlagDescription("");
+                  }}
+                  variant="outline"
+                  className="flex-1 border-gray-200 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitFlag}
+                  disabled={isFlagging || !flagReason}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-400"
+                >
+                  {isFlagging ? "Flagging..." : "Flag Discussion"}
                 </Button>
               </div>
             </div>

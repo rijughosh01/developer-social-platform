@@ -15,7 +15,6 @@ import { DiscussionFilters } from "@/components/discussions/DiscussionFilters";
 import { CreateDiscussionButton } from "@/components/discussions/CreateDiscussionButton";
 import { Button } from "@/components/ui/button";
 import {
-  MessageSquare,
   TrendingUp,
   Clock,
   ThumbsUp,
@@ -27,6 +26,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { SiXdadevelopers } from "react-icons/si";
 
 export default function DiscussionsPage() {
   const dispatch = useAppDispatch();
@@ -103,7 +103,7 @@ export default function DiscussionsPage() {
     {
       value: "commentCount",
       label: "Most Comments",
-      icon: MessageSquare,
+      icon: SiXdadevelopers,
       description: "Most engaging discussions",
     },
     {
@@ -122,7 +122,7 @@ export default function DiscussionsPage() {
             <div className="space-y-2">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                  <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                  <SiXdadevelopers className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
                   Developer Discussions
@@ -427,7 +427,7 @@ export default function DiscussionsPage() {
               ) : discussions.length === 0 ? (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-12 text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="h-8 w-8 text-gray-400" />
+                    <SiXdadevelopers className="h-8 w-8 text-gray-400" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     No discussions found

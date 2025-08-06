@@ -325,6 +325,7 @@ export const discussionsAPI = {
   addComment: (discussionId: string, data: { content: string; parentCommentId?: string; richContent?: string; contentType?: "plain" | "rich" }) => api.post<ApiResponse>(`/discussions/${discussionId}/comments`, data),
   voteComment: (discussionId: string, commentId: string, voteType: "upvote" | "downvote" | "remove") => api.post<ApiResponse>(`/discussions/${discussionId}/comments/${commentId}/vote`, { voteType }),
   editComment: (discussionId: string, commentId: string, data: { content: string; richContent?: string; contentType?: "plain" | "rich" }) => api.put<ApiResponse>(`/discussions/${discussionId}/comments/${commentId}`, data),
+  flagComment: (discussionId: string, commentId: string, reason: string) => api.post<ApiResponse>(`/discussions/${discussionId}/comments/${commentId}/flag`, { reason }),
   acceptAnswer: (discussionId: string, commentId: string) => api.post<ApiResponse>(`/discussions/${discussionId}/accept-answer`, { commentId }),
 };
 

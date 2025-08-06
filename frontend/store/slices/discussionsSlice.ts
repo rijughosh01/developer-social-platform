@@ -283,6 +283,48 @@ export const fetchTags = createAsyncThunk(
   }
 );
 
+export const flagDiscussion = createAsyncThunk(
+  "discussions/flagDiscussion",
+  async (
+    { id, reason }: { id: string; reason: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await discussionsAPI.flagDiscussion(id, reason);
+      return { id, reason };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to flag discussion"
+      );
+    }
+  }
+);
+
+export const flagComment = createAsyncThunk(
+  "discussions/flagComment",
+  async (
+    {
+      discussionId,
+      commentId,
+      reason,
+    }: { discussionId: string; commentId: string; reason: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await discussionsAPI.flagComment(
+        discussionId,
+        commentId,
+        reason
+      );
+      return { discussionId, commentId, reason };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to flag comment"
+      );
+    }
+  }
+);
+
 const discussionsSlice = createSlice({
   name: "discussions",
   initialState,
@@ -493,6 +535,20 @@ const discussionsSlice = createSlice({
         state.tags = action.payload;
       })
       .addCase(fetchTags.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+
+    // Flag discussion
+    builder
+      .addCase(flagDiscussion.fulfilled, (state, action) => {})
+      .addCase(flagDiscussion.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+
+    // Flag comment
+    builder
+      .addCase(flagComment.fulfilled, (state, action) => {})
+      .addCase(flagComment.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },

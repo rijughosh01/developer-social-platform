@@ -540,6 +540,68 @@ router.put(
   })
 );
 
+// Flag comment
+router.post(
+  "/:id/comments/:commentId/flag",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { reason } = req.body;
+
+    if (
+      !["spam", "inappropriate", "offensive", "duplicate", "other"].includes(
+        reason
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid flag reason",
+      });
+    }
+
+    const discussion = await Discussion.findById(req.params.id);
+
+    if (!discussion) {
+      return res.status(404).json({
+        success: false,
+        message: "Discussion not found",
+      });
+    }
+
+    const comment = discussion.comments.id(req.params.commentId);
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    // Check if user already flagged this comment
+    const existingFlag = comment.flags.find(
+      (flag) => flag.user.toString() === req.user._id.toString()
+    );
+
+    if (existingFlag) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already flagged this comment",
+      });
+    }
+
+    comment.flags.push({
+      user: req.user._id,
+      reason,
+    });
+
+    await discussion.save();
+
+    res.json({
+      success: true,
+      message: "Comment flagged successfully",
+    });
+  })
+);
+
 // Accept answer for question discussions
 router.post(
   "/:id/accept-answer",
