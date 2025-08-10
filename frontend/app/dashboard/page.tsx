@@ -27,16 +27,16 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
       <DashboardSidebar />
-      <main className="lg:ml-64 p-6">
+      <main className="lg:ml-64 p-4 sm:p-6 pt-16 lg:pt-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
             {/* Main Feed */}
-            <div className="lg:col-span-2">
+            <div className="xl:col-span-2">
               <Feed />
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <TrendingDevelopers />
               <SuggestedProjects />
             </div>

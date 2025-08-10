@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   FiX,
   FiImage,
@@ -143,6 +143,30 @@ export default function CreateProjectModal({
   const screenshotsInputRef = useRef<HTMLInputElement>(null);
   const totalSteps = 4;
 
+  // Keyboard shortcuts for better UX
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleClose();
+      }
+      if (e.key === "Enter") {
+        const target = e.target as HTMLElement;
+        if (target && target.tagName === "TEXTAREA") return;
+        if (currentStep < totalSteps && isStepValid(currentStep)) {
+          e.preventDefault();
+          handleNext();
+        } else if (currentStep === totalSteps && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          void handleSubmit({ preventDefault: () => {} } as any);
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, currentStep]);
+
   const handleTemplateSelect = (template: any) => {
     setFormData({
       ...formData,
@@ -226,6 +250,21 @@ export default function CreateProjectModal({
       .map((collab) => collab.trim())
       .filter((collab) => collab.length > 0);
     setFormData((prev) => ({ ...prev, collaborators }));
+  };
+
+  // Lightweight validation for disabling buttons
+  const isStepValid = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return (
+          formData.title.trim().length > 0 &&
+          formData.description.trim().length > 0
+        );
+      case 2:
+        return Boolean(formData.category) && Boolean(formData.status);
+      default:
+        return true;
+    }
   };
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -477,6 +516,7 @@ export default function CreateProjectModal({
                       placeholder="Enter your project title"
                       maxLength={100}
                     />
+                    <div className="mt-1 text-xs text-gray-500">{formData.title.length}/100</div>
                     {errors.title && (
                       <p className="text-red-500 text-sm mt-1">
                         {errors.title}
@@ -501,6 +541,7 @@ export default function CreateProjectModal({
                       placeholder="Describe your project in detail..."
                       maxLength={1000}
                     />
+                    <div className="mt-1 text-xs text-gray-500">{formData.description.length}/1000</div>
                     {errors.description && (
                       <p className="text-red-500 text-sm mt-1">
                         {errors.description}
@@ -847,7 +888,8 @@ export default function CreateProjectModal({
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  disabled={(currentStep === 1 || currentStep === 2) && !isStepValid(currentStep)}
+                  className="flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                   <FiArrowRight className="w-4 h-4 ml-2" />

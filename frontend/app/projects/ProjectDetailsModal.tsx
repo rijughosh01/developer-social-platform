@@ -52,6 +52,21 @@ export default function ProjectDetailsModal({
     typeof window !== "undefined" &&
     project.owner?._id === JSON.parse(localStorage.getItem("user") || "{}")._id;
 
+  const statusBadgeStyle = (status?: string) => {
+    switch (status) {
+      case "in-progress":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "completed":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "archived":
+        return "bg-gray-50 text-gray-700 border-gray-200";
+      case "planning":
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
   const handleFormChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -131,23 +146,27 @@ export default function ProjectDetailsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 relative max-h-[90vh] overflow-y-auto">
-        <button
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-500"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <FiX className="w-5 h-5" />
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl relative max-h-[90vh] overflow-y-auto border border-gray-200">
+        {/* Sticky top bar with close button (always visible while scrolling) */}
+        <div className="sticky top-0 z-20 flex items-center justify-end p-3 bg-white/80 backdrop-blur border-b border-gray-200">
+          <button
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-600"
+            onClick={onClose}
+            aria-label="Close"
+            title="Close"
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
         {editModeState ? (
-          <form onSubmit={handleSave} className="space-y-4">
-            <h2 className="text-2xl font-bold mb-2">Edit Project</h2>
+          <form onSubmit={handleSave} className="p-6 space-y-4">
+            <h2 className="text-2xl font-bold">Edit Project</h2>
             <div>
               <label className="block text-sm font-medium mb-1">Title</label>
               <input
                 aria-label="Project Title"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="title"
                 value={form.title || ""}
                 onChange={handleFormChange}
@@ -160,7 +179,7 @@ export default function ProjectDetailsModal({
               </label>
               <textarea
                 aria-label="Project Short Description"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="shortDescription"
                 value={form.shortDescription || ""}
                 onChange={handleFormChange}
@@ -178,7 +197,7 @@ export default function ProjectDetailsModal({
               </label>
               <textarea
                 aria-label="Project Description"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="description"
                 value={form.description || ""}
                 onChange={handleFormChange}
@@ -192,7 +211,7 @@ export default function ProjectDetailsModal({
               </label>
               <input
                 aria-label="Project GitHub URL"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="githubUrl"
                 value={form.githubUrl || ""}
                 onChange={handleFormChange}
@@ -202,7 +221,7 @@ export default function ProjectDetailsModal({
               <label className="block text-sm font-medium mb-1">Live URL</label>
               <input
                 aria-label="Project Live URL"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="liveUrl"
                 value={form.liveUrl || ""}
                 onChange={handleFormChange}
@@ -214,7 +233,7 @@ export default function ProjectDetailsModal({
               </label>
               <input
                 aria-label="Project Technologies"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="technologies"
                 value={
                   Array.isArray(form.technologies)
@@ -229,7 +248,7 @@ export default function ProjectDetailsModal({
               <label className="block text-sm font-medium mb-1">Category</label>
               <select
                 aria-label="Project Category"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="category"
                 value={form.category || "web"}
                 onChange={handleFormChange}
@@ -248,7 +267,7 @@ export default function ProjectDetailsModal({
               <label className="block text-sm font-medium mb-1">Status</label>
               <select
                 aria-label="Project Status"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="status"
                 value={form.status || "completed"}
                 onChange={handleFormChange}
@@ -265,7 +284,7 @@ export default function ProjectDetailsModal({
               </label>
               <input
                 aria-label="Project Image URL"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="image"
                 value={form.image || ""}
                 onChange={handleFormChange}
@@ -355,7 +374,7 @@ export default function ProjectDetailsModal({
                 Tags (comma separated)
               </label>
               <input
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="tags"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
@@ -367,7 +386,7 @@ export default function ProjectDetailsModal({
                 Collaborators (comma separated usernames or emails)
               </label>
               <input
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-200 focus:border-primary-500"
                 name="collaborators"
                 value={collaboratorsInput}
                 onChange={(e) => setCollaboratorsInput(e.target.value)}
@@ -377,7 +396,7 @@ export default function ProjectDetailsModal({
             <div className="flex gap-2 mt-4">
               <button
                 type="button"
-                className="px-4 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                 onClick={() => setEditModeState(false)}
                 disabled={saving}
               >
@@ -385,7 +404,7 @@ export default function ProjectDetailsModal({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded bg-primary-600 text-white hover:bg-primary-700"
+                className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700"
                 disabled={saving}
               >
                 {saving ? "Saving..." : "Save"}
@@ -394,52 +413,61 @@ export default function ProjectDetailsModal({
           </form>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-2xl font-bold">{project.title}</h2>
-              {isOwner && (
-                <button
-                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
-                  onClick={() => setEditModeState(true)}
-                  title="Edit project"
-                >
-                  <FiEdit className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
-                {project.owner?.firstName?.charAt(0)}
-                {project.owner?.lastName?.charAt(0)}
-              </div>
-              <span className="text-gray-700 font-medium">
-                {project.owner?.firstName} {project.owner?.lastName}
-              </span>
-            </div>
-
-            {/* Project Image */}
+            {/* Cover / Image */}
             {project.image && (
-              <div className="mb-4">
+              <div className="relative w-full h-48 bg-gray-100 overflow-hidden rounded-t-2xl">
                 <img
                   src={project.image}
                   alt={project.title}
-                  className="w-full h-48 object-cover rounded-lg border border-gray-200 shadow-sm"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
+            {/* Header */}
+            <div className="p-6 pb-0">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{project.title}</h2>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
+                      {project.owner?.firstName?.charAt(0)}
+                      {project.owner?.lastName?.charAt(0)}
+                    </div>
+                    <span className="text-gray-700 font-medium">
+                      {project.owner?.firstName} {project.owner?.lastName}
+                    </span>
+                    <span className={`ml-2 inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${statusBadgeStyle(project.status)}`}>
+                      {project.status}
+                    </span>
+                  </div>
+                </div>
+                {isOwner && (
+                  <button
+                    className="p-2 rounded-full hover:bg-blue-50 text-blue-600"
+                    onClick={() => setEditModeState(true)}
+                    title="Edit project"
+                  >
+                    <FiEdit className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
             {/* Short Description */}
             {project.shortDescription && (
-              <div className="mb-3">
-                <p className="text-gray-600 text-sm italic bg-gray-50 p-3 rounded-lg border-l-4 border-primary-200">
+              <div className="px-6 mt-4">
+                <p className="text-gray-700 text-sm italic bg-gray-50 p-3 rounded-lg border border-gray-200">
                   {project.shortDescription}
                 </p>
               </div>
             )}
 
             {/* Full Description */}
-            <p className="text-gray-700 mb-4 whitespace-pre-line">
-              {project.description}
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="px-6 mt-4">
+              <p className="text-gray-800 whitespace-pre-line">
+                {project.description}
+              </p>
+            </div>
+            <div className="px-6 mt-4 flex flex-wrap gap-2">
               {project.technologies &&
                 project.technologies.map((tech: string, i: number) => (
                   <span
@@ -450,21 +478,7 @@ export default function ProjectDetailsModal({
                   </span>
                 ))}
             </div>
-            <div className="flex gap-4 mb-4">
-              <div>
-                <span className="text-xs text-gray-500">Category</span>
-                <div className="font-medium text-gray-800">
-                  {project.category}
-                </div>
-              </div>
-              <div>
-                <span className="text-xs text-gray-500">Status</span>
-                <div className="font-medium text-gray-800">
-                  {project.status}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-4 mb-4">
+            <div className="px-6 mt-3 flex gap-4">
               <div className="flex items-center gap-1 text-gray-600 text-sm">
                 <FiStar className="w-4 h-4" />
                 <span>{project.likesCount || 0} Stars</span>
@@ -474,13 +488,13 @@ export default function ProjectDetailsModal({
                 <span>{project.collaborators?.length || 0} Collaborators</span>
               </div>
             </div>
-            <div className="flex gap-2 mt-2">
+            <div className="px-6 mt-3 flex gap-2">
               {project.liveUrl && (
                 <a
                   href={project.liveUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 text-sm flex items-center gap-1"
+                  className="px-3 py-1.5 rounded border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 text-sm flex items-center gap-1"
                 >
                   <FiExternalLink className="w-4 h-4" /> Live
                 </a>
@@ -490,14 +504,14 @@ export default function ProjectDetailsModal({
                   href={project.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm flex items-center gap-1"
+                  className="px-3 py-1.5 rounded border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 text-sm flex items-center gap-1"
                 >
                   <FiGithub className="w-4 h-4" /> GitHub
                 </a>
               )}
             </div>
             {project.screenshots && project.screenshots.length > 0 && (
-              <div className="mb-6">
+              <div className="px-6 mt-6 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <FiUpload className="w-5 h-5" />
                   Project Screenshots ({project.screenshots.length})
@@ -565,11 +579,11 @@ export default function ProjectDetailsModal({
               </div>
             )}
             {project.tags && project.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="px-6 flex flex-wrap gap-2 mb-2">
                 {project.tags.map((tag: string) => (
                   <span
                     key={tag}
-                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
+                    className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium"
                   >
                     #{tag}
                   </span>
@@ -577,11 +591,11 @@ export default function ProjectDetailsModal({
               </div>
             )}
             {project.collaborators && project.collaborators.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="px-6 pb-6 flex flex-wrap gap-2">
                 {project.collaborators.map((c: any, i: number) => (
                   <span
                     key={i}
-                    className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium"
+                    className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium"
                   >
                     {typeof c === "string" ? c : c.username || c.email}
                   </span>

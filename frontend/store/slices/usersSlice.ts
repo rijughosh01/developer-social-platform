@@ -111,8 +111,19 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.users = action.payload.data;
-        state.pagination = action.payload.pagination || null;
+        const incoming = action.payload.data as User[];
+        const pagination = action.payload.pagination || null;
+        const requestedPage = (action.meta.arg as any)?.page || 1;
+
+        if (requestedPage > 1) {
+          // Append while avoiding duplicates by _id
+          const existingById = new Map(state.users.map((u) => [u._id, u]));
+          for (const u of incoming) existingById.set(u._id, { ...existingById.get(u._id), ...u } as User);
+          state.users = Array.from(existingById.values());
+        } else {
+          state.users = incoming;
+        }
+        state.pagination = pagination;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;

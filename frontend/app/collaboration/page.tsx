@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ReviewDashboard } from "@/components/dashboard/ReviewDashboard";
 import { ForkHistory } from "@/components/dashboard/ForkHistory";
 import { CollaborationAnalytics } from "@/components/dashboard/CollaborationAnalytics";
@@ -15,9 +15,21 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 
 export default function CollaborationPage() {
-  const [activeTab, setActiveTab] = useState<"reviews" | "forks" | "analytics">(
-    "reviews"
-  );
+  const [activeTab, setActiveTab] = useState<"reviews" | "forks" | "analytics">("reviews");
+
+  // Restore active tab from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab") as any;
+    if (tab === "forks" || tab === "analytics" || tab === "reviews") setActiveTab(tab);
+  }, []);
+  // Keep URL in sync
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", activeTab);
+    const qs = params.toString();
+    window.history.replaceState(null, "", qs ? `/collaboration?${qs}` : "/collaboration");
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -30,66 +42,29 @@ export default function CollaborationPage() {
         <DashboardHeader />
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Collaboration Hub
-              </h1>
-              <p className="text-gray-600">
-                Manage code reviews, track fork history, and collaborate with
-                other developers
-              </p>
+            {/* Hero */}
+            <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-sky-600 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl font-extrabold tracking-tight mb-1">Collaboration Hub</h1>
+                  <p className="text-white/90">Manage code reviews, track forks, and collaborate with developers.</p>
+                </div>
+              </div>
             </div>
 
             {/* Navigation Tabs */}
             <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8">
-                  <button
-                    onClick={() => setActiveTab("reviews")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "reviews"
-                        ? "border-primary-500 text-primary-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FiMessageSquare className="h-5 w-5" />
-                      Code Reviews
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("forks")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "forks"
-                        ? "border-primary-500 text-primary-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FiGitBranch className="h-5 w-5" />
-                      Fork History
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("analytics")}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === "analytics"
-                        ? "border-primary-500 text-primary-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <FiBarChart className="h-5 w-5" />
-                      Analytics
-                    </div>
-                  </button>
+              <div className="bg-white rounded-xl border border-gray-200 p-2">
+                <nav className="flex gap-2">
+                  <TabButton label="Code Reviews" icon={<FiMessageSquare className="h-4 w-4" />} active={activeTab==='reviews'} onClick={()=>setActiveTab('reviews')} />
+                  <TabButton label="Fork History" icon={<FiGitBranch className="h-4 w-4" />} active={activeTab==='forks'} onClick={()=>setActiveTab('forks')} />
+                  <TabButton label="Analytics" icon={<FiBarChart className="h-4 w-4" />} active={activeTab==='analytics'} onClick={()=>setActiveTab('analytics')} />
                 </nav>
               </div>
             </div>
 
             {/* Content */}
-            <div className="bg-white rounded-lg shadow">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               {activeTab === "reviews" ? (
                 <div className="p-6">
                   <ReviewDashboard />
@@ -106,7 +81,7 @@ export default function CollaborationPage() {
             </div>
 
             {/* Collaboration Tips */}
-            <div className="mt-8 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg p-6">
+            <div className="mt-8 bg-gradient-to-r from-indigo-50 to-sky-50 rounded-xl p-6 border border-indigo-100">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 💡 Collaboration Tips
               </h3>
@@ -139,5 +114,21 @@ export default function CollaborationPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+function TabButton({ label, icon, active, onClick }: { label: string; icon: React.ReactNode; active: boolean; onClick: () => void; }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+        active
+          ? "bg-indigo-600 text-white border-indigo-600"
+          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
   );
 }

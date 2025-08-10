@@ -28,7 +28,7 @@ export function Feed() {
     return (
       <div className="space-y-4">
         <CreatePost />
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
           <div className="animate-pulse space-y-4">
             <div className="flex items-center space-x-4">
               <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -48,16 +48,16 @@ export function Feed() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Recent Activity</h2>
         <Button
           onClick={handleRefresh}
           variant="outline"
           size="sm"
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-2 w-auto justify-center px-3 py-1.5 text-sm"
         >
-          <FiRefreshCw className="h-4 w-4" />
+          <FiRefreshCw className="h-3.5 w-3.5" />
           <span>Refresh</span>
         </Button>
       </div>
@@ -66,16 +66,16 @@ export function Feed() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-800">{error}</p>
+          <p className="text-red-800 text-sm">{error}</p>
         </div>
       )}
 
       <div className="space-y-4">
         {posts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="bg-white rounded-lg shadow p-6 sm:p-8 text-center">
             <div className="text-gray-400 mb-4">
               <svg
-                className="mx-auto h-12 w-12"
+                className="mx-auto h-10 w-10 sm:h-12 sm:w-12"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -88,10 +88,10 @@ export function Feed() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
               No posts yet
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-sm sm:text-base text-gray-500 mb-4">
               Be the first to share something with the developer community!
             </p>
           </div>

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { fetchPosts } from "@/store/slices/postsSlice";
 import { PostCard } from "@/components/posts/PostCard";
 import { Button } from "@/components/ui/button";
-import { FiRefreshCw, FiFilter, FiArrowDown, FiSearch } from "react-icons/fi";
+import { FiRefreshCw, FiFilter, FiArrowDown, FiSearch, FiChevronDown, FiX } from "react-icons/fi";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 
@@ -56,6 +56,10 @@ export default function CodeFeedPage() {
   const [selectedSort, setSelectedSort] = useState("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [layout, setLayout] = useState<"list" | "grid">("list");
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 6;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -69,31 +73,57 @@ export default function CodeFeedPage() {
     }
   }, [dispatch, isAuthenticated]);
 
+  // Initialize from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q") || "";
+    const lang = params.get("lang") || "all";
+    const diff = params.get("diff") || "all";
+    const sort = params.get("sort") || "newest";
+    const lay = (params.get("layout") as any) || "list";
+    const p = parseInt(params.get("page") || "1", 10);
+    setSearchQuery(q);
+    setSelectedLanguage(languageOptions.some(l=>l.value===lang)?lang:"all");
+    setSelectedDifficulty(difficultyOptions.some(d=>d.value===diff)?diff:"all");
+    setSelectedSort(sortOptions.some(s=>s.value===sort)?sort:"newest");
+    setLayout(lay === "grid" ? "grid" : "list");
+    setPage(isNaN(p) || p < 1 ? 1 : p);
+  }, []);
+
+  // Keep URL in sync
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedLanguage !== "all") params.set("lang", selectedLanguage);
+    if (selectedDifficulty !== "all") params.set("diff", selectedDifficulty);
+    if (selectedSort !== "newest") params.set("sort", selectedSort);
+    if (layout !== "list") params.set("layout", layout);
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    const url = qs ? `/code-feed?${qs}` : "/code-feed";
+    window.history.replaceState(null, "", url);
+  }, [searchQuery, selectedLanguage, selectedDifficulty, selectedSort, layout, page]);
+
   const handleRefresh = () => {
     dispatch(fetchPosts());
   };
 
   // Filter and sort code posts
-  const getFilteredAndSortedPosts = () => {
+  const filteredPosts = useMemo(() => {
     let filteredPosts = posts.filter((post: any) => post.type === "code");
 
-    // Filter by language
     if (selectedLanguage !== "all") {
       filteredPosts = filteredPosts.filter(
         (post: any) =>
           post.codeLanguage?.toLowerCase() === selectedLanguage.toLowerCase()
       );
     }
-
-    // Filter by difficulty
     if (selectedDifficulty !== "all") {
       filteredPosts = filteredPosts.filter((post: any) => {
         const difficulty = getDifficultyLevel(post);
         return difficulty === selectedDifficulty;
       });
     }
-
-    // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filteredPosts = filteredPosts.filter(
@@ -104,60 +134,43 @@ export default function CodeFeedPage() {
           post.tags?.some((tag: string) => tag.toLowerCase().includes(query))
       );
     }
-
-    // Sort posts
     switch (selectedSort) {
-      case "newest":
-        filteredPosts.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        break;
       case "oldest":
-        filteredPosts.sort(
+        filteredPosts = filteredPosts.sort(
           (a, b) =>
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
         break;
       case "mostLiked":
-        filteredPosts.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+        filteredPosts = filteredPosts.sort(
+          (a, b) => (b.likesCount || 0) - (a.likesCount || 0)
+        );
         break;
       case "mostCommented":
-        filteredPosts.sort(
+        filteredPosts = filteredPosts.sort(
           (a, b) => (b.commentsCount || 0) - (a.commentsCount || 0)
         );
         break;
-      case "trending":
-        filteredPosts.sort((a, b) => {
-          const aScore =
-            (a.likesCount || 0) +
-            (a.commentsCount || 0) * 2 +
-            Math.max(
-              0,
-              7 -
-                Math.floor(
-                  (Date.now() - new Date(a.createdAt).getTime()) /
-                    (1000 * 60 * 60 * 24)
-                )
-            );
-          const bScore =
-            (b.likesCount || 0) +
-            (b.commentsCount || 0) * 2 +
-            Math.max(
-              0,
-              7 -
-                Math.floor(
-                  (Date.now() - new Date(b.createdAt).getTime()) /
-                    (1000 * 60 * 60 * 24)
-                )
-            );
-          return bScore - aScore;
-        });
+      case "trending": {
+        const score = (p: any) => {
+          const ageDays = Math.floor(
+            (Date.now() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+          );
+          return (p.likesCount || 0) + (p.commentsCount || 0) * 2 + Math.max(0, 7 - ageDays);
+        };
+        filteredPosts = filteredPosts.sort((a, b) => score(b) - score(a));
+        break;
+      }
+      case "newest":
+      default:
+        filteredPosts = filteredPosts.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
         break;
     }
-
     return filteredPosts;
-  };
+  }, [posts, selectedLanguage, selectedDifficulty, searchQuery, selectedSort]);
 
   // Get difficulty level function
   const getDifficultyLevel = (post: any) => {
@@ -176,7 +189,20 @@ export default function CodeFeedPage() {
     return "beginner";
   };
 
-  const filteredPosts = getFilteredAndSortedPosts();
+  const visiblePosts = filteredPosts.slice(0, page * PAGE_SIZE);
+
+  // Infinite scroll sentinel
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) setPage((p) => p + 1);
+      });
+    }, { rootMargin: "200px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filteredPosts.length]);
 
   if (!isAuthenticated || !user) {
     return null;
@@ -186,99 +212,125 @@ export default function CodeFeedPage() {
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
       <DashboardSidebar />
-      <main className="lg:ml-64 p-6">
-        <div className="max-w-7xl mx-auto">
+      <main className="lg:ml-64 p-0">
+        {/* Hero */}
+        <div className="bg-gradient-to-r from-sky-600 to-indigo-600 text-white">
+          <div className="max-w-7xl mx-auto px-6 py-10">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Code Feed</h1>
+                <p className="text-white/90 mt-2">Explore code snippets shared by the community. Filter by language, difficulty and more.</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-3">
+                <Button onClick={handleRefresh} variant="secondary" size="sm" className="flex items-center gap-2">
+                  <FiRefreshCw className="h-4 w-4" /> Refresh
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="space-y-6">
-            {/* Header with Search and Refresh */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Code Feed</h2>
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={handleRefresh}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center space-x-2"
-                >
-                  <FiRefreshCw className="h-4 w-4" />
-                  <span>Refresh</span>
-                </Button>
+            {/* Search + Controls */}
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+              <div className="relative flex-1">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search code posts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-500"
+                />
               </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search code posts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-              />
-            </div>
-
-            {/* Filters and Sort */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => setShowFilters(!showFilters)}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center space-x-2"
-                >
-                  <FiFilter className="h-4 w-4" />
-                  <span>Filters</span>
-                </Button>
-
-                {showFilters && (
-                  <div className="flex items-center gap-2">
-                    <select
-                      aria-label="Programming language"
-                      value={selectedLanguage}
-                      onChange={(e) => setSelectedLanguage(e.target.value)}
-                      className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      {languageOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      aria-label="Difficulty level"
-                      value={selectedDifficulty}
-                      onChange={(e) => setSelectedDifficulty(e.target.value)}
-                      className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      {difficultyOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
               <div className="flex items-center gap-2">
-                <FiArrowDown className="h-4 w-4 text-gray-400" />
+                <Button onClick={() => setShowFilters(!showFilters)} variant="outline" size="sm" className="flex items-center gap-2">
+                  <FiFilter className="h-4 w-4" /> Filters
+                </Button>
+                <div className="relative">
+                  <select
+                    aria-label="Sort by"
+                    value={selectedSort}
+                    onChange={(e) => setSelectedSort(e.target.value)}
+                    className="appearance-none pl-3 pr-8 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-700 focus:ring-2 focus:ring-sky-200 focus:border-sky-500"
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <FiChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                </div>
+              </div>
+            </div>
+
+            {showFilters && (
+              <div className="flex flex-wrap items-center gap-2">
                 <select
-                  aria-label="Sort by"
-                  value={selectedSort}
-                  onChange={(e) => setSelectedSort(e.target.value)}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                  aria-label="Programming language"
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:ring-2 focus:ring-sky-200 focus:border-sky-500"
                 >
-                  {sortOptions.map((option) => (
+                  {languageOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Difficulty level"
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:ring-2 focus:ring-sky-200 focus:border-sky-500"
+                >
+                  {difficultyOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
               </div>
-            </div>
+            )}
+
+            {/* Active filter chips */}
+            {(selectedLanguage !== "all" || selectedDifficulty !== "all" || searchQuery) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 text-xs">
+                    q: {searchQuery}
+                    <button onClick={() => setSearchQuery("")} className="ml-1">
+                      <FiX />
+                    </button>
+                  </span>
+                )}
+                {selectedLanguage !== "all" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs">
+                    {languageOptions.find((l)=>l.value===selectedLanguage)?.label}
+                    <button onClick={() => setSelectedLanguage("all")} className="ml-1 text-blue-700">
+                      <FiX />
+                    </button>
+                  </span>
+                )}
+                {selectedDifficulty !== "all" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-xs">
+                    {difficultyOptions.find((d)=>d.value===selectedDifficulty)?.label}
+                    <button onClick={() => setSelectedDifficulty("all")} className="ml-1 text-purple-700">
+                      <FiX />
+                    </button>
+                  </span>
+                )}
+                <Button
+                  onClick={() => { setSearchQuery(""); setSelectedLanguage("all"); setSelectedDifficulty("all"); }}
+                  variant="outline"
+                  size="sm"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
 
             {/* Results Summary */}
             {filteredPosts.length > 0 && (
@@ -306,10 +358,16 @@ export default function CodeFeedPage() {
               </div>
             )}
 
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="bg-white rounded-lg shadow p-6">Loading...</div>
-              ) : filteredPosts.length === 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main list */}
+              <div className="lg:col-span-2 space-y-4">
+                {isLoading ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {Array.from({length:4}).map((_,i)=> (
+                      <div key={i} className="animate-pulse bg-white rounded-xl border border-gray-100 shadow-sm p-6 h-[200px]" />
+                    ))}
+                  </div>
+                ) : visiblePosts.length === 0 ? (
                 <div className="bg-white rounded-lg shadow p-8 text-center">
                   <div className="text-gray-400 mb-4">
                     <svg
@@ -352,15 +410,51 @@ export default function CodeFeedPage() {
                     </Button>
                   )}
                 </div>
-              ) : (
-                filteredPosts.map((post) => (
-                  <PostCard key={post._id} post={post} />
-                ))
-              )}
+                ) : (
+                  visiblePosts.map((post) => (
+                    <PostCard key={post._id} post={post} />
+                  ))
+                )}
+                {/* Infinite scroll sentinel */}
+                <div ref={sentinelRef} />
+              </div>
+
+              {/* Right rail */}
+              <aside className="hidden lg:block">
+                <div className="sticky top-20 space-y-6">
+                  <PopularLanguages posts={posts} onPick={(lang)=> { setSelectedLanguage(lang); setShowFilters(true); }} />
+                </div>
+              </aside>
             </div>
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// Popular languages widget
+function PopularLanguages({ posts, onPick }: { posts: any[]; onPick: (lang: string)=>void }) {
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    posts.filter((p:any)=>p.type==="code").forEach((p:any)=>{
+      const lang = (p.codeLanguage || "").toLowerCase();
+      if (!lang) return;
+      map[lang] = (map[lang] || 0) + 1;
+    });
+    return Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  }, [posts]);
+  if (counts.length===0) return null;
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">Popular Languages</h3>
+      <div className="flex flex-wrap gap-2">
+        {counts.map(([lang, count]) => (
+          <button key={lang} onClick={()=>onPick(lang)} className="px-2 py-1 rounded-full bg-gray-50 text-gray-700 text-xs border border-gray-200 hover:bg-gray-100" title={`Filter by ${lang}`}>
+            {lang} <span className="text-gray-400">({count})</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

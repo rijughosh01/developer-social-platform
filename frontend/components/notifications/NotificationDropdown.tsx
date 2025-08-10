@@ -138,14 +138,14 @@ export const NotificationDropdown: React.FC = () => {
       {/* Notification Bell Button */}
       <button
         onClick={handleToggle}
-        className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+        className="relative p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
         title="Notifications"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
 
         {/* Unread count badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-medium">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

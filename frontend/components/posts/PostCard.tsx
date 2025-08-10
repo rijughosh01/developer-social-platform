@@ -897,20 +897,18 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
       )}
 
       {/* Post Actions */}
-      <div className="px-4 py-3 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-10">
+      <div className="px-3 sm:px-4 py-3 border-t border-gray-200">
+        <div className="w-full">
+          <div className="flex items-center w-full justify-between sm:justify-start gap-6 flex-nowrap">
             <button
               onClick={handleLike}
-              className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-colors ${
+              className={`flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full transition-colors ${
                 post.isLiked
                   ? "text-red-600 bg-red-50"
                   : "text-gray-500 hover:text-red-600 hover:bg-red-50"
               }`}
             >
-              <FiHeart
-                className={`h-6 w-6 ${post.isLiked ? "fill-current" : ""}`}
-              />
+              <FiHeart className={`h-5 w-5 md:h-6 md:w-6 ${post.isLiked ? "fill-current" : ""}`} />
               <span className="text-sm font-medium">
                 {post.likesCount || 0}
               </span>
@@ -918,9 +916,9 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
 
             <button
               onClick={handleToggleComments}
-              className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             >
-              <FiMessageCircle className="h-6 w-6" />
+              <FiMessageCircle className="h-5 w-5 md:h-6 md:w-6" />
               <span className="text-sm font-medium">
                 {post.commentsCount || 0}
               </span>
@@ -929,10 +927,10 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
             <div className="relative">
               <button
                 onClick={() => setShowShareMenu((prev) => !prev)}
-                className="flex items-center space-x-2 px-3 py-1 rounded-full text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
               >
-                <FiShare className="h-6 w-6" />
-                <span className="text-sm font-medium">Share</span>
+                <FiShare className="h-5 w-5 md:h-6 md:w-6" />
+                <span className="text-sm font-medium hidden sm:inline">Share</span>
               </button>
               {showShareMenu && (
                 <div className="absolute z-20 mt-2 w-56 right-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 flex flex-col gap-2">
@@ -1015,24 +1013,22 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
             {onUnsave ? (
               <button
                 onClick={handleSave}
-                className="flex items-center space-x-2 px-3 py-1 rounded-full text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
                 disabled={unsaving}
               >
-                <span className="text-sm font-medium">Unsave</span>
+                <span className="text-sm font-medium hidden sm:inline">Unsave</span>
               </button>
             ) : (
               <button
                 onClick={handleSave}
-                className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-colors ${
+                className={`flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full transition-colors ${
                   isSaved
                     ? "text-blue-600 bg-blue-50"
                     : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                 }`}
               >
-                <FiBookmark
-                  className={`h-6 w-6 ${isSaved ? "fill-current" : ""}`}
-                />
-                <span className="text-sm font-medium">
+                <FiBookmark className={`h-5 w-5 md:h-6 md:w-6 ${isSaved ? "fill-current" : ""}`} />
+                <span className="text-sm font-medium hidden sm:inline">
                   {isSaved ? "Saved" : "Save"}
                 </span>
               </button>

@@ -4,6 +4,7 @@ import { chatAPI, usersAPI } from "@/lib/api";
 import { useAppSelector } from "@/hooks/useAppDispatch";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
+import { useSwipeable } from "react-swipeable";
 import { FaUsers } from "react-icons/fa";
 import { FiEdit, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
 import Image from "next/image";
@@ -36,6 +37,8 @@ export default function MessagesPage() {
   const [editInput, setEditInput] = useState("");
   const [deletingMessageId, setDeletingMessageId] = useState<string>("");
   const [hoveredMessageId, setHoveredMessageId] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(false);
+  const [showListMobile, setShowListMobile] = useState(true);
 
   const selectedChatRef = useRef(selectedChat);
   const messagesRef = useRef(messages);
@@ -43,6 +46,18 @@ export default function MessagesPage() {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+  useEffect(() => {
+    const update = () => setIsMobile(typeof window !== "undefined" && window.innerWidth < 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    // When a chat is selected on mobile, switch to chat view
+    if (isMobile && selectedChat) setShowListMobile(false);
+  }, [isMobile, selectedChat]);
+
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -150,7 +165,7 @@ export default function MessagesPage() {
             (msg) =>
               !(
                 msg.sender &&
-                msg.sender._id === user._id &&
+                msg.sender._id === user?._id &&
                 msg.content === data.message.content &&
                 Math.abs(new Date(msg.createdAt).getTime() - now) < 60000 &&
                 pendingMessageIds.includes(msg._id)
@@ -275,7 +290,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (showGroupModal || showManageModal) {
       usersAPI.getUsers().then((res) => {
-        setAllUsers(res.data.data.filter((u: any) => u._id !== user._id));
+        setAllUsers(res.data.data.filter((u: any) => u._id !== user?._id));
       });
     }
   }, [showGroupModal, showManageModal, user]);
@@ -297,7 +312,7 @@ export default function MessagesPage() {
         ...prev,
         {
           _id: tempId,
-          sender: { _id: user._id },
+          sender: { _id: user?._id },
           content: messageInput,
           createdAt: new Date().toISOString(),
         },
@@ -406,28 +421,47 @@ export default function MessagesPage() {
     }
   };
 
+  // Swipe handlers for mobile
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: (eventData) => {
+      // Only trigger on mobile when in chat view
+      if (isMobile && !showListMobile && eventData.deltaX > 50) {
+        setShowListMobile(true);
+      }
+    },
+    trackMouse: false,
+    delta: 50, // Minimum swipe distance
+    swipeDuration: 500, // Maximum time for swipe
+  });
+
   return (
-    <div className="flex h-screen w-screen bg-white">
+    <div className="flex h-screen w-screen bg-gray-50">
       {/* Chat List */}
-      <div className="w-1/3 border-r overflow-y-auto">
-        <div className="flex items-center justify-between mb-4 mt-6 px-6">
-          <h2 className="text-lg font-bold">Chats</h2>
-          <button
-            className="bg-primary-600 text-white px-3 py-1 rounded text-sm"
-            onClick={() => setShowGroupModal(true)}
-          >
-            New Group
-          </button>
+      <div className={`${(!isMobile || showListMobile) ? "block" : "hidden"} md:block md:w-1/3 w-full border-r overflow-y-auto bg-white` }>
+        <div className="sticky top-0 z-10 bg-white border-b px-4 py-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold">Chats</h2>
+            <button
+              className="bg-primary-600 text-white px-3 py-1 rounded text-sm"
+              onClick={() => setShowGroupModal(true)}
+              title="Create group"
+            >
+              New Group
+            </button>
+          </div>
+          <div className="mt-3">
+            <input placeholder="Search chats..." className="w-full border rounded px-3 py-2 text-sm" />
+          </div>
         </div>
         {loadingChats ? (
-          <div>Loading...</div>
+          <div className="p-4 text-gray-500">Loading...</div>
         ) : chats.filter(
             (chat) =>
               chat.isGroupChat || (chat.messages && chat.messages.length > 0)
           ).length === 0 ? (
-          <div className="text-gray-500">No chats yet.</div>
+          <div className="p-6 text-gray-500">No chats yet.</div>
         ) : (
-          <ul>
+          <ul className="p-4">
             {chats
               .filter(
                 (chat) =>
@@ -441,8 +475,8 @@ export default function MessagesPage() {
                       key={chat._id}
                       className={`p-2 rounded cursor-pointer mb-2 flex items-center gap-2 ${
                         selectedChat?._id === chat._id
-                          ? "bg-primary-100"
-                          : "hover:bg-gray-100"
+                          ? "bg-primary-50 border border-primary-200"
+                          : "hover:bg-gray-50"
                       }`}
                       onClick={() => setSelectedChat(chat)}
                     >
@@ -459,15 +493,15 @@ export default function MessagesPage() {
                   );
                 } else {
                   const other = chat.participants.find(
-                    (p: any) => p._id !== user._id
+                    (p: any) => p._id !== user?._id
                   );
                   return (
                     <li
                       key={chat._id}
                       className={`p-2 rounded cursor-pointer mb-2 flex items-center gap-2 ${
                         selectedChat?._id === chat._id
-                          ? "bg-primary-100"
-                          : "hover:bg-gray-100"
+                          ? "bg-primary-50 border border-primary-200"
+                          : "hover:bg-gray-50"
                       }`}
                       onClick={() => setSelectedChat(chat)}
                     >
@@ -501,11 +535,23 @@ export default function MessagesPage() {
         )}
       </div>
       {/* Chat Window */}
-      <div className="flex-1 flex flex-col">
+      <div 
+        className={`${(!isMobile || !showListMobile) ? "flex" : "hidden"} md:flex flex-1 flex-col bg-white`}
+        {...swipeHandlers}
+      >
         {selectedChat ? (
           <>
             {/* Chat Header */}
-            <div className="flex items-center gap-3 border-b py-3 px-4">
+            <div className="flex items-center gap-3 border-b py-3 px-4 sticky top-0 bg-white z-10">
+              {/* Back button for mobile */}
+              {isMobile && (
+                <button
+                  className="mr-2 px-2 py-1 text-sm rounded border md:hidden"
+                  onClick={() => setShowListMobile(true)}
+                >
+                  Back
+                </button>
+              )}
               {selectedChat.isGroupChat ? (
                 <>
                   <div className="w-10 h-10 flex items-center justify-center bg-primary-100 rounded-full">
@@ -521,7 +567,7 @@ export default function MessagesPage() {
                         .join(", ")}
                     </div>
                   </div>
-                  {selectedChat.groupAdmin?._id === user._id && (
+                  {selectedChat.groupAdmin?._id === user?._id && (
                     <button
                       className="ml-auto px-2 py-1 text-xs rounded bg-primary-100 text-primary-700 hover:bg-primary-200"
                       onClick={() => setShowManageModal(true)}
@@ -534,7 +580,7 @@ export default function MessagesPage() {
                 <>
                   {(() => {
                     const other = selectedChat.participants.find(
-                      (p: any) => p._id !== user._id
+                      (p: any) => p._id !== user?._id
                     );
                     return other?.avatar ? (
                       <Image
@@ -554,19 +600,19 @@ export default function MessagesPage() {
                   <div className="font-bold text-lg">
                     {
                       selectedChat.participants.find(
-                        (p: any) => p._id !== user._id
+                        (p: any) => p._id !== user?._id
                       )?.firstName
                     }{" "}
                     {
                       selectedChat.participants.find(
-                        (p: any) => p._id !== user._id
+                        (p: any) => p._id !== user?._id
                       )?.lastName
                     }
                   </div>
                 </>
               )}
             </div>
-            <div className="flex-1 p-4 overflow-y-auto">
+            <div className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
               {loadingMessages ? (
                 <div>Loading...</div>
               ) : messages.length === 0 ? (
@@ -710,10 +756,10 @@ export default function MessagesPage() {
                 </div>
               )}
             </div>
-            <form onSubmit={handleSend} className="p-4 border-t flex gap-2">
+            <form onSubmit={handleSend} className="p-4 border-t flex gap-2 bg-white sticky bottom-0">
               <input
                 type="text"
-                className="flex-1 border rounded px-2 py-1"
+                className="flex-1 border rounded-full px-4 py-2"
                 value={messageInput}
                 onChange={handleInputChange}
                 onKeyDown={(e) => {
@@ -723,7 +769,7 @@ export default function MessagesPage() {
               />
               <button
                 type="submit"
-                className="bg-primary-600 text-white px-4 py-2 rounded"
+                className="bg-primary-600 text-white px-5 py-2 rounded-full shadow-sm"
                 disabled={sending || !messageInput.trim()}
               >
                 Send
@@ -817,7 +863,7 @@ export default function MessagesPage() {
                     <span>
                       {p.firstName} {p.lastName} (@{p.username})
                     </span>
-                    {p._id !== user._id && (
+                    {p._id !== user?._id && (
                       <button
                         className="ml-auto px-2 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
                         onClick={() => handleRemoveParticipant(p._id)}

@@ -76,17 +76,17 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
   const suggestedProjects = localProjects.slice(0, limit);
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
         <div className="flex items-center">
           <FiFolder className="h-5 w-5 text-primary-600 mr-2" />
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">
             Suggested Projects
           </h3>
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
@@ -105,7 +105,7 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
             {suggestedProjects.map((project) => (
               <div
                 key={project._id}
-                className="p-0 rounded-xl border border-gray-100 shadow group hover:shadow-lg hover:-translate-y-1 transition-all bg-white relative cursor-pointer overflow-hidden"
+                className="p-0 rounded-xl border border-gray-100 shadow-sm group hover:shadow-lg hover:-translate-y-1 transition-all bg-white relative cursor-pointer overflow-hidden"
                 onClick={(e) => {
                   if ((e.target as HTMLElement).closest("button")) return;
                   setSelectedProject(project);
@@ -114,7 +114,7 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
               >
                 {/* Main Image */}
                 {project.image && (
-                  <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden border-b rounded-t-xl">
+                  <div className="w-full h-24 sm:h-32 bg-gray-100 flex items-center justify-center overflow-hidden border-b rounded-t-xl">
                     <img
                       src={project.image}
                       alt={project.title}
@@ -122,18 +122,18 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
                     />
                   </div>
                 )}
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-bold text-gray-900 truncate max-w-[60%]">
                       {project.title}
                     </h4>
                     <div className="flex items-center gap-2">
                       <button
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border ${
+                        className={`flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded text-xs font-semibold border ${
                           project.isLiked
-                            ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                            : "bg-gray-100 text-gray-600 border-gray-200"
-                        } hover:bg-yellow-200 hover:text-yellow-800 transition`}
+                            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                            : "bg-gray-50 text-gray-600 border-gray-200"
+                        } hover:bg-yellow-100 hover:text-yellow-800 transition`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStar(project._id);
@@ -147,21 +147,21 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
                       </button>
                       {user?._id === (project as any).owner?._id && (
                         <button
-                          className="p-1 rounded-full hover:bg-red-100 text-red-500 hover:text-red-700 transition"
+                          className="p-1 sm:p-1.5 rounded-full hover:bg-red-50 text-red-600 hover:text-red-700 transition"
                           title="Delete project"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(project._id);
                           }}
                         >
-                          <FiTrash2 className="w-4 h-4" />
+                          <FiTrash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                         </button>
                       )}
                     </div>
                   </div>
                   {/* Tags */}
                   {project.tags && project.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-2">
+                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
                       {project.tags.map((tag: string) => (
                         <span
                           key={tag}
@@ -184,7 +184,7 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
                           window.open(project.liveUrl, "_blank");
                         }}
                       >
-                        <FiExternalLink className="w-4 h-4" /> Live
+                        <FiExternalLink className="w-3 h-3 sm:w-4 sm:h-4" /> Live
                       </button>
                     )}
                     {project.githubUrl && (
@@ -195,7 +195,7 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
                           window.open(project.githubUrl, "_blank");
                         }}
                       >
-                        <FiGithub className="w-4 h-4" /> GitHub
+                        <FiGithub className="w-3 h-3 sm:w-4 sm:h-4" /> GitHub
                       </button>
                     )}
                   </div>

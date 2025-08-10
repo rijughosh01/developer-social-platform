@@ -216,7 +216,7 @@ export default function ProjectTemplates({
           <button
             key={template.id}
             onClick={() => onSelectTemplate(template)}
-            className="p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all text-left group"
+            className="p-4 border-2 border-gray-200 rounded-xl hover:border-primary-500 hover:bg-primary-50 transition-all text-left group shadow-sm hover:shadow"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 bg-primary-100 text-primary-600 rounded-lg group-hover:bg-primary-200 transition-colors">
@@ -249,7 +249,7 @@ export default function ProjectTemplates({
               </div>
             )}
 
-            <div className="text-xs text-primary-600 font-medium">
+            <div className="text-xs text-primary-700 font-semibold">
               Use this template →
             </div>
           </button>
