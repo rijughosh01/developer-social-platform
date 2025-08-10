@@ -270,61 +270,69 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
       <DashboardSidebar />
-      <main className="lg:ml-64 p-6">
+      <main className="lg:ml-64 p-3 sm:p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 mb-6">
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
+            <div className="p-4 sm:p-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 space-y-3 sm:space-y-0">
                 <button
                   onClick={onBack}
-                  className="flex items-center gap-3 text-gray-600 hover:text-gray-900 transition-all duration-200 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl"
+                  className="flex items-center gap-3 text-gray-600 hover:text-gray-900 transition-all duration-200 bg-gray-100 hover:bg-gray-200 px-3 sm:px-4 py-2 rounded-xl"
                 >
-                  <ArrowLeft className="w-5 h-5" />
-                  <span className="font-medium">Back to Conversations</span>
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="font-medium text-sm sm:text-base">
+                    Back to Conversations
+                  </span>
                 </button>
                 <button
                   onClick={handleDeleteConversation}
-                  className="flex items-center gap-3 text-red-600 hover:text-red-700 transition-all duration-200 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl"
+                  className="flex items-center gap-3 text-red-600 hover:text-red-700 transition-all duration-200 bg-red-50 hover:bg-red-100 px-3 sm:px-4 py-2 rounded-xl"
                   title="Delete conversation"
                 >
-                  <Trash2 className="w-5 h-5" />
-                  <span className="font-medium">Delete</span>
+                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="font-medium text-sm sm:text-base">
+                    Delete
+                  </span>
                 </button>
               </div>
 
               {/* Title and Context */}
               <div className="mb-6">
                 {isEditing ? (
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <input
                       aria-label="Conversation Title"
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="flex-1 text-2xl font-bold text-gray-900 border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      className="flex-1 text-lg sm:text-2xl font-bold text-gray-900 border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     />
-                    <button
-                      type="button"
-                      onClick={handleSaveEdit}
-                      className="p-3 text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition-all duration-200"
-                    >
-                      <Save className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsEditing(false);
-                        setEditTitle(currentConversation.title);
-                        setEditTags(currentConversation.tags?.join(", ") || "");
-                      }}
-                      className="p-3 text-gray-400 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSaveEdit}
+                        className="p-2 sm:p-3 text-green-600 bg-green-50 hover:bg-green-100 rounded-xl transition-all duration-200"
+                      >
+                        <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditTitle(currentConversation.title);
+                          setEditTags(
+                            currentConversation.tags?.join(", ") || ""
+                          );
+                        }}
+                        className="p-2 sm:p-3 text-gray-400 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200"
+                      >
+                        <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-gray-900">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                       {currentConversation.title}
                     </h1>
                     <button
@@ -336,16 +344,16 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 mt-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4">
                   <span
-                    className={`px-4 py-2 text-sm font-semibold rounded-xl shadow-sm ${getContextColor(
+                    className={`px-3 sm:px-4 py-2 text-sm font-semibold rounded-xl shadow-sm ${getContextColor(
                       currentConversation.context
                     )}`}
                   >
                     {currentConversation.context}
                   </span>
                   {currentConversation.project && (
-                    <span className="px-4 py-2 text-sm font-semibold rounded-xl shadow-sm bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800">
+                    <span className="px-3 sm:px-4 py-2 text-sm font-semibold rounded-xl shadow-sm bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800">
                       {currentConversation.project.title}
                     </span>
                   )}
@@ -363,7 +371,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     value={editTags}
                     onChange={(e) => setEditTags(e.target.value)}
                     placeholder="Enter tags separated by commas"
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    className="w-full border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                   />
                 </div>
               ) : (
@@ -373,7 +381,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     {currentConversation.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 text-sm bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-lg shadow-sm"
+                        className="px-2 sm:px-3 py-1 text-sm bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-lg shadow-sm"
                       >
                         {tag}
                       </span>
@@ -383,46 +391,46 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
               )}
 
               {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <MessageCircle className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-blue-900">
+                    <div className="text-xs sm:text-sm font-semibold text-blue-900">
                       {currentConversation.messageCount}
                     </div>
                     <div className="text-xs text-blue-700">messages</div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-5 h-5 text-white" />
+                <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-green-900">
+                    <div className="text-xs sm:text-sm font-semibold text-green-900">
                       {currentConversation.totalTokens.toLocaleString()}
                     </div>
                     <div className="text-xs text-green-700">tokens</div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-white" />
+                <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-purple-900">
+                    <div className="text-xs sm:text-sm font-semibold text-purple-900">
                       ${currentConversation.totalCost.toFixed(2)}
                     </div>
                     <div className="text-xs text-purple-700">cost</div>
                   </div>
                 </div>
-                <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-white" />
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-orange-900">
+                    <div className="text-xs sm:text-sm font-semibold text-orange-900">
                       {formatDistanceToNow(
                         new Date(currentConversation.lastActivity),
                         { addSuffix: true }
@@ -444,39 +452,39 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
           {/* Messages */}
           <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 mb-6">
-            <div className="p-8">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4 text-white" />
+            <div className="p-4 sm:p-8">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
                 Conversation History
               </h2>
 
               {!currentConversation?.messages ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+                <div className="text-center py-8 sm:py-12">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 animate-pulse">
+                    <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-2 border-white border-t-transparent"></div>
                   </div>
-                  <p className="text-gray-600 font-medium">
+                  <p className="text-gray-600 font-medium text-sm sm:text-base">
                     Loading messages...
                   </p>
                 </div>
               ) : currentConversation.messages.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <MessageCircle className="w-10 h-10 text-gray-400" />
+                <div className="text-center py-8 sm:py-12">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                    <MessageCircle className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
                   </div>
-                  <p className="text-gray-600 font-medium">
+                  <p className="text-gray-600 font-medium text-sm sm:text-base">
                     No messages in this conversation yet.
                   </p>
-                  <p className="text-gray-500 text-sm mt-2">
+                  <p className="text-gray-500 text-xs sm:text-sm mt-2">
                     Start the conversation below!
                   </p>
                 </div>
               ) : (
                 <>
                   {/* Regular Messages */}
-                  <div className="space-y-10 max-h-96 overflow-y-auto pr-4">
+                  <div className="space-y-6 sm:space-y-10 max-h-96 overflow-y-auto pr-2 sm:pr-4">
                     {currentConversation.messages.map((msg, index) => (
                       <div
                         key={index}
@@ -486,13 +494,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div
-                          className={`max-w-3xl relative group ${
+                          className={`max-w-full sm:max-w-3xl relative group ${
                             msg.role === "user" ? "order-2" : "order-1"
                           }`}
                         >
                           {/* Message Bubble */}
                           <div
-                            className={`relative rounded-2xl p-6 shadow-soft border ${
+                            className={`relative rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-soft border ${
                               msg.role === "user"
                                 ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white border-blue-500/20"
                                 : "bg-gradient-to-r from-gray-50 to-white text-gray-900 border-gray-200/50"
@@ -502,13 +510,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                           >
                             {/* Pinned Indicator */}
                             {msg.pinned && (
-                              <div className="absolute -top-2 -left-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg z-10">
-                                <Pin className="w-3 h-3 text-white" />
+                              <div className="absolute -top-1 sm:-top-2 -left-1 sm:-left-2 w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg z-10">
+                                <Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                               </div>
                             )}
 
                             {/* Message Content */}
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                               <div className="flex-1">
                                 <ReactMarkdown
                                   components={{
@@ -568,7 +576,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                               </div>
 
                               {/* Message Footer */}
-                              <div className="flex items-center justify-between pt-3 border-t border-gray-200/30">
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-3 border-t border-gray-200/30 space-y-2 sm:space-y-0">
                                 {/* Timestamp */}
                                 <div
                                   className={`text-xs flex items-center gap-2 ${
@@ -587,10 +595,10 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                                 </div>
 
                                 {/* Action Buttons and Metadata */}
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                                   {/* Metadata for AI messages */}
                                   {msg.role === "assistant" && msg.metadata && (
-                                    <div className="flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 border border-gray-300 shadow-sm">
+                                    <div className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 shadow-sm">
                                       <div className="font-semibold text-gray-900">
                                         {msg.metadata.tokens} tokens
                                       </div>
@@ -614,13 +622,13 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                                           `msg-${index}`
                                         )
                                       }
-                                      className="p-2 rounded-md transition-all duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-700"
+                                      className="p-1.5 sm:p-2 rounded-md transition-all duration-200 hover:bg-blue-50 text-gray-600 hover:text-blue-700"
                                       title="Copy message"
                                     >
                                       {copiedId === `msg-${index}` ? (
-                                        <Check className="w-4 h-4" />
+                                        <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                                       ) : (
-                                        <Copy className="w-4 h-4" />
+                                        <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                                       )}
                                     </button>
                                     <button
@@ -629,7 +637,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                                           ? handleUnpinMessage(index)
                                           : handlePinMessage(index)
                                       }
-                                      className={`p-2 rounded-md transition-all duration-200 ${
+                                      className={`p-1.5 sm:p-2 rounded-md transition-all duration-200 ${
                                         msg.pinned
                                           ? "text-yellow-600 hover:bg-yellow-50"
                                           : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
@@ -641,9 +649,9 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                                       }
                                     >
                                       {msg.pinned ? (
-                                        <PinOff className="w-4 h-4" />
+                                        <PinOff className="w-3 h-3 sm:w-4 sm:h-4" />
                                       ) : (
-                                        <Pin className="w-4 h-4" />
+                                        <Pin className="w-3 h-3 sm:w-4 sm:h-4" />
                                       )}
                                     </button>
                                   </div>
@@ -663,26 +671,29 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
           {/* Continue Conversation */}
           <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20">
-            <div className="p-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                  <Send className="w-4 h-4 text-white" />
+            <div className="p-4 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                  <Send className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
                 Continue Conversation
               </h3>
 
-              <form onSubmit={handleSendMessage} className="space-y-6">
+              <form
+                onSubmit={handleSendMessage}
+                className="space-y-4 sm:space-y-6"
+              >
                 <div className="relative">
                   <textarea
                     ref={inputRef}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Type your message here... Ask me anything about programming, code review, debugging, or project help!"
-                    className="w-full border-2 border-gray-200 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-500"
+                    className="w-full border-2 border-gray-200 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-500 text-sm sm:text-base"
                     rows={4}
                     disabled={isLoading}
                   />
-                  <div className="absolute bottom-4 right-4 text-xs text-gray-400">
+                  <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 text-xs text-gray-400">
                     {message.length}/4000
                   </div>
                 </div>
@@ -691,16 +702,16 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <button
                     type="submit"
                     disabled={!message.trim() || isLoading}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-glow hover:scale-105 transform"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 sm:gap-3 shadow-lg hover:shadow-glow hover:scale-105 transform text-sm sm:text-base"
                   >
                     {isLoading ? (
                       <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         <span className="font-medium">Sending...</span>
                       </>
                     ) : (
                       <>
-                        <Send className="w-5 h-5" />
+                        <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                         <span className="font-medium">Send Message</span>
                       </>
                     )}

@@ -161,29 +161,29 @@ const AIPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
-      {/* Header */}
+      {/* Header  */}
       <div className="relative bg-white/80 backdrop-blur-xl shadow-soft border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <div className="text-center animate-fade-in">
-            <div className="flex items-center justify-center mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center mb-6 space-y-4 sm:space-y-0">
               <div className="relative">
-                <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-lg mr-6">
-                  <Bot className="w-10 h-10 text-white" />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-lg sm:mr-6">
+                  <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-                  <Sparkles className="w-3 h-3 text-white" />
+                <div className="absolute -top-2 -right-2 w-4 h-4 sm:w-6 sm:h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-2 h-2 sm:w-3 sm:h-3 text-white" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <div className="text-center sm:text-left">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                   DevLink AI
                 </h1>
-                <p className="text-xl text-gray-600 mt-2">
+                <p className="text-lg sm:text-xl text-gray-600 mt-2">
                   Your AI-powered development assistant
                 </p>
               </div>
             </div>
-            <p className="text-gray-600 max-w-3xl mx-auto text-lg leading-relaxed">
+            <p className="text-gray-600 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed px-4 sm:px-0">
               Get instant help with coding, debugging, learning, and project
               guidance. Powered by advanced AI to accelerate your development
               journey.
@@ -195,60 +195,62 @@ const AIPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-slide-in-up">
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12 animate-slide-in-up">
+            <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-3 sm:p-6 hover-lift">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Zap className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                  <Zap className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                <div className="ml-2 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">
                     Total Requests
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">
                     {stats.totalRequests}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
+            <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-3 sm:p-6 hover-lift">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <TrendingUp className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                  <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                <div className="ml-2 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">
                     Today's Requests
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">
                     {stats.requestsToday}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
+            <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-3 sm:p-6 hover-lift">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Star className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                  <Star className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                <div className="ml-2 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">
                     Favorite Context
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 capitalize">
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900 capitalize">
                     {stats.favoriteContext}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift">
+            <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-3 sm:p-6 hover-lift">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                  <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Last Used</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="ml-2 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">
+                    Last Used
+                  </p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900">
                     {stats.lastUsed ? "Today" : "Never"}
                   </p>
                 </div>
@@ -257,38 +259,38 @@ const AIPage: React.FC = () => {
           </div>
         )}
 
-        {/* AI Features Grid */}
-        <div className="mb-16 animate-slide-in-up">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Brain className="w-5 h-5 text-white" />
+        {/* AI Features Grid  */}
+        <div className="mb-12 sm:mb-16 animate-slide-in-up">
+          <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+              <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
               AI Features
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {aiFeatures.map((feature, index) => {
               const Icon = feature.icon;
               return (
                 <div
                   key={feature.id}
-                  className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-6 hover-lift cursor-pointer group"
+                  className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-4 sm:p-6 hover-lift cursor-pointer group"
                   onClick={feature.action}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3 sm:mb-4">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200`}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r ${feature.color} rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200`}
                     >
-                      <Icon className="w-6 h-6 text-white" />
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all duration-200" />
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all duration-200" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 group-hover:text-blue-600 transition-colors duration-200">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -298,42 +300,44 @@ const AIPage: React.FC = () => {
         </div>
 
         {/* Quick Start Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16 animate-slide-in-up">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-12 sm:mb-16 animate-slide-in-up">
           {/* Quick Chat */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-8 hover-lift">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                <MessageCircle className="w-5 h-5 text-white" />
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-6 sm:p-8 hover-lift">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">Quick Chat</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Quick Chat
+              </h3>
             </div>
-            <p className="text-gray-600 mb-6 leading-relaxed">
+            <p className="text-gray-600 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base">
               Start a conversation with our AI assistant for instant help with
               any coding question or problem.
             </p>
             <button
               onClick={() => setShowChatbot(true)}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl hover:-translate-y-0.5 font-semibold"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 sm:space-x-3 shadow-lg hover:shadow-xl hover:-translate-y-0.5 font-semibold text-sm sm:text-base"
             >
-              <Play className="w-5 h-5" />
+              <Play className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Start Chat</span>
             </button>
           </div>
 
           {/* Quick Prompts */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-8 hover-lift">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Sparkles className="w-5 h-5 text-white" />
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-6 sm:p-8 hover-lift">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
                 Quick Prompts
               </h3>
             </div>
-            <p className="text-gray-600 mb-6 leading-relaxed">
+            <p className="text-gray-600 mb-4 sm:mb-6 leading-relaxed text-sm sm:text-base">
               Try these common questions to get started with AI assistance:
             </p>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {quickPrompts.map((prompt, index) => (
                 <button
                   key={index}
@@ -341,7 +345,7 @@ const AIPage: React.FC = () => {
                     dispatch(setCurrentContext("general"));
                     setShowChatbot(true);
                   }}
-                  className="w-full text-left p-4 text-sm text-gray-700 hover:bg-gray-50 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-200 font-medium"
+                  className="w-full text-left p-3 sm:p-4 text-xs sm:text-sm text-gray-700 hover:bg-gray-50 rounded-lg sm:rounded-xl transition-all duration-200 border border-transparent hover:border-gray-200 font-medium"
                 >
                   {prompt}
                 </button>
@@ -351,21 +355,21 @@ const AIPage: React.FC = () => {
         </div>
 
         {/* How It Works */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-soft border border-white/20 p-12 animate-slide-in-up">
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Cpu className="w-5 h-5 text-white" />
+        <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-soft border border-white/20 p-6 sm:p-12 animate-slide-in-up">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                <Cpu className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                 How It Works
               </h2>
             </div>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            <p className="text-gray-600 text-sm sm:text-lg max-w-2xl mx-auto px-4 sm:px-0">
               Get started with DevLink AI in just three simple steps
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {howItWorksSteps.map((step, index) => {
               const Icon = step.icon;
               return (
@@ -375,17 +379,17 @@ const AIPage: React.FC = () => {
                   style={{ animationDelay: `${index * 200}ms` }}
                 >
                   <div
-                    className={`w-16 h-16 bg-gradient-to-r ${step.color} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200`}
+                    className={`w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r ${step.color} rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200`}
                   >
-                    <Icon className="w-8 h-8 text-white" />
+                    <Icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   </div>
-                  <div className="w-8 h-8 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-sm">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 text-white font-bold text-xs sm:text-sm">
                     {step.number}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
                     {step.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base px-2 sm:px-0">
                     {step.description}
                   </p>
                 </div>

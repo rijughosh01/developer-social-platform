@@ -218,7 +218,7 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
           top: `${buttonPosition.y}px`,
           cursor: isDragging ? "grabbing" : "grab",
         }}
-        className={`fixed z-40 w-18 h-18 bg-white/90 backdrop-blur-xl border border-white/20 text-gray-700 rounded-3xl shadow-2xl hover:shadow-3xl transform transition-all duration-300 flex items-center justify-center group ${className} ${
+        className={`fixed z-40 w-16 h-16 sm:w-18 sm:h-18 bg-white/90 backdrop-blur-xl border border-white/20 text-gray-700 rounded-2xl sm:rounded-3xl shadow-2xl hover:shadow-3xl transform transition-all duration-300 flex items-center justify-center group ${className} ${
           isDragging
             ? "scale-110 shadow-3xl rotate-3"
             : isHovered
@@ -233,18 +233,18 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
         {/* Main content */}
         <div className="relative z-10 flex items-center justify-center">
           {isOpen ? (
-            <X className="w-7 h-7 text-gray-700 group-hover:text-gray-900 transition-colors duration-200" />
+            <X className="w-6 h-6 sm:w-7 sm:h-7 text-gray-700 group-hover:text-gray-900 transition-colors duration-200" />
           ) : (
             <div className="relative">
-              <Bot className="w-8 h-8 text-gray-700 group-hover:text-gray-900 transition-colors duration-200" />
+              <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700 group-hover:text-gray-900 transition-colors duration-200" />
 
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-pulse" />
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-pulse" />
             </div>
           )}
 
           {/* Drag indicator */}
           <GripVertical
-            className={`absolute -bottom-2 -right-2 w-4 h-4 text-gray-400/60 transition-all duration-200 ${
+            className={`absolute -bottom-1.5 -right-1.5 sm:-bottom-2 sm:-right-2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400/60 transition-all duration-200 ${
               isDragging
                 ? "opacity-100 scale-110"
                 : "opacity-0 group-hover:opacity-60"
@@ -266,20 +266,20 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
       {showDragHint && (
         <div
           style={{
-            left: `${buttonPosition.x + 90}px`,
+            left: `${buttonPosition.x + 70}px`,
             top: `${buttonPosition.y}px`,
           }}
-          className="fixed z-50 bg-white/95 backdrop-blur-xl border border-white/20 text-gray-700 text-sm px-4 py-3 rounded-2xl shadow-2xl max-w-xs animate-fade-in"
+          className="fixed z-50 bg-white/95 backdrop-blur-xl border border-white/20 text-gray-700 text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-2xl max-w-[200px] sm:max-w-xs animate-fade-in"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <GripVertical className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg sm:rounded-xl flex items-center justify-center">
+              <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
             </div>
             <div className="flex-1">
-              <div className="font-semibold text-gray-800">
+              <div className="font-semibold text-gray-800 text-xs sm:text-sm">
                 Drag me anywhere!
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 mt-0.5 sm:mt-1">
                 Double-click to reset position
               </div>
             </div>
@@ -287,12 +287,12 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
               onClick={() => setShowDragHint(false)}
               className="p-1 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
-              <X className="w-4 h-4 text-gray-400" />
+              <X className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
             </button>
           </div>
 
           {/* Arrow pointing to button */}
-          <div className="absolute left-0 top-1/2 transform -translate-x-2 -translate-y-1/2 w-0 h-0 border-l-0 border-r-8 border-t-4 border-b-4 border-transparent border-r-white/95" />
+          <div className="absolute left-0 top-1/2 transform -translate-x-2 -translate-y-1/2 w-0 h-0 border-l-0 border-r-6 sm:border-r-8 border-t-3 sm:border-t-4 border-b-3 sm:border-b-4 border-transparent border-r-white/95" />
         </div>
       )}
     </>
