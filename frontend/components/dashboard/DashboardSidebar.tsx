@@ -15,22 +15,85 @@ import {
   FiGitBranch,
   FiZap,
   FiMessageCircle,
+  FiStar,
+  FiActivity,
+  FiLink,
 } from "react-icons/fi";
 import { SiXdadevelopers } from "react-icons/si";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: FiHome },
-  { name: "Developers", href: "/developers", icon: FiUsers },
-  { name: "Projects", href: "/projects", icon: FiFolder },
-  { name: "Discussions", href: "/discussions", icon: SiXdadevelopers },
-  { name: "Messages", href: "/messages", icon: FiMessageSquare },
-  { name: "Saved", href: "/saved", icon: FiBookmark },
-  { name: "Trending", href: "/trending", icon: FiTrendingUp },
-  { name: "Code Feed", href: "/code-feed", icon: FiCode },
-  { name: "Collaboration", href: "/collaboration", icon: FiGitBranch },
-  { name: "AI Assistant", href: "/ai", icon: FiZap },
-  { name: "Conversations", href: "/conversations", icon: FiMessageCircle },
-  { name: "Settings", href: "/settings", icon: FiSettings },
+  { 
+    name: "Dashboard", 
+    href: "/dashboard", 
+    icon: FiHome,
+    description: "Overview and recent activity"
+  },
+  { 
+    name: "Developers", 
+    href: "/developers", 
+    icon: FiUsers,
+    description: "Connect with other developers"
+  },
+  { 
+    name: "Projects", 
+    href: "/projects", 
+    icon: FiFolder,
+    description: "Browse and create projects"
+  },
+  { 
+    name: "Discussions", 
+    href: "/discussions", 
+    icon: SiXdadevelopers,
+    description: "Join technical discussions"
+  },
+  { 
+    name: "Messages", 
+    href: "/messages", 
+    icon: FiMessageSquare,
+    description: "Chat with other developers"
+  },
+  { 
+    name: "Saved", 
+    href: "/saved", 
+    icon: FiBookmark,
+    description: "Your saved content"
+  },
+  { 
+    name: "Trending", 
+    href: "/trending", 
+    icon: FiTrendingUp,
+    description: "What's popular now"
+  },
+  { 
+    name: "Code Feed", 
+    href: "/code-feed", 
+    icon: FiCode,
+    description: "Latest code snippets"
+  },
+  { 
+    name: "Collaboration", 
+    href: "/collaboration", 
+    icon: FiGitBranch,
+    description: "Team up on projects"
+  },
+  { 
+    name: "AI Assistant", 
+    href: "/ai", 
+    icon: FiZap,
+    description: "Get AI-powered help"
+  },
+  { 
+    name: "Conversations", 
+    href: "/conversations", 
+    icon: FiMessageCircle,
+    description: "AI chat history"
+  },
+  { 
+    name: "Settings", 
+    href: "/settings", 
+    icon: FiSettings,
+    description: "Account preferences"
+  },
 ];
 
 export function DashboardSidebar() {
@@ -40,44 +103,173 @@ export function DashboardSidebar() {
     <>
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:pt-0 lg:pb-0 lg:overflow-y-auto lg:border-r lg:border-gray-200 lg:bg-white">
-        <div className="flex flex-col items-center justify-center py-4 bg-gray-50 border-b border-gray-200">
+        {/* Logo Section */}
+        <div className="flex flex-col items-center justify-center py-8 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-4 left-4 w-2 h-2 bg-white rounded-full"></div>
+            <div className="absolute top-12 right-6 w-1 h-1 bg-white rounded-full"></div>
+            <div className="absolute bottom-8 left-8 w-1.5 h-1.5 bg-white rounded-full"></div>
+            <div className="absolute bottom-16 right-4 w-1 h-1 bg-white rounded-full"></div>
+          </div>
+          
           <Link
             href="/"
-            className="cursor-pointer hover:opacity-80 transition-opacity"
+            className="cursor-pointer hover:opacity-90 transition-all duration-300 group relative z-10"
           >
-            <span className="text-2xl font-bold text-primary-600 tracking-tight">
-              DevLink
-            </span>
+            <div className="flex items-center">
+              {/* Icon Container */}
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300 shadow-xl group-hover:shadow-2xl">
+                <div className="relative">
+                  <FiLink className="w-6 h-6 text-primary-600" />
+                  <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full border border-white"></div>
+                </div>
+              </div>
+              
+              {/* Brand Text */}
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight group-hover:text-blue-100 transition-colors duration-300">
+                  DevLink
+                </h1>
+                <div className="text-xs text-primary-100 font-medium tracking-wide">
+                  Connect • Collaborate • Code
+                </div>
+              </div>
+            </div>
           </Link>
-          <span className="text-xs text-gray-400 mt-1">
-            Connect. Collaborate. Code.
-          </span>
         </div>
-        <nav className="mt-6 px-4 space-y-1">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                  isActive
-                    ? "bg-primary-100 text-primary-900"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <item.icon
-                  className={`mr-3 h-5 w-5 ${
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {/* Main Navigation */}
+          <div className="space-y-1">
+            {navigation.slice(0, 6).map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
                     isActive
-                      ? "text-primary-500"
-                      : "text-gray-400 group-hover:text-gray-500"
+                      ? "bg-primary-100 text-primary-900 shadow-sm border border-primary-200"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
                   }`}
-                />
-                {item.name}
-              </Link>
-            );
-          })}
+                  title={item.description}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full"></div>
+                  )}
+                  <item.icon
+                    className={`mr-3 h-5 w-5 transition-all duration-200 ${
+                      isActive
+                        ? "text-primary-500"
+                        : "text-gray-400 group-hover:text-gray-500"
+                    }`}
+                  />
+                  <span className="flex-1">{item.name}</span>
+                  {isActive && (
+                    <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="my-4 border-t border-gray-200"></div>
+
+          {/* Secondary Navigation */}
+          <div className="space-y-1">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Tools & Features
+            </div>
+            {navigation.slice(6, 9).map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
+                    isActive
+                      ? "bg-primary-100 text-primary-900 shadow-sm border border-primary-200"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
+                  }`}
+                  title={item.description}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full"></div>
+                  )}
+                  <item.icon
+                    className={`mr-3 h-5 w-5 transition-all duration-200 ${
+                      isActive
+                        ? "text-primary-500"
+                        : "text-gray-400 group-hover:text-gray-500"
+                    }`}
+                  />
+                  <span className="flex-1">{item.name}</span>
+                  {isActive && (
+                    <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="my-4 border-t border-gray-200"></div>
+
+          {/* AI & Settings */}
+          <div className="space-y-1">
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              AI & Account
+            </div>
+            {navigation.slice(9).map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
+                    isActive
+                      ? "bg-primary-100 text-primary-900 shadow-sm border border-primary-200"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm"
+                  }`}
+                  title={item.description}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full"></div>
+                  )}
+                  <item.icon
+                    className={`mr-3 h-5 w-5 transition-all duration-200 ${
+                      isActive
+                        ? "text-primary-500"
+                        : "text-gray-400 group-hover:text-gray-500"
+                    }`}
+                  />
+                  <span className="flex-1">{item.name}</span>
+                  {isActive && (
+                    <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg flex items-center justify-center">
+                <FiActivity className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gray-900">Pro Tips</p>
+                <p className="text-xs text-gray-500">Use DevLink AI for faster coding</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );

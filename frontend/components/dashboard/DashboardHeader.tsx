@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { logout } from "@/store/slices/authSlice";
@@ -24,6 +25,8 @@ import {
   FiZap,
   FiMessageCircle,
   FiX,
+  FiMenu,
+  FiLink,
 } from "react-icons/fi";
 import { SiXdadevelopers } from "react-icons/si";
 import { getAvatarUrl } from "@/lib/utils";
@@ -46,84 +49,129 @@ const navigation = [
 export function DashboardHeader() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isUserMenuOpen && !target.closest(".user-menu-container")) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isUserMenuOpen]);
+
   const handleLogout = () => {
     dispatch(logout());
+    setIsUserMenuOpen(false);
+    router.push("/auth/login");
   };
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const handleProfileClick = () => {
+    setIsUserMenuOpen(false);
+    if (user?.username) {
+      router.push(`/profile/${user.username}`);
+    } else {
+      router.push("/profile");
+    }
+  };
+
+  const handleSettingsClick = () => {
+    setIsUserMenuOpen(false);
+    router.push("/settings");
+  };
+
   return (
     <>
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40 lg:ml-64">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Mobile Menu Button - Left side */}
-            <div className="lg:hidden flex items-center">
+            {/* Left Section */}
+            <div className="flex items-center">
+              {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-2 rounded-md bg-white shadow-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-gray-200 mr-3"
+                className="lg:hidden p-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <FiMenu className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="hidden md:flex items-center">
-              <Link href="/dashboard" className="flex items-center">
-                <span className="text-2xl font-bold text-primary-600">
-                  DevLink
-                </span>
-              </Link>
-            </div>
-
-            <div className="flex-1 max-w-xs sm:max-w-md lg:max-w-lg mx-2 sm:mx-4 lg:mx-8">
-              <div className="relative w-full">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiSearch className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+            {/* Center Section - Search Bar */}
+            <div className="flex-1 max-w-2xl mx-4 lg:mx-8">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <FiSearch
+                    className={`h-4 w-4 transition-colors duration-200 ${
+                      isSearchFocused ? "text-primary-500" : "text-gray-400"
+                    }`}
+                  />
                 </div>
                 <input
                   type="text"
                   placeholder="Search developers, projects, posts..."
-                  className="block w-full pl-8 sm:pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                  className={`block w-full pl-10 pr-4 py-2.5 border rounded-xl leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm transition-all duration-200 ${
+                    isSearchFocused
+                      ? "bg-white border-primary-500 shadow-md"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
                 />
               </div>
             </div>
 
-            
-            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
-              {/* Notifications */}
-              <NotificationDropdown />
+            {/* Right Section - Actions & User Menu */}
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="hidden sm:block">
+                <NotificationDropdown />
+              </div>
+
+              <Link
+                href="/notifications"
+                className="sm:hidden p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 relative"
+              >
+                <FiBell className="h-5 w-5" />
+                {/* Unread count badge for mobile */}
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                  1
+                </span>
+              </Link>
 
               {/* Messages */}
               <Link
                 href="/messages"
-                className="p-1.5 sm:p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
-                <FiMessageSquare className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+                <FiMessageSquare className="h-5 w-5" />
               </Link>
 
               {/* User Menu */}
-              <div className="relative">
+              <div className="relative user-menu-container">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 p-1.5 sm:p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  className="flex items-center space-x-2 p-1.5 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center overflow-hidden ring-2 ring-white shadow-sm">
                     {user?.avatar ? (
                       <img
                         src={getAvatarUrl(user)}
                         alt="User Avatar"
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
+                        className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <span className="text-white text-xs sm:text-sm font-medium">
+                      <span className="text-white text-sm font-semibold">
                         {user?.firstName?.charAt(0)}
                         {user?.lastName?.charAt(0)}
                       </span>
@@ -136,33 +184,36 @@ export function DashboardHeader() {
 
                 {/* User Dropdown */}
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                    <Link
-                      href={user ? `/profile/${user.username}` : "/profile"}
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <FiUser className="mr-3 h-4 w-4" />
-                      Profile
-                    </Link>
-                    <Link
-                      href="/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <FiSettings className="mr-3 h-4 w-4" />
-                      Settings
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setIsUserMenuOpen(false);
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <FiLogOut className="mr-3 h-4 w-4" />
-                      Sign out
-                    </button>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg py-2 z-50 border border-gray-100">
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">
+                        {user?.firstName} {user?.lastName}
+                      </p>
+                      <p className="text-sm text-gray-500">@{user?.username}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={handleProfileClick}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                      >
+                        <FiUser className="mr-3 h-4 w-4" />
+                        Profile
+                      </button>
+                      <button
+                        onClick={handleSettingsClick}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                      >
+                        <FiSettings className="mr-3 h-4 w-4" />
+                        Settings
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                      >
+                        <FiLogOut className="mr-3 h-4 w-4" />
+                        Sign out
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -174,48 +225,68 @@ export function DashboardHeader() {
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity"
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
             onClick={closeMobileMenu}
           />
-          
+
           {/* Drawer */}
-          <div className="fixed inset-y-0 left-0 flex w-64 max-w-xs flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
+          <div className="fixed inset-y-0 left-0 flex w-80 max-w-xs flex-col bg-white shadow-2xl transform transition-transform duration-300 ease-in-out">
+            <div className="flex items-center justify-between p-6 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-2 left-2 w-1 h-1 bg-white rounded-full"></div>
+                <div className="absolute top-6 right-3 w-0.5 h-0.5 bg-white rounded-full"></div>
+                <div className="absolute bottom-4 left-4 w-0.75 h-0.75 bg-white rounded-full"></div>
+                <div className="absolute bottom-8 right-2 w-0.5 h-0.5 bg-white rounded-full"></div>
+              </div>
+
               <Link
                 href="/"
-                className="cursor-pointer hover:opacity-80 transition-opacity"
+                className="cursor-pointer hover:opacity-90 transition-all duration-300 group relative z-10"
                 onClick={closeMobileMenu}
               >
-                <span className="text-xl font-bold text-primary-600 tracking-tight">
-                  DevLink
-                </span>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center mr-3 group-hover:scale-105 transition-transform duration-300 shadow-lg">
+                    <div className="relative">
+                      <FiLink className="w-5 h-5 text-primary-600" />
+                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full border border-white"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-xl font-bold text-white tracking-tight group-hover:text-blue-100 transition-colors duration-300">
+                      DevLink
+                    </span>
+                    <div className="text-xs text-primary-100 font-medium tracking-wide">
+                      Connect • Collaborate • Code
+                    </div>
+                  </div>
+                </div>
               </Link>
               <button
                 onClick={closeMobileMenu}
-                className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600 relative z-10"
               >
                 <FiX className="h-6 w-6" />
               </button>
             </div>
-            
-            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+
+            {/* Navigation */}
+            <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
               {navigation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`group flex items-center px-3 py-3 text-base font-medium rounded-md ${
+                    className={`group flex items-center px-4 py-3 text-base font-medium rounded-xl transition-all duration-200 ${
                       isActive
-                        ? "bg-primary-100 text-primary-900"
+                        ? "bg-primary-100 text-primary-900 shadow-sm"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                     onClick={closeMobileMenu}
                   >
                     <item.icon
-                      className={`mr-3 h-6 w-6 ${
+                      className={`mr-4 h-5 w-5 transition-colors duration-200 ${
                         isActive
                           ? "text-primary-500"
                           : "text-gray-400 group-hover:text-gray-500"
@@ -226,6 +297,34 @@ export function DashboardHeader() {
                 );
               })}
             </nav>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center overflow-hidden">
+                  {user?.avatar ? (
+                    <img
+                      src={getAvatarUrl(user)}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-sm font-semibold">
+                      {user?.firstName?.charAt(0)}
+                      {user?.lastName?.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    @{user?.username}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
