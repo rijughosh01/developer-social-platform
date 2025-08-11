@@ -23,7 +23,8 @@ const notificationSchema = new mongoose.Schema(
         "comment_discussion",
         "answer_accepted",
         "discussion_vote",
-
+        "discussion_flagged",
+        "comment_flagged",
         "follow",
         "unfollow",
         "mention",
@@ -49,6 +50,7 @@ const notificationSchema = new mongoose.Schema(
       projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
       commentId: { type: mongoose.Schema.Types.ObjectId, ref: "Comment" },
       discussionId: { type: mongoose.Schema.Types.ObjectId, ref: "Discussion" },
+      flagReason: { type: String },
       chatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
       messageId: { type: mongoose.Schema.Types.ObjectId },
       url: { type: String },

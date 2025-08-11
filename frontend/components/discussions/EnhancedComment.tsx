@@ -11,6 +11,7 @@ import {
 import { DiscussionComment } from "@/types";
 import { Button } from "@/components/ui/button";
 import { RichTextEditor } from "./RichTextEditor";
+import { FlagStatus } from "./FlagStatus";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -398,6 +399,13 @@ export function EnhancedComment({
 
         {/*  Comment Content */}
         <div className="mb-4 sm:mb-6">
+          {/* Flag Status */}
+          <FlagStatus 
+            content={comment} 
+            contentType="comment" 
+            className="mb-4"
+          />
+          
           {isEditing ? (
             <div className="space-y-4">
               <div className="space-y-3">

@@ -20,6 +20,7 @@ import {
   FiLink,
 } from "react-icons/fi";
 import { SiXdadevelopers } from "react-icons/si";
+import { Logo } from "@/components/ui/Logo";
 
 const navigation = [
   { 
@@ -104,7 +105,7 @@ export function DashboardSidebar() {
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:pt-0 lg:pb-0 lg:overflow-y-auto lg:border-r lg:border-gray-200 lg:bg-white">
         {/* Logo Section */}
-        <div className="flex flex-col items-center justify-center py-8 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden">
+        <div className="flex flex-col items-center justify-center py-4 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-4 left-4 w-2 h-2 bg-white rounded-full"></div>
@@ -113,30 +114,7 @@ export function DashboardSidebar() {
             <div className="absolute bottom-16 right-4 w-1 h-1 bg-white rounded-full"></div>
           </div>
           
-          <Link
-            href="/"
-            className="cursor-pointer hover:opacity-90 transition-all duration-300 group relative z-10"
-          >
-            <div className="flex items-center">
-              {/* Icon Container */}
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-300 shadow-xl group-hover:shadow-2xl">
-                <div className="relative">
-                  <FiLink className="w-6 h-6 text-primary-600" />
-                  <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full border border-white"></div>
-                </div>
-              </div>
-              
-              {/* Brand Text */}
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight group-hover:text-blue-100 transition-colors duration-300">
-                  DevLink
-                </h1>
-                <div className="text-xs text-primary-100 font-medium tracking-wide">
-                  Connect • Collaborate • Code
-                </div>
-              </div>
-            </div>
-          </Link>
+          <Logo variant="sidebar" className="relative z-10" />
         </div>
 
         {/* Navigation */}

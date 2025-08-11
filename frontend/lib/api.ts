@@ -228,6 +228,48 @@ export const settingsAPI = {
     api.delete<ApiResponse>(`/users/${userId}`),
 };
 
+export const notificationsAPI = {
+  // Get notifications with pagination
+  getNotifications: (params?: { page?: number; limit?: number }) =>
+    api.get<ApiResponse>("/notifications", { params }),
+
+  // Get unread count
+  getUnreadCount: () => api.get<ApiResponse>("/notifications/unread-count"),
+
+  // Mark notification as read
+  markAsRead: (notificationId: string) =>
+    api.put<ApiResponse>(`/notifications/${notificationId}/read`),
+
+  // Mark multiple notifications as read
+  markMultipleAsRead: (notificationIds: string[]) =>
+    api.put<ApiResponse>("/notifications/mark-read", { notificationIds }),
+
+  // Mark all notifications as read
+  markAllAsRead: () => api.put<ApiResponse>("/notifications/mark-all-read"),
+
+  // Delete notification
+  deleteNotification: (notificationId: string) =>
+    api.delete<ApiResponse>(`/notifications/${notificationId}`),
+
+  // Delete multiple notifications
+  deleteMultipleNotifications: (notificationIds: string[]) =>
+    api.delete<ApiResponse>("/notifications", { data: { notificationIds } }),
+
+  // Get notification settings
+  getSettings: () => api.get<ApiResponse>("/notifications/settings"),
+
+  // Update notification settings
+  updateSettings: (settings: {
+    email?: boolean;
+    push?: boolean;
+    marketing?: boolean;
+  }) => api.put<ApiResponse>("/notifications/settings", settings),
+
+  // Get collaboration notifications
+  getCollaborationNotifications: () =>
+    api.get<ApiResponse>("/notifications/collaboration"),
+};
+
 export const aiAPI = {
   // Get available AI contexts
   getContexts: () => api.get<ApiResponse>("/ai/contexts"),

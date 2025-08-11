@@ -19,6 +19,7 @@ import {
   FolderOpen,
   Handshake,
   Settings,
+  Flag,
   X,
   Check,
 } from "lucide-react";
@@ -62,6 +63,9 @@ const getNotificationIcon = (type: string) => {
           title="Collaboration Request"
         />
       );
+    case "discussion_flagged":
+    case "comment_flagged":
+      return <Flag className="w-5 h-5 text-red-500" title="Flagged" />;
     case "system":
       return <Settings className="w-5 h-5 text-gray-500" title="System" />;
     default:
@@ -89,6 +93,9 @@ const getNotificationColor = (type: string) => {
       return "bg-indigo-50 border-indigo-200";
     case "collaboration_request":
       return "bg-teal-50 border-teal-200";
+    case "discussion_flagged":
+    case "comment_flagged":
+      return "bg-red-50 border-red-200";
     case "system":
       return "bg-gray-50 border-gray-200";
     default:

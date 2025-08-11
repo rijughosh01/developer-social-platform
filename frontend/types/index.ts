@@ -196,6 +196,8 @@ export interface Notification {
     | "mention"
     | "project_invite"
     | "collaboration_request"
+    | "discussion_flagged"
+    | "comment_flagged"
     | "system";
   title: string;
   message: string;
@@ -203,6 +205,8 @@ export interface Notification {
     postId?: string;
     projectId?: string;
     commentId?: string;
+    discussionId?: string;
+    flagReason?: string;
     chatId?: string;
     messageId?: string;
     url?: string;

@@ -22,7 +22,7 @@ export default function TrendingPage() {
   // Pagination / infinite scroll state per section
   const POSTS_PAGE_SIZE = 6;
   const PROJECTS_PAGE_SIZE = 6;
-  const DEVS_PAGE_SIZE = 9;
+  const DEVS_PAGE_SIZE = 10;
   const [postsPage, setPostsPage] = useState(1);
   const [projectsPage, setProjectsPage] = useState(1);
   const [devsPage, setDevsPage] = useState(1);
@@ -36,8 +36,10 @@ export default function TrendingPage() {
       setLoading(true);
       try {
         const res = await api.get("/trending");
+        console.log("Trending API response:", res.data);
         setData(res.data.data);
       } catch (err: any) {
+        console.error("Trending API error:", err);
         setError("Failed to load trending content");
       }
       setLoading(false);
@@ -121,16 +123,19 @@ export default function TrendingPage() {
     [data.projects, search, timeRange, sortBy]
   );
   const filteredDevelopers = useMemo(
-    () =>
-      filterAndSort<any>(data.developers || [], {
-        getTitle: (d) => `${d.firstName || ""} ${d.lastName || ""}`,
-        getBody: (d) => d.bio || "",
-        getTags: () => [],
-        getLikes: (d) => d.followersCount || 0,
-        getDate: (d) => d.createdAt,
-        getExtra: () => 0,
-      }),
-    [data.developers, search, timeRange, sortBy]
+    () => {
+      console.log("Raw developers data:", data.developers);
+      const developers = data.developers || [];
+      const filtered = developers.filter((dev: any) => {
+        const q = (search || "").toLowerCase();
+        const title = `${dev.firstName || ""} ${dev.lastName || ""}`.toLowerCase();
+        const body = (dev.bio || "").toLowerCase();
+        return !q || title.includes(q) || body.includes(q);
+      });
+      console.log("Filtered developers:", filtered);
+      return filtered;
+    },
+    [data.developers, search]
   );
 
   // Reset pagination when filters change
@@ -543,10 +548,10 @@ export default function TrendingPage() {
                         Trending Developers
                       </h2>
                     </div>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       {loading && (
                         <>
-                          {Array.from({length:6}).map((_,i)=> (
+                          {Array.from({length:10}).map((_,i)=> (
                             <div key={i} className="animate-pulse bg-white rounded-2xl border border-gray-100 shadow-sm p-5" />
                           ))}
                         </>

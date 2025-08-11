@@ -7,7 +7,16 @@ const User = require("../models/User");
 const NotificationService = require("../utils/notificationService");
 
 // Initialize notification service
-const notificationService = new NotificationService();
+let notificationService = new NotificationService();
+
+// Middleware to set notification service with io instance
+const setNotificationService = (req, res, next) => {
+  const io = req.app.get('io');
+  if (io) {
+    notificationService = new NotificationService(io);
+  }
+  next();
+};
 
 // Get all discussions with filters
 router.get(
@@ -544,6 +553,7 @@ router.put(
 router.post(
   "/:id/comments/:commentId/flag",
   protect,
+  setNotificationService,
   asyncHandler(async (req, res) => {
     const { reason } = req.body;
 
@@ -594,6 +604,22 @@ router.post(
     });
 
     await discussion.save();
+
+    // Send notification to comment author
+    if (comment.author.toString() !== req.user._id.toString()) {
+      try {
+        await notificationService.createCommentFlaggedNotification(
+          req.user._id,
+          comment.author,
+          discussion._id,
+          discussion.title,
+          comment._id,
+          reason
+        );
+      } catch (error) {
+        console.error("Error sending flag notification:", error);
+      }
+    }
 
     res.json({
       success: true,
@@ -662,6 +688,7 @@ router.post(
 router.post(
   "/:id/flag",
   protect,
+  setNotificationService,
   asyncHandler(async (req, res) => {
     const { reason } = req.body;
 
@@ -703,6 +730,21 @@ router.post(
     });
 
     await discussion.save();
+
+    // Send notification to discussion author
+    if (discussion.author.toString() !== req.user._id.toString()) {
+      try {
+        await notificationService.createDiscussionFlaggedNotification(
+          req.user._id,
+          discussion.author,
+          discussion._id,
+          discussion.title,
+          reason
+        );
+      } catch (error) {
+        console.error("Error sending flag notification:", error);
+      }
+    }
 
     res.json({
       success: true,

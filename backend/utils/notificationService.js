@@ -317,6 +317,60 @@ class NotificationService {
     });
   }
 
+  // Discussion flagged notification
+  async createDiscussionFlaggedNotification(
+    flaggerId,
+    discussionAuthorId,
+    discussionId,
+    discussionTitle,
+    flagReason
+  ) {
+    const flagger = await User.findById(flaggerId).select(
+      "username firstName lastName"
+    );
+
+    return await this.createNotification({
+      recipient: discussionAuthorId,
+      sender: flaggerId,
+      type: "discussion_flagged",
+      title: "Your discussion has been flagged",
+      message: `Your discussion "${discussionTitle}" has been flagged for ${flagReason}`,
+      data: {
+        discussionId,
+        flagReason,
+        url: `/discussions/${discussionId}`,
+      },
+    });
+  }
+
+  // Comment flagged notification
+  async createCommentFlaggedNotification(
+    flaggerId,
+    commentAuthorId,
+    discussionId,
+    discussionTitle,
+    commentId,
+    flagReason
+  ) {
+    const flagger = await User.findById(flaggerId).select(
+      "username firstName lastName"
+    );
+
+    return await this.createNotification({
+      recipient: commentAuthorId,
+      sender: flaggerId,
+      type: "comment_flagged",
+      title: "Your comment has been flagged",
+      message: `Your comment in "${discussionTitle}" has been flagged for ${flagReason}`,
+      data: {
+        discussionId,
+        commentId,
+        flagReason,
+        url: `/discussions/${discussionId}#comment-${commentId}`,
+      },
+    });
+  }
+
   // System notification
   async createSystemNotification(recipientId, title, message, data = {}) {
     return await this.createNotification({

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { logout } from "@/store/slices/authSlice";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/Logo";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import {
   FiSearch,
@@ -240,28 +241,7 @@ export function DashboardHeader() {
                 <div className="absolute bottom-8 right-2 w-0.5 h-0.5 bg-white rounded-full"></div>
               </div>
 
-              <Link
-                href="/"
-                className="cursor-pointer hover:opacity-90 transition-all duration-300 group relative z-10"
-                onClick={closeMobileMenu}
-              >
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center mr-3 group-hover:scale-105 transition-transform duration-300 shadow-lg">
-                    <div className="relative">
-                      <FiLink className="w-5 h-5 text-primary-600" />
-                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gradient-to-r from-green-400 to-blue-500 rounded-full border border-white"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-xl font-bold text-white tracking-tight group-hover:text-blue-100 transition-colors duration-300">
-                      DevLink
-                    </span>
-                    <div className="text-xs text-primary-100 font-medium tracking-wide">
-                      Connect • Collaborate • Code
-                    </div>
-                  </div>
-                </div>
-              </Link>
+              <Logo variant="compact" className="relative z-10" onClick={closeMobileMenu} />
               <button
                 onClick={closeMobileMenu}
                 className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600 relative z-10"

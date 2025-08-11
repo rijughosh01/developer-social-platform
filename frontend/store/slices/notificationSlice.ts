@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { NotificationState, Notification, ApiResponse } from "@/types";
-import { api } from "@/lib/api";
+import { notificationsAPI } from "@/lib/api";
 
 const initialState: NotificationState = {
   notifications: [],
@@ -19,18 +19,7 @@ const initialState: NotificationState = {
 export const fetchNotifications = createAsyncThunk(
   "notifications/fetchNotifications",
   async ({ page = 1, limit = 20 }: { page?: number; limit?: number }) => {
-    const response = await api.get<
-      ApiResponse<{
-        notifications: Notification[];
-        pagination: {
-          page: number;
-          limit: number;
-          total: number;
-          pages: number;
-        };
-        unreadCount: number;
-      }>
-    >(`/notifications?page=${page}&limit=${limit}`);
+    const response = await notificationsAPI.getNotifications({ page, limit });
     return response.data;
   }
 );
@@ -38,9 +27,7 @@ export const fetchNotifications = createAsyncThunk(
 export const getUnreadCount = createAsyncThunk(
   "notifications/getUnreadCount",
   async () => {
-    const response = await api.get<ApiResponse<{ unreadCount: number }>>(
-      "/notifications/unread-count"
-    );
+    const response = await notificationsAPI.getUnreadCount();
     return response.data;
   }
 );
@@ -48,9 +35,7 @@ export const getUnreadCount = createAsyncThunk(
 export const markNotificationAsRead = createAsyncThunk(
   "notifications/markAsRead",
   async (notificationId: string) => {
-    const response = await api.put<ApiResponse<Notification>>(
-      `/notifications/${notificationId}/read`
-    );
+    const response = await notificationsAPI.markAsRead(notificationId);
     return response.data;
   }
 );
@@ -58,12 +43,7 @@ export const markNotificationAsRead = createAsyncThunk(
 export const markMultipleNotificationsAsRead = createAsyncThunk(
   "notifications/markMultipleAsRead",
   async (notificationIds: string[]) => {
-    const response = await api.put<ApiResponse<{ updatedCount: number }>>(
-      "/notifications/mark-read",
-      {
-        notificationIds,
-      }
-    );
+    const response = await notificationsAPI.markMultipleAsRead(notificationIds);
     return response.data;
   }
 );
@@ -71,9 +51,7 @@ export const markMultipleNotificationsAsRead = createAsyncThunk(
 export const markAllNotificationsAsRead = createAsyncThunk(
   "notifications/markAllAsRead",
   async () => {
-    const response = await api.put<ApiResponse<{ updatedCount: number }>>(
-      "/notifications/mark-all-read"
-    );
+    const response = await notificationsAPI.markAllAsRead();
     return response.data;
   }
 );
@@ -81,7 +59,7 @@ export const markAllNotificationsAsRead = createAsyncThunk(
 export const deleteNotification = createAsyncThunk(
   "notifications/deleteNotification",
   async (notificationId: string) => {
-    await api.delete(`/notifications/${notificationId}`);
+    await notificationsAPI.deleteNotification(notificationId);
     return notificationId;
   }
 );
@@ -89,12 +67,7 @@ export const deleteNotification = createAsyncThunk(
 export const deleteMultipleNotifications = createAsyncThunk(
   "notifications/deleteMultipleNotifications",
   async (notificationIds: string[]) => {
-    const response = await api.delete<ApiResponse<{ deletedCount: number }>>(
-      "/notifications",
-      {
-        data: { notificationIds },
-      }
-    );
+    const response = await notificationsAPI.deleteMultipleNotifications(notificationIds);
     return response.data;
   }
 );
@@ -102,13 +75,7 @@ export const deleteMultipleNotifications = createAsyncThunk(
 export const getNotificationSettings = createAsyncThunk(
   "notifications/getSettings",
   async () => {
-    const response = await api.get<
-      ApiResponse<{
-        email: boolean;
-        push: boolean;
-        marketing: boolean;
-      }>
-    >("/notifications/settings");
+    const response = await notificationsAPI.getSettings();
     return response.data;
   }
 );
@@ -120,13 +87,7 @@ export const updateNotificationSettings = createAsyncThunk(
     push?: boolean;
     marketing?: boolean;
   }) => {
-    const response = await api.put<
-      ApiResponse<{
-        email: boolean;
-        push: boolean;
-        marketing: boolean;
-      }>
-    >("/notifications/settings", settings);
+    const response = await notificationsAPI.updateSettings(settings);
     return response.data;
   }
 );

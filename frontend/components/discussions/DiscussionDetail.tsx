@@ -44,6 +44,7 @@ import { savedAPI } from "@/lib/api";
 import toast from "react-hot-toast";
 import { EnhancedComment } from "./EnhancedComment";
 import { RichTextEditor } from "./RichTextEditor";
+import { FlagStatus } from "./FlagStatus";
 
 interface DiscussionDetailProps {
   discussion: Discussion;
@@ -493,6 +494,13 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
 
         {/*  Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Flag Status */}
+          <FlagStatus 
+            content={discussion} 
+            contentType="discussion" 
+            className="mb-6"
+          />
+          
           <div className="prose prose-lg max-w-none mb-6 sm:mb-8">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
               {discussion.content}

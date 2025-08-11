@@ -93,14 +93,22 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
+    if (!touch) return;
+    
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
+
+    e.preventDefault();
 
     setDragOffset({
       x: touch.clientX - rect.left,
       y: touch.clientY - rect.top,
     });
-    setIsDragging(true);
+    
+    // Small delay to prevent accidental drags
+    setTimeout(() => {
+      setIsDragging(true);
+    }, 50);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -122,7 +130,13 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
   const handleTouchMove = (e: TouchEvent) => {
     if (!isDragging) return;
 
+    if (isDragging && e.cancelable) {
+      e.preventDefault();
+    }
+
     const touch = e.touches[0];
+    if (!touch) return;
+
     const newX = touch.clientX - dragOffset.x;
     const newY = touch.clientY - dragOffset.y;
 
@@ -134,10 +148,6 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
 
     const newPosition = { x: constrainedX, y: constrainedY };
     setButtonPosition(newPosition);
-
-    if (isDragging) {
-      e.preventDefault();
-    }
   };
 
   const handleMouseUp = () => {
@@ -164,12 +174,12 @@ const AIChatButton: React.FC<AIChatButtonProps> = ({
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove, {
-        passive: false,
-      });
-      document.addEventListener("touchend", handleTouchEnd, {
-        passive: false,
-      });
+      
+      const touchMoveOptions = { passive: false };
+      const touchEndOptions = { passive: true };
+      
+      document.addEventListener("touchmove", handleTouchMove, touchMoveOptions);
+      document.addEventListener("touchend", handleTouchEnd, touchEndOptions);
 
       return () => {
         document.removeEventListener("mousemove", handleMouseMove);

@@ -5,7 +5,23 @@ import { useForm } from "react-hook-form";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { createPost } from "@/store/slices/postsSlice";
 import { Button } from "@/components/ui/button";
-import { FiImage, FiX, FiSend, FiLoader } from "react-icons/fi";
+import {
+  FiImage,
+  FiX,
+  FiSend,
+  FiLoader,
+  FiCode,
+  FiFileText,
+  FiTag,
+  FiEye,
+  FiEdit3,
+  FiPlus,
+  FiZap,
+  FiTrendingUp,
+  FiStar,
+  FiChevronDown,
+  FiChevronUp,
+} from "react-icons/fi";
 import toast from "react-hot-toast";
 import Editor from "react-simple-code-editor";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -39,7 +55,39 @@ interface CreatePostForm {
   content: string;
 }
 
+const languageOptions = [
+  { value: "javascript", label: "JavaScript", icon: "⚡" },
+  { value: "typescript", label: "TypeScript", icon: "🔷" },
+  { value: "python", label: "Python", icon: "🐍" },
+  { value: "java", label: "Java", icon: "☕" },
+  { value: "cpp", label: "C++", icon: "⚙️" },
+  { value: "css", label: "CSS", icon: "🎨" },
+  { value: "php", label: "PHP", icon: "🐘" },
+  { value: "sql", label: "SQL", icon: "🗄️" },
+  { value: "bash", label: "Bash", icon: "💻" },
+  { value: "markup", label: "HTML", icon: "🌐" },
+  { value: "react", label: "React", icon: "⚛️" },
+  { value: "node", label: "Node.js", icon: "🟢" },
+];
+
+const difficultyOptions = [
+  { value: "beginner", label: "Beginner", icon: "🌱", color: "text-green-600" },
+  {
+    value: "intermediate",
+    label: "Intermediate",
+    icon: "🚀",
+    color: "text-blue-600",
+  },
+  {
+    value: "advanced",
+    label: "Advanced",
+    icon: "⚡",
+    color: "text-purple-600",
+  },
+];
+
 export function CreatePost() {
+  const [isVisible, setIsVisible] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -86,6 +134,25 @@ export function CreatePost() {
   const removeImage = () => {
     setSelectedImage(null);
     setImagePreview(null);
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setContent("");
+    setTagsInput("");
+    setSelectedImage(null);
+    setImagePreview(null);
+    setCode("");
+    setCodeLanguage("javascript");
+    setCodeDifficulty("beginner");
+    setCodeDescription("");
+    setPostType("regular");
+    setCodeTab("edit");
+  };
+
+  const handleCancel = () => {
+    resetForm();
+    setIsVisible(false);
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -137,16 +204,8 @@ export function CreatePost() {
           })
         );
       }
-      setTitle("");
-      setContent("");
-      setTagsInput("");
-      setSelectedImage(null);
-      setImagePreview(null);
-      setCode("");
-      setCodeLanguage("javascript");
-      setCodeDifficulty("beginner");
-      setCodeDescription("");
-      setPostType("regular");
+      resetForm();
+      setIsVisible(false);
       toast.success("Post created successfully!");
     } catch (err: any) {
       toast.error(err.message || "Failed to create post");
@@ -156,291 +215,384 @@ export function CreatePost() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-100">
-      <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
-          <img
-            src={getAvatarUrl(user)}
-            alt="User Avatar"
-            className="w-12 h-12 rounded-full object-cover"
-          />
+    <div className="mb-6">
+      {/* Toggle Button - Always Visible */}
+      {!isVisible && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
+          <button
+            onClick={() => setIsVisible(true)}
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 hover:border-gray-300 transition-all duration-200 group"
+          >
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <FiPlus className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left">
+              <div className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                Create a Post
+              </div>
+              <div className="text-sm text-gray-500">
+                Share your thoughts, code, or experiences with the community
+              </div>
+            </div>
+            <FiChevronDown className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors ml-auto" />
+          </button>
         </div>
-        <form onSubmit={onSubmit} className="flex-1 min-w-0">
-          {/* Post type toggle */}
-          <div className="flex gap-2 mb-2">
-            <button
-              type="button"
-              className={`px-3 py-1 rounded-lg text-sm font-medium border ${
-                postType === "regular"
-                  ? "bg-primary-600 text-white"
-                  : "bg-white text-gray-700 border-gray-200"
-              }`}
-              onClick={() => setPostType("regular")}
-            >
-              Regular Post
-            </button>
-            <button
-              type="button"
-              className={`px-3 py-1 rounded-lg text-sm font-medium border ${
-                postType === "code"
-                  ? "bg-primary-600 text-white"
-                  : "bg-white text-gray-700 border-gray-200"
-              }`}
-              onClick={() => setPostType("code")}
-            >
-              Code Post
-            </button>
-          </div>
-          <input
-            type="text"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="w-full mb-2 px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base font-semibold placeholder-gray-400 transition"
-          />
-          <input
-            type="text"
-            placeholder="Tags (comma separated, e.g. react, nodejs, api)"
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            className="w-full mb-2 px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base placeholder-gray-400 transition"
-          />
-          {postType === "regular" && (
-            <textarea
-              placeholder="What's on your mind?"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
-              rows={3}
-              className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none placeholder-gray-400 transition"
-            />
-          )}
-          {postType === "code" && (
-            <>
-              <div className="flex gap-2 mb-2">
-                <select
-                  aria-label="Code Language"
-                  value={codeLanguage}
-                  onChange={(e) => setCodeLanguage(e.target.value)}
-                  className="px-3 py-1 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-sm"
-                >
-                  <option value="javascript">JavaScript</option>
-                  <option value="typescript">TypeScript</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java</option>
-                  <option value="cpp">C++</option>
-                  <option value="css">CSS</option>
-                  <option value="php">PHP</option>
-                  <option value="sql">SQL</option>
-                  <option value="bash">Bash</option>
-                  <option value="markup">HTML</option>
-                  <option value="react">React</option>
-                  <option value="node">Node.js</option>
-                </select>
-                <span className="text-xs text-gray-400 self-center">
-                  Select language
-                </span>
-              </div>
+      )}
 
-              {/* Difficulty Level Selector */}
-              <div className="flex gap-2 mb-2">
-                <select
-                  aria-label="Difficulty Level"
-                  value={codeDifficulty}
-                  onChange={(e) => setCodeDifficulty(e.target.value)}
-                  className="px-3 py-1 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-sm"
-                >
-                  <option value="beginner">🌱 Beginner</option>
-                  <option value="intermediate">🚀 Intermediate</option>
-                  <option value="advanced">⚡ Advanced</option>
-                </select>
-                <span className="text-xs text-gray-400 self-center">
-                  Select difficulty
-                </span>
-              </div>
-
-              {/* Description Field */}
-              <div className="mb-2">
-                <textarea
-                  placeholder="Describe your code, explain what it does, or add any context..."
-                  value={codeDescription}
-                  onChange={(e) => setCodeDescription(e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base resize-none placeholder-gray-400 transition"
-                />
-              </div>
-
-              <div className="flex gap-2 mb-2">
-                <button
-                  type="button"
-                  className={`px-3 py-1 rounded-lg text-sm font-medium border ${
-                    codeTab === "edit"
-                      ? "bg-primary-600 text-white"
-                      : "bg-white text-gray-700 border-gray-200"
-                  }`}
-                  onClick={() => setCodeTab("edit")}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1 rounded-lg text-sm font-medium border ${
-                    codeTab === "preview"
-                      ? "bg-primary-600 text-white"
-                      : "bg-white text-gray-700 border-gray-200"
-                  }`}
-                  onClick={() => setCodeTab("preview")}
-                >
-                  Preview
-                </button>
-              </div>
-              {codeTab === "edit" && (
-                <div className="w-full max-w-full" style={{ height: 240 }}>
-                  <textarea
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    className="w-full h-full font-mono text-sm rounded-lg border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 bg-white p-3 resize-none"
-                    style={{
-                      fontFamily: "Fira Mono, monospace",
-                      fontSize: 14,
-                      minHeight: 0,
-                      height: "100%",
-                      overflowY: "auto",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-all",
-                      color: "#111",
-                      background: "#fff",
-                    }}
-                    placeholder="Paste or write your code here..."
+      {/* Post Creation Form - Only Visible When Toggled */}
+      {isVisible && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center overflow-hidden ring-2 ring-white shadow-sm">
+                  <img
+                    src={user ? getAvatarUrl(user) : ""}
+                    alt="User Avatar"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
                 </div>
-              )}
-              {codeTab === "preview" && (
-                <div
-                  className="w-full border border-gray-200 rounded-lg overflow-hidden"
-                  style={{
-                    maxWidth: "100%",
-                    wordWrap: "break-word",
-                    minWidth: 0,
-                  }}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Create Post
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Share your thoughts or code with the community
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCancel}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                title="Cancel"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={onSubmit} className="p-6">
+            {/* Post Type Selector */}
+            <div className="mb-6">
+              <div className="flex bg-gray-50 rounded-xl p-1">
+                <button
+                  type="button"
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    postType === "regular"
+                      ? "bg-white text-blue-600 shadow-sm border border-blue-100"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                  onClick={() => setPostType("regular")}
                 >
-                  {code ? (
-                    <div
-                      className="overflow-x-auto"
-                      style={{ maxWidth: "100%" }}
+                  <FiFileText className="w-4 h-4" />
+                  Regular Post
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    postType === "code"
+                      ? "bg-white text-blue-600 shadow-sm border border-blue-100"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                  onClick={() => setPostType("code")}
+                >
+                  <FiCode className="w-4 h-4" />
+                  Code Post
+                </button>
+              </div>
+            </div>
+
+            {/* Title Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                placeholder="Give your post a compelling title..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-base font-medium placeholder-gray-400 transition-all duration-200 bg-gray-50 focus:bg-white"
+              />
+            </div>
+
+            {/* Tags Input */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tags
+              </label>
+              <div className="relative">
+                <FiTag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="react, nodejs, api, javascript..."
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-base placeholder-gray-400 transition-all duration-200 bg-gray-50 focus:bg-white"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Separate tags with commas
+              </p>
+            </div>
+
+            {/* Content Section */}
+            {postType === "regular" && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Content
+                </label>
+                <textarea
+                  placeholder="What's on your mind? Share your thoughts, ideas, or experiences..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  required
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-base resize-none placeholder-gray-400 transition-all duration-200 bg-gray-50 focus:bg-white"
+                />
+              </div>
+            )}
+
+            {/* Code Post Specific Fields */}
+            {postType === "code" && (
+              <div className="space-y-4">
+                {/* Language and Difficulty Selectors */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Programming Language
+                    </label>
+                    <select
+                      value={codeLanguage}
+                      onChange={(e) => setCodeLanguage(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-base transition-all duration-200 bg-gray-50 focus:bg-white"
                     >
-                      <SyntaxHighlighter
-                        language={codeLanguage || "javascript"}
-                        style={atomOneDark}
-                        customStyle={{
-                          borderRadius: "0.5rem",
-                          fontSize: 14,
-                          padding: 16,
-                          margin: 0,
-                          background: "#1e1e1e",
-                          minHeight: "240px",
-                          maxHeight: "400px",
-                          overflowY: "auto",
-                          overflowX: "auto",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                          maxWidth: "100%",
-                          minWidth: 0,
-                        }}
-                        showLineNumbers
-                      >
-                        {code}
-                      </SyntaxHighlighter>
+                      {languageOptions.map((lang) => (
+                        <option key={lang.value} value={lang.value}>
+                          {lang.icon} {lang.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Difficulty Level
+                    </label>
+                    <select
+                      value={codeDifficulty}
+                      onChange={(e) => setCodeDifficulty(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-base transition-all duration-200 bg-gray-50 focus:bg-white"
+                    >
+                      {difficultyOptions.map((diff) => (
+                        <option key={diff.value} value={diff.value}>
+                          {diff.icon} {diff.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    placeholder="Explain what your code does, the problem it solves, or any context that would help others understand..."
+                    value={codeDescription}
+                    onChange={(e) => setCodeDescription(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 text-base resize-none placeholder-gray-400 transition-all duration-200 bg-gray-50 focus:bg-white"
+                  />
+                </div>
+
+                {/* Code Editor Tabs */}
+                <div>
+                  <div className="flex bg-gray-50 rounded-xl p-1 mb-3">
+                    <button
+                      type="button"
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        codeTab === "edit"
+                          ? "bg-white text-blue-600 shadow-sm border border-blue-100"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      }`}
+                      onClick={() => setCodeTab("edit")}
+                    >
+                      <FiEdit3 className="w-4 h-4" />
+                      Edit Code
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        codeTab === "preview"
+                          ? "bg-white text-blue-600 shadow-sm border border-blue-100"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      }`}
+                      onClick={() => setCodeTab("preview")}
+                    >
+                      <FiEye className="w-4 h-4" />
+                      Preview
+                    </button>
+                  </div>
+
+                  {codeTab === "edit" && (
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Code
+                      </label>
+                      <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-900">
+                        <textarea
+                          value={code}
+                          onChange={(e) => setCode(e.target.value)}
+                          className="w-full h-64 font-mono text-sm bg-gray-900 text-gray-100 p-4 resize-none focus:outline-none focus:ring-0"
+                          style={{
+                            fontFamily:
+                              "Fira Code, Monaco, Consolas, monospace",
+                            fontSize: 14,
+                            lineHeight: 1.5,
+                          }}
+                          placeholder="// Write your code here..."
+                        />
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-60 bg-gray-50 text-gray-500">
-                      <div className="text-center">
-                        <div className="text-lg mb-2">📝</div>
-                        <div className="text-sm">No code to preview</div>
-                        <div className="text-xs mt-1">
-                          Switch to Edit tab to write code
-                        </div>
+                  )}
+
+                  {codeTab === "preview" && (
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Code Preview
+                      </label>
+                      <div className="border border-gray-200 rounded-xl overflow-hidden">
+                        {code ? (
+                          <div className="overflow-x-auto">
+                            <SyntaxHighlighter
+                              language={codeLanguage || "javascript"}
+                              style={atomOneDark}
+                              customStyle={{
+                                borderRadius: "0.75rem",
+                                fontSize: 14,
+                                padding: 16,
+                                margin: 0,
+                                background: "#1e1e1e",
+                                minHeight: "256px",
+                                maxHeight: "400px",
+                                overflowY: "auto",
+                                overflowX: "auto",
+                                fontFamily:
+                                  "Fira Code, Monaco, Consolas, monospace",
+                              }}
+                              showLineNumbers
+                            >
+                              {code}
+                            </SyntaxHighlighter>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-64 bg-gray-50 text-gray-500">
+                            <div className="text-center">
+                              <FiCode className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                              <div className="text-sm font-medium">
+                                No code to preview
+                              </div>
+                              <div className="text-xs mt-1 text-gray-400">
+                                Switch to Edit tab to write code
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
-              )}
-            </>
-          )}
-          {errors.content && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.content.message}
-            </p>
-          )}
-
-          {/* Image Preview */}
-          {postType === "regular" && imagePreview && (
-            <div className="mt-3 relative group w-fit">
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="max-h-56 rounded-lg object-cover border border-gray-200 shadow"
-              />
-              <button
-                type="button"
-                onClick={removeImage}
-                className="absolute top-2 right-2 p-1 bg-gray-900 bg-opacity-60 rounded-full text-white opacity-0 group-hover:opacity-100 transition"
-                title="Remove image"
-                disabled={isCreating || isUploading}
-              >
-                <FiX className="h-4 w-4" />
-              </button>
-              {isUploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-60 rounded-lg">
-                  <FiLoader className="animate-spin h-8 w-8 text-primary-600" />
-                  <span className="ml-2 text-primary-600 font-medium">
-                    Uploading...
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-4">
-            {postType === "regular" && (
-              <label className="cursor-pointer flex items-center gap-2 text-gray-500 hover:text-primary-600">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-                <div className="p-2 hover:bg-primary-50 rounded-full transition-colors">
-                  <FiImage className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-medium hidden sm:inline">
-                  Add image
-                </span>
-              </label>
+              </div>
             )}
-            <Button
-              type="submit"
-              disabled={isCreating || isUploading}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold text-base shadow-sm transition"
-            >
-              {isCreating || isUploading ? (
-                <FiLoader className="h-4 w-4 animate-spin" />
-              ) : (
-                <FiSend className="h-4 w-4" />
-              )}
-              <span>
-                {isCreating
-                  ? "Posting..."
-                  : isUploading
-                  ? "Uploading..."
-                  : "Post"}
-              </span>
-            </Button>
-          </div>
-        </form>
-      </div>
+
+            {/* Image Preview for Regular Posts */}
+            {postType === "regular" && imagePreview && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Image Preview
+                </label>
+                <div className="relative group w-fit">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="max-h-64 rounded-xl object-cover border border-gray-200 shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 rounded-full text-white opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg"
+                    title="Remove image"
+                    disabled={isCreating || isUploading}
+                  >
+                    <FiX className="h-4 w-4" />
+                  </button>
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <FiLoader className="animate-spin h-5 w-5 text-blue-600" />
+                        <span className="text-blue-600 font-medium">
+                          Uploading...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+                {postType === "regular" && (
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
+                      <FiImage className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-xs sm:text-sm font-medium">
+                        Add Image
+                      </span>
+                    </div>
+                  </label>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-3 sm:px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isCreating || isUploading}
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+              >
+                {isCreating || isUploading ? (
+                  <FiLoader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FiSend className="h-4 w-4" />
+                )}
+                <span>
+                  {isCreating
+                    ? "Creating Post..."
+                    : isUploading
+                    ? "Uploading..."
+                    : "Publish Post"}
+                </span>
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -59,15 +59,45 @@ router.get(
 
     // Trending developers: most followers
     const developersRaw = await User.find()
-      .sort({ followersCount: -1, lastSeen: -1 })
-      .limit(5)
       .select(
-        "username firstName lastName avatar followersCount bio followers"
-      );
+        "username firstName lastName avatar bio followers lastSeen createdAt isActive"
+      )
+      .populate("followers", "username");
 
-    const developers = developersRaw.map((dev) =>
-      dev.toObject({ virtuals: true })
-    );
+    // Sort by actual followers count
+    console.log("Raw developers count:", developersRaw.length);
+    const developers = developersRaw
+      .map((dev) => dev.toObject({ virtuals: true }))
+      .filter(dev => dev.isActive !== false) 
+      .sort((a, b) => {
+       
+        const aFollowers = a.followersCount || 0;
+        const bFollowers = b.followersCount || 0;
+        
+        if (aFollowers !== bFollowers) {
+          return bFollowers - aFollowers;
+        }
+        
+        const aLastSeen = a.lastSeen ? new Date(a.lastSeen).getTime() : 0;
+        const bLastSeen = b.lastSeen ? new Date(b.lastSeen).getTime() : 0;
+        
+        if (aLastSeen !== bLastSeen) {
+          return bLastSeen - aLastSeen;
+        }
+        
+        // Tertiary sort: most recently created
+        const aCreated = new Date(a.createdAt).getTime();
+        const bCreated = new Date(b.createdAt).getTime();
+        return bCreated - aCreated;
+      })
+      .slice(0, 10);
+    
+    console.log("Final developers count:", developers.length);
+    console.log("Developers data:", developers.map(d => ({
+      username: d.username,
+      name: `${d.firstName} ${d.lastName}`,
+      followersCount: d.followersCount
+    })));
 
     res.json({
       success: true,
@@ -79,5 +109,35 @@ router.get(
     });
   })
 );
+
+// Debug endpoint to check follower counts
+router.get("/debug-developers", asyncHandler(async (req, res) => {
+  const developersRaw = await User.find()
+    .select("username firstName lastName followers lastSeen createdAt isActive")
+    .populate("followers", "username");
+
+  const developers = developersRaw
+    .map((dev) => dev.toObject({ virtuals: true }))
+    .filter(dev => dev.isActive !== false) 
+    .sort((a, b) => {
+      const aFollowers = a.followersCount || 0;
+      const bFollowers = b.followersCount || 0;
+      return bFollowers - aFollowers;
+    })
+    .slice(0, 10)
+    .map(dev => ({
+      username: dev.username,
+      name: `${dev.firstName} ${dev.lastName}`,
+      followersCount: dev.followersCount,
+      followers: dev.followers.map(f => f.username),
+      lastSeen: dev.lastSeen,
+      createdAt: dev.createdAt
+    }));
+
+  res.json({
+    success: true,
+    data: developers
+  });
+}));
 
 module.exports = router;

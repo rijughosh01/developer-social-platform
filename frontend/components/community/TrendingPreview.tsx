@@ -21,7 +21,7 @@ export function TrendingPreview() {
                 View all
               </Link>
             </div>
-            <TrendingDevelopers limit={3} />
+            <TrendingDevelopers limit={10} />
           </div>
           <div>
             <div className="flex items-center justify-between mb-4">

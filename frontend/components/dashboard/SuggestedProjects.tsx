@@ -10,6 +10,13 @@ import {
   FiTrash2,
   FiExternalLink,
   FiGithub,
+  FiArrowRight,
+  FiZap,
+  FiEye,
+  FiCode,
+  FiGlobe,
+  FiUsers,
+  FiCalendar
 } from "react-icons/fi";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
 import { fetchProjects } from "@/store/slices/projectsSlice";
@@ -76,26 +83,46 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
   const suggestedProjects = localProjects.slice(0, limit);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-      <div className="p-4 sm:p-6 border-b border-gray-200">
-        <div className="flex items-center">
-          <FiFolder className="h-5 w-5 text-primary-600 mr-2" />
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-            Suggested Projects
-          </h3>
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+              <FiFolder className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Suggested Projects
+              </h3>
+              <p className="text-sm text-gray-600">
+                Discover amazing projects
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-gray-500 bg-white px-2 py-1 rounded-lg border border-gray-200">
+            <FiZap className="w-3 h-3" />
+            <span>New</span>
+          </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-6">
+      {/* Content */}
+      <div className="p-6">
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(limit)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="flex space-x-2">
-                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="h-32 bg-gray-200 rounded-lg"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-gray-200 rounded w-16"></div>
+                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -105,128 +132,162 @@ export function SuggestedProjects({ limit = 5 }: { limit?: number }) {
             {suggestedProjects.map((project) => (
               <div
                 key={project._id}
-                className="p-0 rounded-xl border border-gray-100 shadow-sm group hover:shadow-lg hover:-translate-y-1 transition-all bg-white relative cursor-pointer overflow-hidden"
+                className="group cursor-pointer"
                 onClick={(e) => {
                   if ((e.target as HTMLElement).closest("button")) return;
                   setSelectedProject(project);
                   setModalOpen(true);
                 }}
               >
-                {/* Main Image */}
-                {project.image && (
-                  <div className="w-full h-24 sm:h-32 bg-gray-100 flex items-center justify-center overflow-hidden border-b rounded-t-xl">
-                    <img
-                      src={project.image}
-                      alt={project.title}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                )}
-                <div className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-bold text-gray-900 truncate max-w-[60%]">
-                      {project.title}
-                    </h4>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className={`flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded text-xs font-semibold border ${
-                          project.isLiked
-                            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                            : "bg-gray-50 text-gray-600 border-gray-200"
-                        } hover:bg-yellow-100 hover:text-yellow-800 transition`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStar(project._id);
-                        }}
-                        title={project.isLiked ? "Unstar" : "Star"}
-                      >
-                        <FiStar
-                          className={project.isLiked ? "fill-yellow-400" : ""}
-                        />
-                        <span>{project.likesCount || 0}</span>
-                      </button>
-                      {user?._id === (project as any).owner?._id && (
+                <div className="bg-gray-50 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 rounded-xl border border-transparent hover:border-green-200 transition-all duration-200 overflow-hidden">
+                  {/* Project Image */}
+                  {project.image && (
+                    <div className="relative h-40 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                      <img
+                        src={project.image}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                      
+                      {/* Action Buttons Overlay */}
+                      <div className="absolute top-3 right-3 flex items-center gap-2">
                         <button
-                          className="p-1 sm:p-1.5 rounded-full hover:bg-red-50 text-red-600 hover:text-red-700 transition"
-                          title="Delete project"
+                          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm transition-all duration-200 ${
+                            project.isLiked
+                              ? "bg-yellow-500/90 text-white border-yellow-400"
+                              : "bg-white/90 text-gray-700 border-white/50 hover:bg-white"
+                          }`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(project._id);
+                            handleStar(project._id);
+                          }}
+                          title={project.isLiked ? "Unstar" : "Star"}
+                        >
+                          <FiStar
+                            className={`w-3 h-3 ${project.isLiked ? "fill-current" : ""}`}
+                          />
+                          <span>{project.likesCount || 0}</span>
+                        </button>
+                        {user?._id === (project as any).owner?._id && (
+                          <button
+                            className="p-1.5 rounded-lg bg-red-500/90 text-white border border-red-400 backdrop-blur-sm hover:bg-red-600 transition-all duration-200"
+                            title="Delete project"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(project._id);
+                            }}
+                          >
+                            <FiTrash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Project Content */}
+                  <div className="p-4">
+                    
+                    <div className="mb-3">
+                      <h4 className="text-base font-semibold text-gray-900 truncate mb-1 group-hover:text-green-600 transition-colors">
+                        {project.title}
+                      </h4>
+                      <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                        {project.description}
+                      </p>
+                    </div>
+
+                    {/* Tags */}
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {project.tags.slice(0, 3).map((tag: string) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium border border-green-200"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                        {project.tags.length > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium">
+                            +{project.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Project Links */}
+                    <div className="flex items-center gap-2 mb-3">
+                      {project.liveUrl && (
+                        <button
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 text-xs font-medium border border-green-200 transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(project.liveUrl, "_blank");
                           }}
                         >
-                          <FiTrash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <FiGlobe className="w-3 h-3" />
+                          Live
+                        </button>
+                      )}
+                      {project.githubUrl && (
+                        <button
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs font-medium border border-gray-200 transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(project.githubUrl, "_blank");
+                          }}
+                        >
+                          <FiGithub className="w-3 h-3" />
+                          GitHub
                         </button>
                       )}
                     </div>
-                  </div>
-                  {/* Tags */}
-                  {project.tags && project.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
-                      {project.tags.map((tag: string) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
+
+                    {/* Project Owner */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center overflow-hidden ring-2 ring-white shadow-sm">
+                          <img
+                            src={getAvatarUrl(project.owner)}
+                            alt="Owner Avatar"
+                            className="w-8 h-8 rounded-lg object-cover"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-900">
+                            {project.owner?.firstName} {project.owner?.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {project.createdAt && new Date(project.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* View Button */}
+                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200 group-hover:bg-green-50 group-hover:border-green-200 transition-all duration-200">
+                        <FiArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-600 transition-colors" />
+                      </div>
                     </div>
-                  )}
-                  <p className="text-xs text-gray-500 mb-2 line-clamp-2 min-h-[32px]">
-                    {project.description}
-                  </p>
-                  <div className="flex gap-2 mt-2">
-                    {project.liveUrl && (
-                      <button
-                        className="px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200 text-xs flex items-center gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(project.liveUrl, "_blank");
-                        }}
-                      >
-                        <FiExternalLink className="w-3 h-3 sm:w-4 sm:h-4" /> Live
-                      </button>
-                    )}
-                    {project.githubUrl && (
-                      <button
-                        className="px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs flex items-center gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(project.githubUrl, "_blank");
-                        }}
-                      >
-                        <FiGithub className="w-3 h-3 sm:w-4 sm:h-4" /> GitHub
-                      </button>
-                    )}
-                  </div>
-                  {/* Owner row */}
-                  <div className="flex items-center mt-3">
-                    <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden mr-2">
-                      <img
-                        src={getAvatarUrl(project.owner)}
-                        alt="Owner Avatar"
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {project.owner?.firstName} {project.owner?.lastName}
-                    </span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         )}
-
-        <div className="mt-6">
-          <Link
-            href="/projects"
-            className="block w-full text-center px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-md transition-colors"
-          >
-            View all projects
-          </Link>
-        </div>
       </div>
+
+      {/* Footer */}
+      <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-green-50 border-t border-gray-100">
+        <Link
+          href="/projects"
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-green-600 hover:text-green-700 hover:bg-green-100 rounded-xl transition-all duration-200 group"
+        >
+          <span>View all projects</span>
+          <FiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </div>
+
       <ProjectDetailsModal
         project={selectedProject}
         open={modalOpen}
