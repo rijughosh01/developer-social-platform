@@ -12,7 +12,7 @@ import {
   FiClock,
   FiGift,
 } from "react-icons/fi";
-import { getAvatarUrl } from "@/lib/utils";
+
 
 interface AnalyticsData {
   totalReviews: number;
@@ -270,17 +270,36 @@ export function CollaborationAnalytics() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={getAvatarUrl(collaborator)}
-                      alt="Collaborator Avatar"
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
+                    {collaborator.avatar ? (
+                      <img
+                        src={collaborator.avatar}
+                        alt={`${collaborator.firstName} ${collaborator.lastName}`}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`${collaborator.avatar ? 'hidden' : ''} w-8 h-8 flex items-center justify-center text-white text-xs font-semibold`}>
+                      {collaborator.firstName?.charAt(0)}
+                      {collaborator.lastName?.charAt(0)}
+                    </div>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
                       {collaborator.firstName} {collaborator.lastName}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p 
+                      className="text-sm text-gray-500 hover:text-primary-600 hover:underline cursor-pointer transition-colors"
+                      onClick={() => {
+                        // Navigate to collaborator's profile
+                        window.location.href = `/profile/${collaborator.username}`;
+                      }}
+                      title={`View ${collaborator.username}'s profile`}
+                    >
                       @{collaborator.username}
                     </p>
                   </div>

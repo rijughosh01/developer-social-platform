@@ -23,6 +23,7 @@ import {
 } from "@/lib/uploadUtils";
 import ProjectTemplates from "./ProjectTemplates";
 import CreationTips from "./CreationTips";
+import CollaboratorInput from "./CollaboratorInput";
 
 interface CreateProjectModalProps {
   open: boolean;
@@ -49,6 +50,15 @@ interface Screenshot {
   file: File;
   preview: string;
   caption: string;
+}
+
+interface Collaborator {
+  _id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  avatar?: string;
+  role: "developer" | "designer" | "tester" | "manager";
 }
 
 const CATEGORIES = [
@@ -121,6 +131,7 @@ export default function CreateProjectModal({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showTemplates, setShowTemplates] = useState(true);
 
@@ -242,14 +253,13 @@ export default function CreateProjectModal({
     setFormData((prev) => ({ ...prev, tags }));
   };
 
-  const handleCollaboratorsChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const collaborators = e.target.value
-      .split(",")
-      .map((collab) => collab.trim())
-      .filter((collab) => collab.length > 0);
-    setFormData((prev) => ({ ...prev, collaborators }));
+  const handleCollaboratorsChange = (newCollaborators: Collaborator[]) => {
+    setCollaborators(newCollaborators);
+
+    setFormData((prev) => ({
+      ...prev,
+      collaborators: newCollaborators.map((c) => c.username),
+    }));
   };
 
   // Lightweight validation for disabling buttons
@@ -374,10 +384,17 @@ export default function CreateProjectModal({
         uploadedScreenshots = await uploadScreenshots(screenshots);
       }
 
+      // Prepare collaborators data for backend
+      const collaboratorsData = collaborators.map((collaborator) => ({
+        username: collaborator.username,
+        role: collaborator.role,
+      }));
+
       const payload = {
         ...formData,
         image: imageUrl,
         screenshots: uploadedScreenshots,
+        collaborators: collaboratorsData,
         shortDescription:
           formData.shortDescription || formData.description.substring(0, 200),
       };
@@ -431,6 +448,7 @@ export default function CreateProjectModal({
     setImageFile(null);
     setImagePreview(null);
     setScreenshots([]);
+    setCollaborators([]);
     onClose();
   };
 
@@ -516,7 +534,9 @@ export default function CreateProjectModal({
                       placeholder="Enter your project title"
                       maxLength={100}
                     />
-                    <div className="mt-1 text-xs text-gray-500">{formData.title.length}/100</div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {formData.title.length}/100
+                    </div>
                     {errors.title && (
                       <p className="text-red-500 text-sm mt-1">
                         {errors.title}
@@ -541,7 +561,9 @@ export default function CreateProjectModal({
                       placeholder="Describe your project in detail..."
                       maxLength={1000}
                     />
-                    <div className="mt-1 text-xs text-gray-500">{formData.description.length}/1000</div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {formData.description.length}/1000
+                    </div>
                     {errors.description && (
                       <p className="text-red-500 text-sm mt-1">
                         {errors.description}
@@ -848,22 +870,11 @@ export default function CreateProjectModal({
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <FiUsers className="inline w-4 h-4 mr-1" />
-                      Collaborators
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.collaborators.join(", ")}
-                      onChange={handleCollaboratorsChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="Enter usernames or emails separated by commas"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Add collaborators by username or email address
-                    </p>
-                  </div>
+                  <CollaboratorInput
+                    collaborators={collaborators}
+                    onChange={handleCollaboratorsChange}
+                    className="mb-6"
+                  />
                 </div>
               )}
             </form>
@@ -888,7 +899,10 @@ export default function CreateProjectModal({
                 <button
                   type="button"
                   onClick={handleNext}
-                  disabled={(currentStep === 1 || currentStep === 2) && !isStepValid(currentStep)}
+                  disabled={
+                    (currentStep === 1 || currentStep === 2) &&
+                    !isStepValid(currentStep)
+                  }
                   className="flex items-center px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next

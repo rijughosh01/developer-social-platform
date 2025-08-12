@@ -253,14 +253,16 @@ router.post(
       .optional()
       .isArray({ min: 0, max: 10 })
       .withMessage("Collaborators must be an array with maximum 10 items"),
-    body("collaborators.*")
+    body("collaborators.*.username")
       .optional()
       .isString()
       .trim()
       .isLength({ min: 1, max: 100 })
-      .withMessage(
-        "Each collaborator identifier must be between 1 and 100 characters"
-      ),
+      .withMessage("Username must be between 1 and 100 characters"),
+    body("collaborators.*.role")
+      .optional()
+      .isIn(["developer", "designer", "tester", "manager"])
+      .withMessage("Invalid role"),
   ],
   validate,
   asyncHandler(async (req, res) => {
@@ -285,13 +287,13 @@ router.post(
     let collaboratorsArr = [];
     let addedUserIds = new Set();
     if (Array.isArray(collaborators) && collaborators.length > 0) {
-      for (const identifier of collaborators) {
+      for (const collaborator of collaborators) {
         const user = await User.findOne({
-          $or: [{ username: identifier }, { email: identifier }],
+          $or: [{ username: collaborator.username }, { email: collaborator.username }],
         });
         if (user) {
           if (!addedUserIds.has(user._id.toString())) {
-            collaboratorsArr.push({ user: user._id, role: "developer" });
+            collaboratorsArr.push({ user: user._id, role: collaborator.role || "developer" });
             addedUserIds.add(user._id.toString());
             console.log(
               "Added collaborator:",
@@ -306,7 +308,7 @@ router.post(
             );
           }
         } else {
-          console.log("Collaborator not found:", identifier);
+          console.log("Collaborator not found:", collaborator.username);
         }
       }
     }
@@ -328,6 +330,7 @@ router.post(
     });
 
     await project.populate("owner", "username firstName lastName avatar");
+    await project.populate("collaborators.user", "username firstName lastName avatar");
     await User.evaluateAndAwardBadges(req.user._id);
 
     // Track project creation analytics
@@ -461,13 +464,13 @@ router.put(
       let addedUserIds = new Set();
       const collaborators = req.body.collaborators;
       if (Array.isArray(collaborators) && collaborators.length > 0) {
-        for (const identifier of collaborators) {
+        for (const collaborator of collaborators) {
           const user = await User.findOne({
-            $or: [{ username: identifier }, { email: identifier }],
+            $or: [{ username: collaborator.username }, { email: collaborator.username }],
           });
           if (user) {
             if (!addedUserIds.has(user._id.toString())) {
-              collaboratorsArr.push({ user: user._id, role: "developer" });
+              collaboratorsArr.push({ user: user._id, role: collaborator.role || "developer" });
               addedUserIds.add(user._id.toString());
 
               console.log(
@@ -483,7 +486,7 @@ router.put(
               );
             }
           } else {
-            console.log("Collaborator not found (update):", identifier);
+            console.log("Collaborator not found (update):", collaborator.username);
           }
         }
       }

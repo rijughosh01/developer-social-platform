@@ -100,6 +100,14 @@ export const usersAPI = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
+  searchCollaborators: (query: string, excludeIds?: string[]) => 
+    api.get<ApiResponse>("/users/search/collaborators", { 
+      params: { 
+        q: query, 
+        excludeIds: excludeIds?.join(","),
+        limit: 10 
+      } 
+    }),
 };
 
 export const postsAPI = {

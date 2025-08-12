@@ -753,4 +753,78 @@ router.post(
   })
 );
 
+// Search users for collaborator suggestions
+router.get(
+  "/search/collaborators",
+  [
+    query("q")
+      .trim()
+      .isLength({ min: 1, max: 100 })
+      .withMessage("Search query must be between 1 and 100 characters"),
+    query("limit")
+      .optional()
+      .isInt({ min: 1, max: 20 })
+      .withMessage("Limit must be between 1 and 20"),
+    query("excludeIds")
+      .optional()
+      .isString()
+      .withMessage("Exclude IDs must be a comma-separated string"),
+  ],
+  validate,
+  auth.protect,
+  asyncHandler(async (req, res) => {
+    const { q, limit = 10, excludeIds } = req.query;
+    
+    // Build search query
+    const searchQuery = {
+      $or: [
+        { username: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+        { firstName: { $regex: q, $options: "i" } },
+        { lastName: { $regex: q, $options: "i" } },
+        { 
+          $expr: {
+            $regexMatch: {
+              input: { $concat: ["$firstName", " ", "$lastName"] },
+              regex: q,
+              options: "i"
+            }
+          }
+        }
+      ]
+    };
+
+    // Exclude current user and already added collaborators
+    const excludeUserIds = [req.user._id.toString()];
+    if (excludeIds) {
+      excludeUserIds.push(...excludeIds.split(","));
+    }
+    
+    if (excludeUserIds.length > 0) {
+      searchQuery._id = { $nin: excludeUserIds };
+    }
+
+    const users = await User.find(searchQuery)
+      .select("username firstName lastName email avatar bio skills")
+      .limit(parseInt(limit))
+      .sort({ username: 1 });
+
+    const suggestions = users.map(user => ({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: `${user.firstName} ${user.lastName}`,
+      avatar: user.avatar,
+      bio: user.bio,
+      skills: user.skills,
+      displayText: `${user.username} (${user.firstName} ${user.lastName})`
+    }));
+
+    res.json({
+      success: true,
+      data: suggestions
+    });
+  })
+);
+
 module.exports = router;

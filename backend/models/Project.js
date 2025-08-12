@@ -69,6 +69,7 @@ const projectSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+
     views: {
       type: Number,
       default: 0,
@@ -114,6 +115,8 @@ const projectSchema = new mongoose.Schema(
 projectSchema.virtual("likesCount").get(function () {
   return this.likes ? this.likes.length : 0;
 });
+
+
 
 // Index for search
 projectSchema.index({
