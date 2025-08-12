@@ -20,23 +20,57 @@ export const register = createAsyncThunk(
     password: string;
     firstName: string;
     lastName: string;
-  }) => {
-    const response = await api.post<ApiResponse<User>>(
-      "/auth/register",
-      userData
-    );
-    return response.data;
+  }, { rejectWithValue }) => {
+    try {
+      const response = await api.post<ApiResponse<User>>(
+        "/auth/register",
+        userData
+      );
+      return response.data;
+    } catch (error: any) {
+      
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 400) {
+        return rejectWithValue("Please check your input data");
+      } else if (error.response?.status === 409) {
+        return rejectWithValue("User already exists");
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection");
+      } else {
+        return rejectWithValue("Registration failed. Please try again");
+      }
+    }
   }
 );
 
 export const login = createAsyncThunk(
   "auth/login",
-  async (credentials: { email: string; password: string }) => {
-    const response = await api.post<ApiResponse<User>>(
-      "/auth/login",
-      credentials
-    );
-    return response.data;
+  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post<ApiResponse<User>>(
+        "/auth/login",
+        credentials
+      );
+      return response.data;
+    } catch (error: any) {
+      
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 401) {
+        return rejectWithValue("Invalid email or password");
+      } else if (error.response?.status === 400) {
+        return rejectWithValue("Please check your email format");
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection");
+      } else {
+        return rejectWithValue("Login failed. Please try again");
+      }
+    }
   }
 );
 
@@ -69,11 +103,28 @@ export const changePassword = createAsyncThunk(
 
 export const forgotPassword = createAsyncThunk(
   "auth/forgotPassword",
-  async (email: string) => {
-    const response = await api.post<ApiResponse>("/auth/forgot-password", {
-      email,
-    });
-    return response.data;
+  async (email: string, { rejectWithValue }) => {
+    try {
+      const response = await api.post<ApiResponse>("/auth/forgot-password", {
+        email,
+      });
+      return response.data;
+    } catch (error: any) {
+      
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 404) {
+        return rejectWithValue("Email not found. Please check your email address.");
+      } else if (error.response?.status === 400) {
+        return rejectWithValue("Please enter a valid email address.");
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later.");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection.");
+      } else {
+        return rejectWithValue("Failed to send reset email. Please try again.");
+      }
+    }
   }
 );
 
@@ -138,7 +189,7 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message || "Registration failed";
+        state.error = action.payload as string || "Registration failed";
       });
 
     // Login
@@ -158,7 +209,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message || "Login failed";
+        state.error = action.payload as string || "Login failed";
       });
 
     // Get Profile
@@ -221,7 +272,7 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message || "Failed to send reset email";
+        state.error = action.payload as string || "Failed to send reset email";
       });
 
     // Reset Password

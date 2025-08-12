@@ -5,8 +5,24 @@ import { useAppSelector } from "@/hooks/useAppDispatch";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import { useSwipeable } from "react-swipeable";
-import { FaUsers } from "react-icons/fa";
-import { FiEdit, FiCheck, FiX, FiTrash2 } from "react-icons/fi";
+import { 
+  FaUsers, 
+  FaSearch, 
+  FaSmile
+} from "react-icons/fa";
+import dynamic from 'next/dynamic';
+
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
+  ssr: false,
+  loading: () => <div className="p-4 text-center">Loading emoji picker...</div>
+});
+import { 
+  FiEdit, 
+  FiCheck, 
+  FiX, 
+  FiTrash2, 
+  FiSend
+} from "react-icons/fi";
 import Image from "next/image";
 import toast from "react-hot-toast";
 
@@ -39,6 +55,10 @@ export default function MessagesPage() {
   const [hoveredMessageId, setHoveredMessageId] = useState<string>("");
   const [isMobile, setIsMobile] = useState(false);
   const [showListMobile, setShowListMobile] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showChatOptions, setShowChatOptions] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const selectedChatRef = useRef(selectedChat);
   const messagesRef = useRef(messages);
@@ -46,6 +66,7 @@ export default function MessagesPage() {
   useEffect(() => {
     selectedChatRef.current = selectedChat;
   }, [selectedChat]);
+
   useEffect(() => {
     const update = () => setIsMobile(typeof window !== "undefined" && window.innerWidth < 768);
     update();
@@ -54,7 +75,6 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
-    // When a chat is selected on mobile, switch to chat view
     if (isMobile && selectedChat) setShowListMobile(false);
   }, [isMobile, selectedChat]);
 
@@ -62,12 +82,11 @@ export default function MessagesPage() {
     messagesRef.current = messages;
   }, [messages]);
 
-  // --- SOCKET HOOK ---
+  // Socket hook
   const { joinChat, leaveChat, sendMessage, startTyping, stopTyping, socket } =
     useSocket({
       token: token || "",
       onMessage: (data) => {
-        console.log("Received new-message event:", data);
         if (data.chatId === selectedChatRef.current?._id) {
           setMessages((prev) => {
             if (
@@ -125,11 +144,8 @@ export default function MessagesPage() {
 
   useEffect(() => {
     if (!socket) return;
-    console.log("Socket connected:", socket.connected);
     socket.on("connect", () => {
-      console.log("Socket connected event");
       if (selectedChat) {
-        console.log("Re-joining chat room after connect:", selectedChat._id);
         joinChat(selectedChat._id);
       }
     });
@@ -144,11 +160,9 @@ export default function MessagesPage() {
 
   useEffect(() => {
     if (selectedChat) {
-      console.log("Joining chat room:", selectedChat._id);
       joinChat(selectedChat._id);
       setOtherTyping(false);
       return () => {
-        console.log("Leaving chat room:", selectedChat._id);
         leaveChat(selectedChat._id);
       };
     }
@@ -188,11 +202,10 @@ export default function MessagesPage() {
     };
   }, [socket, user, pendingMessageIds]);
 
-  // Listen for message-edited event only
+  // Listen for message-edited event
   useEffect(() => {
     if (!socket) return;
     const handleEdited = (data: any) => {
-      console.log("Received message-edited event", data);
       if (data.chatId === selectedChatRef.current?._id) {
         setMessages((prev) =>
           prev.map((msg) =>
@@ -262,7 +275,6 @@ export default function MessagesPage() {
       if (existingChat) {
         setSelectedChat(existingChat);
       } else {
-        // Start a new chat with the user
         chatAPI.startChat({ userId }).then((res) => {
           const newChat = res.data.data;
           setChats((prev) => [newChat, ...prev]);
@@ -300,12 +312,39 @@ export default function MessagesPage() {
     setIsTyping(true);
   };
 
+  const onEmojiClick = (emojiObject: any) => {
+    console.log('Emoji clicked:', emojiObject);
+    setMessageInput((prevInput) => prevInput + emojiObject.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      const emojiButton = target.closest('button[type="button"]');
+      const emojiPicker = target.closest('.emoji-picker-container');
+      
+      if (!emojiButton && !emojiPicker) {
+        console.log('Clicking outside, closing emoji picker');
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || !selectedChat) return;
     setSending(true);
     try {
-      // Send via socket
       const tempId = Date.now().toString();
       sendMessage({ chatId: selectedChat._id, content: messageInput });
       setMessages((prev) => [
@@ -347,7 +386,6 @@ export default function MessagesPage() {
     }
   };
 
-  // Handler to add participant
   const handleAddParticipant = async (userId: string) => {
     if (!selectedChat) return;
     setManageLoading(true);
@@ -362,7 +400,6 @@ export default function MessagesPage() {
     }
   };
 
-  // Handler to remove participant
   const handleRemoveParticipant = async (userId: string) => {
     if (!selectedChat) return;
     setManageLoading(true);
@@ -382,10 +419,12 @@ export default function MessagesPage() {
     setEditingMessageId(msg._id);
     setEditInput(msg.content);
   };
+  
   const cancelEditMessage = () => {
     setEditingMessageId("");
     setEditInput("");
   };
+  
   const saveEditMessage = () => {
     if (!selectedChat || !editingMessageId) return;
     socket?.emit("edit-message", {
@@ -424,385 +463,517 @@ export default function MessagesPage() {
   // Swipe handlers for mobile
   const swipeHandlers = useSwipeable({
     onSwipedRight: (eventData) => {
-      // Only trigger on mobile when in chat view
       if (isMobile && !showListMobile && eventData.deltaX > 50) {
         setShowListMobile(true);
       }
     },
     trackMouse: false,
-    delta: 50, // Minimum swipe distance
-    swipeDuration: 500, // Maximum time for swipe
+    delta: 50,
+    swipeDuration: 500,
   });
 
+  // Filter chats based on search query
+  const filteredChats = chats.filter((chat) => {
+    if (!searchQuery.trim()) return true;
+    
+    if (chat.isGroupChat) {
+      return chat.groupName.toLowerCase().includes(searchQuery.toLowerCase());
+    } else {
+      const other = chat.participants.find((p: any) => p._id !== user?._id);
+      return (
+        other?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        other?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        other?.username?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+  });
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
   return (
-    <div className="flex h-screen w-screen bg-gray-50">
-      {/* Chat List */}
-      <div className={`${(!isMobile || showListMobile) ? "block" : "hidden"} md:block md:w-1/3 w-full border-r overflow-y-auto bg-white` }>
-        <div className="sticky top-0 z-10 bg-white border-b px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Chats</h2>
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Chat List Sidebar */}
+      <div className={`${(!isMobile || showListMobile) ? "block" : "hidden"} md:block md:w-96 w-full bg-white shadow-lg border-r border-gray-200`}>
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
             <button
-              className="bg-primary-600 text-white px-3 py-1 rounded text-sm"
               onClick={() => setShowGroupModal(true)}
-              title="Create group"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
             >
+              <FaUsers className="inline mr-2" />
               New Group
             </button>
           </div>
-          <div className="mt-3">
-            <input placeholder="Search chats..." className="w-full border rounded px-3 py-2 text-sm" />
+          
+          {/* Search Bar */}
+          <div className="relative">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search conversations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+            />
           </div>
         </div>
-        {loadingChats ? (
-          <div className="p-4 text-gray-500">Loading...</div>
-        ) : chats.filter(
-            (chat) =>
-              chat.isGroupChat || (chat.messages && chat.messages.length > 0)
-          ).length === 0 ? (
-          <div className="p-6 text-gray-500">No chats yet.</div>
-        ) : (
-          <ul className="p-4">
-            {chats
-              .filter(
-                (chat) =>
-                  chat.isGroupChat ||
-                  (chat.messages && chat.messages.length > 0)
-              )
-              .map((chat) => {
-                if (chat.isGroupChat) {
-                  return (
-                    <li
-                      key={chat._id}
-                      className={`p-2 rounded cursor-pointer mb-2 flex items-center gap-2 ${
-                        selectedChat?._id === chat._id
-                          ? "bg-primary-50 border border-primary-200"
-                          : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedChat(chat)}
-                    >
-                      <div className="w-10 h-10 flex items-center justify-center bg-primary-100 rounded-full mr-2">
-                        <FaUsers className="text-primary-600 text-xl" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{chat.groupName}</div>
-                        <div className="text-xs text-gray-500">
-                          Group chat • {chat.participants.length} members
+
+        {/* Chat List */}
+        <div className="flex-1 overflow-y-auto">
+          {loadingChats ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : filteredChats.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+              <div className="text-6xl mb-4">💬</div>
+              <p className="text-lg font-medium">No conversations yet</p>
+              <p className="text-sm">Start a chat to connect with others</p>
+            </div>
+          ) : (
+            <div className="p-2 sm:p-4">
+              {filteredChats
+                .filter(
+                  (chat) =>
+                    chat.isGroupChat ||
+                    (chat.messages && chat.messages.length > 0)
+                )
+                .map((chat) => {
+                  if (chat.isGroupChat) {
+                    return (
+                      <div
+                        key={chat._id}
+                        onClick={() => setSelectedChat(chat)}
+                        className={`p-3 sm:p-4 rounded-xl cursor-pointer mb-2 transition-all duration-200 ${
+                          selectedChat?._id === chat._id
+                            ? "bg-blue-50 border-2 border-blue-200 shadow-md"
+                            : "hover:bg-gray-50 border-2 border-transparent"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 sm:space-x-3">
+                          <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <FaUsers className="text-white text-lg" />
+                          </div>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <h3 className="font-semibold text-gray-900 truncate text-left leading-tight">
+                              {chat.groupName}
+                            </h3>
+                            <p className="text-sm text-gray-500 truncate text-left leading-tight mt-0.5">
+                              {chat.participants.length} members
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </li>
-                  );
-                } else {
-                  const other = chat.participants.find(
-                    (p: any) => p._id !== user?._id
-                  );
-                  return (
-                    <li
-                      key={chat._id}
-                      className={`p-2 rounded cursor-pointer mb-2 flex items-center gap-2 ${
-                        selectedChat?._id === chat._id
-                          ? "bg-primary-50 border border-primary-200"
-                          : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedChat(chat)}
-                    >
-                      {other?.avatar ? (
-                        <Image
-                          src={other.avatar}
-                          alt={other.firstName}
-                          width={40}
-                          height={40}
-                          className="rounded-full w-10 h-10 object-cover mr-2"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full mr-2 text-lg font-bold text-gray-600">
-                          {other?.firstName?.[0]}
-                          {other?.lastName?.[0]}
-                        </div>
-                      )}
-                      <div>
-                        <div className="font-medium">
-                          {other?.firstName} {other?.lastName}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          @{other?.username}
+                    );
+                  } else {
+                    const other = chat.participants.find(
+                      (p: any) => p._id !== user?._id
+                    );
+                    return (
+                      <div
+                        key={chat._id}
+                        onClick={() => setSelectedChat(chat)}
+                        className={`p-3 sm:p-4 rounded-xl cursor-pointer mb-2 transition-all duration-200 ${
+                          selectedChat?._id === chat._id
+                            ? "bg-blue-50 border-2 border-blue-200 shadow-md"
+                            : "hover:bg-gray-50 border-2 border-transparent"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2 sm:space-x-3">
+                          <div className="flex-shrink-0">
+                            {other?.avatar ? (
+                              <Image
+                                src={other.avatar}
+                                alt={other.firstName}
+                                width={48}
+                                height={48}
+                                className="rounded-full object-cover w-12 h-12"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center">
+                                <span className="text-white font-semibold text-lg">
+                                  {other?.firstName?.[0]}
+                                  {other?.lastName?.[0]}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <h3 className="font-semibold text-gray-900 truncate text-left leading-tight">
+                              {other?.firstName} {other?.lastName}
+                            </h3>
+                            <p className="text-sm text-gray-500 truncate text-left leading-tight mt-0.5">
+                              @{other?.username}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </li>
-                  );
-                }
-              })}
-          </ul>
-        )}
+                    );
+                  }
+                })}
+            </div>
+          )}
+        </div>
       </div>
+
       {/* Chat Window */}
       <div 
-        className={`${(!isMobile || !showListMobile) ? "flex" : "hidden"} md:flex flex-1 flex-col bg-white`}
+        className={`${(!isMobile || !showListMobile) ? "flex" : "hidden"} md:flex flex-1 flex-col bg-white shadow-lg`}
         {...swipeHandlers}
       >
         {selectedChat ? (
           <>
             {/* Chat Header */}
-            <div className="flex items-center gap-3 border-b py-3 px-4 sticky top-0 bg-white z-10">
-              {/* Back button for mobile */}
-              {isMobile && (
-                <button
-                  className="mr-2 px-2 py-1 text-sm rounded border md:hidden"
-                  onClick={() => setShowListMobile(true)}
-                >
-                  Back
-                </button>
-              )}
-              {selectedChat.isGroupChat ? (
-                <>
-                  <div className="w-10 h-10 flex items-center justify-center bg-primary-100 rounded-full">
-                    <FaUsers className="text-primary-600 text-xl" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-lg">
-                      {selectedChat.groupName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {selectedChat.participants
-                        .map((p: any) => `${p.firstName} ${p.lastName}`)
-                        .join(", ")}
-                    </div>
-                  </div>
-                  {selectedChat.groupAdmin?._id === user?._id && (
+            <div className="bg-white border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  {/* Back button for mobile */}
+                  {isMobile && (
                     <button
-                      className="ml-auto px-2 py-1 text-xs rounded bg-primary-100 text-primary-700 hover:bg-primary-200"
-                      onClick={() => setShowManageModal(true)}
+                      onClick={() => setShowListMobile(true)}
+                      className="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
                     >
-                      Add/Remove Participants
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
                     </button>
                   )}
-                </>
-              ) : (
-                <>
-                  {(() => {
-                    const other = selectedChat.participants.find(
-                      (p: any) => p._id !== user?._id
-                    );
-                    return other?.avatar ? (
-                      <Image
-                        src={other.avatar}
-                        alt={other.firstName}
-                        width={40}
-                        height={40}
-                        className="rounded-full w-10 h-10 object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full text-lg font-bold text-gray-600">
-                        {other?.firstName?.[0]}
-                        {other?.lastName?.[0]}
+                  
+                  {selectedChat.isGroupChat ? (
+                    <>
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <FaUsers className="text-white text-lg" />
                       </div>
-                    );
-                  })()}
-                  <div className="font-bold text-lg">
-                    {
-                      selectedChat.participants.find(
-                        (p: any) => p._id !== user?._id
-                      )?.firstName
-                    }{" "}
-                    {
-                      selectedChat.participants.find(
-                        (p: any) => p._id !== user?._id
-                      )?.lastName
-                    }
-                  </div>
-                </>
-              )}
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">
+                          {selectedChat.groupName}
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                          {selectedChat.participants.length} members
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {(() => {
+                        const other = selectedChat.participants.find(
+                          (p: any) => p._id !== user?._id
+                        );
+                        return other?.avatar ? (
+                          <Image
+                            src={other.avatar}
+                            alt={other.firstName}
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center">
+                            <span className="text-white font-semibold text-lg">
+                              {other?.firstName?.[0]}
+                              {other?.lastName?.[0]}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">
+                          {selectedChat.participants.find(
+                            (p: any) => p._id !== user?._id
+                          )?.firstName}{" "}
+                          {selectedChat.participants.find(
+                            (p: any) => p._id !== user?._id
+                          )?.lastName}
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                          @{selectedChat.participants.find(
+                            (p: any) => p._id !== user?._id
+                          )?.username}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+
+              </div>
             </div>
-            <div className="flex-1 p-4 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white p-6">
               {loadingMessages ? (
-                <div>Loading...</div>
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
               ) : messages.length === 0 ? (
-                <div className="text-gray-500">No messages yet.</div>
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <div className="text-6xl mb-4">💬</div>
+                  <p className="text-lg font-medium">No messages yet</p>
+                  <p className="text-sm">Start the conversation!</p>
+                </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {messages.map((msg) => {
-                    const isMe =
-                      !!user && msg.sender && user?._id === msg.sender._id;
+                    const isMe = !!user && msg.sender && user?._id === msg.sender._id;
                     const canDelete = isMe;
-                    const sender =
-                      selectedChat.participants.find(
-                        (p: any) => p._id === msg.sender._id
-                      ) || msg.sender;
+                    const sender = selectedChat.participants.find(
+                      (p: any) => p._id === msg.sender._id
+                    ) || msg.sender;
+                    
                     return (
                       <div
                         key={msg._id}
-                        className={`flex items-end ${
-                          isMe ? "justify-end" : "justify-start"
-                        } gap-2`}
+                        className={`flex items-end ${isMe ? "justify-end" : "justify-start"} gap-3`}
                         onMouseEnter={() => setHoveredMessageId(msg._id)}
                         onMouseLeave={() => setHoveredMessageId("")}
                       >
-                        {!isMe &&
-                          (sender.avatar ? (
-                            <Image
-                              src={sender.avatar}
-                              alt={sender.firstName}
-                              width={32}
-                              height={32}
-                              className="rounded-full w-8 h-8 object-cover mr-1"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full mr-1 text-sm font-bold text-gray-600">
-                              {sender.firstName?.[0]}
-                              {sender.lastName?.[0]}
-                            </div>
-                          ))}
-                        {/* Message bubble and edit icon for sent messages */}
-                        <div
-                          className={`flex items-center ${
-                            isMe ? "flex-row-reverse" : ""
-                          } gap-1`}
-                        >
-                          <div
-                            className={`px-4 py-2 rounded-2xl max-w-xs shadow relative ${
-                              isMe
-                                ? "bg-primary-600 text-white"
-                                : "bg-gray-100 text-gray-900"
-                            } ${isMe ? "ml-0" : "mr-0"}`}
-                            style={{ minWidth: "48px" }}
-                          >
-                            {!isMe && selectedChat.isGroupChat && (
-                              <div className="text-xs font-semibold mb-1 text-primary-700">
-                                {sender.firstName} {sender.lastName}
+                        {!isMe && (
+                          <div className="flex-shrink-0">
+                            {sender.avatar ? (
+                              <Image
+                                src={sender.avatar}
+                                alt={sender.firstName}
+                                width={32}
+                                height={32}
+                                className="rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center">
+                                <span className="text-white font-semibold text-sm">
+                                  {sender.firstName?.[0]}
+                                  {sender.lastName?.[0]}
+                                </span>
                               </div>
                             )}
+                          </div>
+                        )}
+                        
+                        <div className={`flex flex-col ${isMe ? "items-end" : "items-start"} max-w-xs lg:max-w-md`}>
+                          {!isMe && selectedChat.isGroupChat && (
+                            <span className="text-xs font-medium text-gray-600 mb-1">
+                              {sender.firstName} {sender.lastName}
+                            </span>
+                          )}
+                          
+                          <div className="flex items-end gap-2">
                             {editingMessageId === msg._id ? (
-                              <div className="flex items-center gap-2">
+                              <div className="bg-white border border-gray-300 rounded-2xl px-4 py-2 shadow-lg">
                                 <input
-                                  className="flex-1 border rounded px-2 py-1 text-black"
+                                  className="border-none outline-none bg-transparent text-gray-900 min-w-[200px]"
                                   value={editInput}
                                   onChange={(e) => setEditInput(e.target.value)}
                                   autoFocus
                                   placeholder="Edit your message..."
                                 />
-                                <button
-                                  onClick={saveEditMessage}
-                                  className="text-green-600"
-                                >
-                                  <FiCheck />
-                                </button>
-                                <button
-                                  onClick={cancelEditMessage}
-                                  className="text-gray-400"
-                                >
-                                  <FiX />
-                                </button>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <button
+                                    onClick={saveEditMessage}
+                                    className="text-green-600 hover:text-green-700 p-1 rounded-full hover:bg-green-50"
+                                  >
+                                    <FiCheck size={16} />
+                                  </button>
+                                  <button
+                                    onClick={cancelEditMessage}
+                                    className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-50"
+                                  >
+                                    <FiX size={16} />
+                                  </button>
+                                </div>
                               </div>
                             ) : (
-                              <>
-                                <div className="text-sm break-words">
+                              <div
+                                className={`px-4 py-3 rounded-2xl shadow-sm relative ${
+                                  isMe
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white text-gray-900 border border-gray-200"
+                                }`}
+                              >
+                                <p className="text-sm leading-relaxed break-words">
                                   {msg.content}
-                                </div>
-                                <div className="text-xs text-right mt-1 opacity-70">
-                                  {new Date(msg.createdAt).toLocaleTimeString(
-                                    [],
-                                    { hour: "2-digit", minute: "2-digit" }
+                                </p>
+                                <div className={`flex items-center justify-end gap-1 mt-2 ${
+                                  isMe ? "text-blue-100" : "text-gray-400"
+                                }`}>
+                                  <span className="text-xs">
+                                    {formatTime(msg.createdAt)}
+                                  </span>
+                                  {isMe && (
+                                    <FiCheck size={12} className="text-blue-200" />
                                   )}
                                 </div>
-                              </>
+                              </div>
                             )}
-                          </div>
-                          {/* Show icons only on hover and if sender */}
-                          {canDelete &&
-                            hoveredMessageId === msg._id &&
-                            editingMessageId !== msg._id && (
-                              <>
-                                <button
-                                  onClick={() => handleDeleteMessage(msg)}
-                                  className="text-xs text-red-500 hover:text-red-700 transition-colors duration-150 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-red-300"
-                                  title="Delete message"
-                                  disabled={deletingMessageId === msg._id}
-                                  style={{ marginLeft: "2px" }}
-                                >
-                                  <FiTrash2 size={18} />
-                                </button>
+                            
+                            {/* Action buttons */}
+                            {canDelete && hoveredMessageId === msg._id && editingMessageId !== msg._id && (
+                              <div className="flex items-center gap-1 bg-white rounded-full shadow-lg px-2 py-1">
                                 <button
                                   onClick={() => startEditMessage(msg)}
-                                  className="text-xs text-primary-500 hover:text-yellow-400 transition-colors duration-150 p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                                  className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                                   title="Edit message"
-                                  style={{ marginLeft: "2px" }}
                                 >
-                                  <FiEdit size={18} />
+                                  <FiEdit size={14} className="text-gray-600" />
                                 </button>
-                              </>
+                                <button
+                                  onClick={() => handleDeleteMessage(msg)}
+                                  className="p-1 rounded-full hover:bg-red-50 transition-colors"
+                                  title="Delete message"
+                                  disabled={deletingMessageId === msg._id}
+                                >
+                                  <FiTrash2 size={14} className="text-red-500" />
+                                </button>
+                              </div>
                             )}
+                          </div>
                         </div>
-                        {isMe &&
-                          (user?.avatar ? (
-                            <Image
-                              src={user?.avatar}
-                              alt={user?.firstName || "User"}
-                              width={32}
-                              height={32}
-                              className="rounded-full w-8 h-8 object-cover ml-1"
-                            />
-                          ) : user ? (
-                            <div className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full ml-1 text-sm font-bold text-gray-600">
-                              {(user?.firstName?.[0] || "") +
-                                (user?.lastName?.[0] || "")}
-                            </div>
-                          ) : null)}
+                        
+                        {isMe && (
+                          <div className="flex-shrink-0">
+                            {user?.avatar ? (
+                              <Image
+                                src={user.avatar}
+                                alt={user.firstName || "User"}
+                                width={32}
+                                height={32}
+                                className="rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <span className="text-white font-semibold text-sm">
+                                  {user?.firstName?.[0]}
+                                  {user?.lastName?.[0]}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
+                  
                   {otherTyping && (
-                    <div className="text-xs text-gray-400 pl-2">Typing...</div>
+                    <div className="flex items-center space-x-2 text-gray-500">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                      <span className="text-sm">Typing...</span>
+                    </div>
                   )}
+                  
                   <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
-            <form onSubmit={handleSend} className="p-4 border-t flex gap-2 bg-white sticky bottom-0">
-              <input
-                type="text"
-                className="flex-1 border rounded-full px-4 py-2"
-                value={messageInput}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSend(e);
-                }}
-                placeholder="Type a message..."
-              />
-              <button
-                type="submit"
-                className="bg-primary-600 text-white px-5 py-2 rounded-full shadow-sm"
-                disabled={sending || !messageInput.trim()}
-              >
-                Send
-              </button>
-            </form>
+
+            {/* Message Input */}
+            <div className="bg-white border-t border-gray-200 px-6 py-4">
+              <form onSubmit={handleSend} className="flex items-center space-x-3">
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={`p-2 rounded-full transition-colors ${
+                      showEmojiPicker 
+                        ? 'bg-blue-100 text-blue-600' 
+                        : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                    onClick={() => {
+                      console.log('Emoji button clicked, current state:', showEmojiPicker);
+                      setShowEmojiPicker(!showEmojiPicker);
+                    }}
+                  >
+                    <FaSmile className="text-current" />
+                  </button>
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full left-0 mb-2 z-50 emoji-picker-container bg-white rounded-lg shadow-2xl border border-gray-200">
+                      <div className="p-2 text-xs text-gray-500 border-b border-gray-200">
+                        Emoji Picker
+                      </div>
+                      <EmojiPicker 
+                        onEmojiClick={onEmojiClick}
+                        width={350}
+                        height={400}
+                        searchPlaceholder="Search emojis..."
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={messageInput}
+                    onChange={handleInputChange}
+                    placeholder="Type a message..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={sending || !messageInput.trim()}
+                  className={`p-3 rounded-full transition-all duration-200 ${
+                    messageInput.trim()
+                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  {sending ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <FiSend className="text-lg" />
+                  )}
+                </button>
+              </form>
+            </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            Select a chat to start messaging.
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <div className="text-6xl mb-4">💬</div>
+              <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
+              <p className="text-sm">Choose a chat to start messaging</p>
+            </div>
           </div>
         )}
       </div>
+
       {/* Group Chat Modal */}
       {showGroupModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h3 className="text-lg font-bold mb-4">Create Group Chat</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold mb-4 text-gray-900">Create Group Chat</h3>
             <form onSubmit={handleCreateGroup}>
               <input
                 type="text"
-                className="w-full border rounded px-3 py-2 mb-3"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Group Name"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 required
               />
-              <div className="mb-3">
-                <div className="font-medium mb-1">Add Participants:</div>
-                <div className="max-h-40 overflow-y-auto border rounded p-2">
+              <div className="mb-4">
+                <div className="font-medium mb-2 text-gray-700">Add Participants:</div>
+                <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-xl p-3">
                   {allUsers.map((u) => (
                     <label
                       key={u._id}
-                      className="flex items-center gap-2 mb-1 cursor-pointer"
+                      className="flex items-center gap-3 mb-2 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
                     >
                       <input
                         type="checkbox"
@@ -815,18 +986,19 @@ export default function MessagesPage() {
                               prev.filter((id) => id !== u._id)
                             );
                         }}
+                        className="rounded text-blue-600 focus:ring-blue-500"
                       />
-                      <span>
+                      <span className="text-sm">
                         {u.firstName} {u.lastName} (@{u.username})
                       </span>
                     </label>
                   ))}
                 </div>
               </div>
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-3">
                 <button
                   type="button"
-                  className="px-4 py-2 rounded bg-gray-200"
+                  className="flex-1 px-4 py-3 rounded-xl bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-colors"
                   onClick={() => setShowGroupModal(false)}
                   disabled={creatingGroup}
                 >
@@ -834,7 +1006,7 @@ export default function MessagesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-primary-600 text-white"
+                  className="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                   disabled={
                     creatingGroup ||
                     !groupName.trim() ||
@@ -848,24 +1020,25 @@ export default function MessagesPage() {
           </div>
         </div>
       )}
+
       {/* Manage Participants Modal */}
       {showManageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h3 className="text-lg font-bold mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold mb-4 text-gray-900">
               Manage Group Participants
             </h3>
             <div className="mb-4">
-              <div className="font-medium mb-1">Current Members:</div>
-              <div className="max-h-32 overflow-y-auto border rounded p-2 mb-2">
+              <div className="font-medium mb-2 text-gray-700">Current Members:</div>
+              <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-xl p-3 mb-4">
                 {selectedChat.participants.map((p: any) => (
-                  <div key={p._id} className="flex items-center gap-2 mb-1">
-                    <span>
+                  <div key={p._id} className="flex items-center justify-between mb-2 p-2 hover:bg-gray-50 rounded-lg">
+                    <span className="text-sm">
                       {p.firstName} {p.lastName} (@{p.username})
                     </span>
                     {p._id !== user?._id && (
                       <button
-                        className="ml-auto px-2 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200"
+                        className="px-3 py-1 text-xs rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
                         onClick={() => handleRemoveParticipant(p._id)}
                         disabled={manageLoading}
                       >
@@ -875,8 +1048,8 @@ export default function MessagesPage() {
                   </div>
                 ))}
               </div>
-              <div className="font-medium mb-1 mt-2">Add Users:</div>
-              <div className="max-h-32 overflow-y-auto border rounded p-2">
+              <div className="font-medium mb-2 text-gray-700">Add Users:</div>
+              <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-xl p-3">
                 {allUsers
                   .filter(
                     (u) =>
@@ -885,12 +1058,12 @@ export default function MessagesPage() {
                       )
                   )
                   .map((u) => (
-                    <div key={u._id} className="flex items-center gap-2 mb-1">
-                      <span>
+                    <div key={u._id} className="flex items-center justify-between mb-2 p-2 hover:bg-gray-50 rounded-lg">
+                      <span className="text-sm">
                         {u.firstName} {u.lastName} (@{u.username})
                       </span>
                       <button
-                        className="ml-auto px-2 py-1 text-xs rounded bg-primary-100 text-primary-700 hover:bg-primary-200"
+                        className="px-3 py-1 text-xs rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
                         onClick={() => handleAddParticipant(u._id)}
                         disabled={manageLoading}
                       >
@@ -902,20 +1075,18 @@ export default function MessagesPage() {
                   (u) =>
                     !selectedChat.participants.some((p: any) => p._id === u._id)
                 ).length === 0 && (
-                  <div className="text-xs text-gray-400">No users to add.</div>
+                  <div className="text-xs text-gray-400 text-center py-2">No users to add.</div>
                 )}
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                type="button"
-                className="px-4 py-2 rounded bg-gray-200"
-                onClick={() => setShowManageModal(false)}
-                disabled={manageLoading}
-              >
-                Close
-              </button>
-            </div>
+            <button
+              type="button"
+              className="w-full px-4 py-3 rounded-xl bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-colors"
+              onClick={() => setShowManageModal(false)}
+              disabled={manageLoading}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

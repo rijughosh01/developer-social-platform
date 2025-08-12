@@ -59,6 +59,10 @@ export default function RootLayout({
               style: {
                 background: "#363636",
                 color: "#fff",
+                borderRadius: "8px",
+                fontSize: "14px",
+                padding: "12px 16px",
+                maxWidth: "400px",
               },
               success: {
                 duration: 3000,
@@ -66,12 +70,22 @@ export default function RootLayout({
                   primary: "#10b981",
                   secondary: "#fff",
                 },
+                style: {
+                  background: "#065f46",
+                  color: "#fff",
+                  border: "1px solid #10b981",
+                },
               },
               error: {
-                duration: 5000,
+                duration: 6000,
                 iconTheme: {
                   primary: "#ef4444",
                   secondary: "#fff",
+                },
+                style: {
+                  background: "#7f1d1d",
+                  color: "#fff",
+                  border: "1px solid #ef4444",
                 },
               },
             }}

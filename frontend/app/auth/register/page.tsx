@@ -46,10 +46,12 @@ export default function RegisterPage() {
     try {
       const { confirmPassword, ...registerData } = data;
       await dispatch(registerUser(registerData)).unwrap();
-      toast.success("Registration successful!");
+      toast.success("Account created successfully! Welcome to DevLink!");
       router.push("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Registration failed");
+      
+      const errorMessage = error.message || "Registration failed. Please try again.";
+      toast.error(errorMessage);
     }
   };
 
@@ -289,9 +291,16 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Creating account..." : "Create account"}
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Creating account...</span>
+                </div>
+              ) : (
+                "Create account"
+              )}
             </Button>
           </div>
         </form>

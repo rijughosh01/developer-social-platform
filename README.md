@@ -22,6 +22,7 @@ A modern social platform for developers to connect, collaborate, and showcase th
 - **Advanced Notifications**: Get notified for mentions, invites, review requests, forks, and more.
 - **Saved Items**: Save posts and projects for later.
 - **Professional Networking**: Earn badges, discover developers, and grow your network.
+- **💬 Discussion Forums**: Create and participate in threaded discussions with categories, tags, voting, and moderation.
 
 ---
 
@@ -47,6 +48,7 @@ DevLink uses a modern full-stack architecture:
 - **Real-time Chat**: Socket.IO messaging, online status
 - **Notifications**: Real-time, mark as read/unread, preferences
 - **Responsive UI**: Modern design with Tailwind CSS
+- **Discussion Forums**: Threaded discussions with categories, tags, voting, and moderation
 
 ### 🤖 AI-Powered Features
 - **Intelligent Chatbot**: Context-aware AI assistant with 5 specialized modes
@@ -81,6 +83,17 @@ DevLink uses a modern full-stack architecture:
 ### Professional Networking
 - **Developer Discovery**: Find and follow developers
 - **Profile Badges**: Earn badges for collaboration and engagement
+
+### Discussion Forums
+- **Threaded Discussions**: Create and participate in deep technical discussions
+- **Categories & Tags**: Organize discussions by topics (General, Help, Showcase, Tutorial, etc.)
+- **Voting System**: Upvote/downvote discussions and comments
+- **Rich Text Editor**: Create formatted content with markdown support
+- **Moderation Tools**: Flag inappropriate content, sticky discussions, and moderation features
+- **Search & Filters**: Advanced search with category, tag, and status filters
+- **Discussion Analytics**: Track views, replies, and engagement metrics
+- **Mention System**: Tag users with @mentions for notifications
+- **Saved Discussions**: Save important discussions for later reference
 
 ### Saved & Personalized Content
 - **Saved Posts/Projects**: Save items for later

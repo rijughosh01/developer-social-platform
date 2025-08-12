@@ -23,7 +23,7 @@ router.post(
     body("email")
       .isEmail()
       .normalizeEmail()
-      .withMessage("Please provide a valid email"),
+      .withMessage("Please enter a valid email address"),
     body("password")
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters long"),
@@ -52,8 +52,8 @@ router.post(
         success: false,
         message:
           existingUser.email === email
-            ? "Email already registered"
-            : "Username already taken",
+            ? "This email is already registered. Please try logging in instead."
+            : "This username is already taken. Please choose a different username.",
       });
     }
 
@@ -105,7 +105,7 @@ router.post(
     body("email")
       .isEmail()
       .normalizeEmail()
-      .withMessage("Please provide a valid email"),
+      .withMessage("Please enter a valid email address"),
     body("password").notEmpty().withMessage("Password is required"),
   ],
   validate,
@@ -118,7 +118,7 @@ router.post(
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Email not found. Please check your email address or create a new account.",
       });
     }
 
@@ -128,7 +128,7 @@ router.post(
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Incorrect password. Please try again.",
       });
     }
 
@@ -346,7 +346,7 @@ router.post(
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "No account found with this email address. Please check your email or create a new account.",
       });
     }
 
@@ -355,10 +355,10 @@ router.post(
     await user.save();
 
     // TODO: Send email with reset token
-    // For now, just return the token (in production, send via email)
+    // For now, just return the token
     res.json({
       success: true,
-      message: "Password reset email sent",
+      message: "Password reset email sent successfully! Check your inbox for the reset link.",
       resetToken:
         process.env.NODE_ENV === "development" ? resetToken : undefined,
     });

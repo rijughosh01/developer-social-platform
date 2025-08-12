@@ -30,10 +30,12 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     try {
       await dispatch(login(data)).unwrap();
-      toast.success("Login successful!");
+      toast.success("Welcome back! Login successful!");
       router.push("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Login failed");
+      
+      const errorMessage = error.message || "Login failed. Please try again.";
+      toast.error(errorMessage);
     }
   };
 
@@ -72,13 +74,14 @@ export default function LoginPage() {
                     required: "Email is required",
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Invalid email address",
+                      message: "Please enter a valid email address",
                     },
                   })}
                   id="email"
                   type="email"
                   className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                   placeholder="Email address"
+                  autoComplete="email"
                 />
               </div>
               {errors.email && (
@@ -107,6 +110,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                   placeholder="Password"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -137,15 +141,25 @@ export default function LoginPage() {
                 Forgot your password?
               </Link>
             </div>
+            <div className="text-xs text-gray-500">
+              Need help? Check your email format
+            </div>
           </div>
 
           <div>
             <Button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                "Sign in"
+              )}
             </Button>
           </div>
         </form>
