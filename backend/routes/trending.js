@@ -3,6 +3,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const Post = require("../models/Post");
 const Project = require("../models/Project");
 const User = require("../models/User");
+const Comment = require("../models/Comment");
 
 const router = express.Router();
 
@@ -14,25 +15,38 @@ router.get(
 
     // Trending posts: most liked + commented in last 7 days
     const postsRaw = await Post.find({ createdAt: { $gte: since } })
-      .sort({ likesCount: -1, commentsCount: -1, createdAt: -1 })
+      .sort({ likesCount: -1, createdAt: -1 })
       .limit(5)
-      .select("title content author likes comments createdAt image tags")
+      .select("title content author likes createdAt image tags")
       .populate({
         path: "author",
         select: "username firstName lastName avatar followersCount followers",
         options: { virtuals: true },
       });
 
-    const posts = postsRaw.map((post) => {
-      const obj = post.toObject({ virtuals: true });
-      if (
-        obj.author &&
-        post.author &&
-        post.author.followersCount !== undefined
-      ) {
-        obj.author.followersCount = post.author.followersCount;
-      }
-      return obj;
+    // Get comment counts for each post from the separate Comment model
+    const postsWithCommentCounts = await Promise.all(
+      postsRaw.map(async (post) => {
+        const commentCount = await Comment.countDocuments({ post: post._id });
+        const obj = post.toObject({ virtuals: true });
+        obj.likesCount = post.likesCount;
+        obj.commentsCount = commentCount;
+        if (
+          obj.author &&
+          post.author &&
+          post.author.followersCount !== undefined
+        ) {
+          obj.author.followersCount = post.author.followersCount;
+        }
+        return obj;
+      })
+    );
+
+    // Sort by likes and comment counts
+    const posts = postsWithCommentCounts.sort((a, b) => {
+      const aScore = (a.likesCount || 0) + (a.commentsCount || 0) * 0.5;
+      const bScore = (b.likesCount || 0) + (b.commentsCount || 0) * 0.5;
+      return bScore - aScore;
     });
 
     // Trending projects: most liked in last 7 days
