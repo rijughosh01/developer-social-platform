@@ -15,7 +15,7 @@ import {
   FiMonitor,
   FiTrash2,
 } from "react-icons/fi";
-import { getProfile } from "@/store/slices/authSlice";
+import { getProfile, logout } from "@/store/slices/authSlice";
 
 const TABS = [
   { label: "Profile", icon: FiUser },
@@ -138,7 +138,7 @@ function ProfileForm() {
       linkedin: "",
       website: "",
     },
-    skills: "", 
+    skills: "",
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -817,6 +817,7 @@ function ThemeForm({ userId }: { userId: string }) {
 function DeleteAccountForm({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const handleDelete = async () => {
     if (
@@ -830,10 +831,8 @@ function DeleteAccountForm({ userId }: { userId: string }) {
       await settingsAPI.deleteAccount(userId);
       toast.success("Account deleted. Goodbye!");
       // Clear auth state and localStorage
-      localStorage.removeItem("token");
-      // Optionally clear userId, etc.
-      // localStorage.removeItem('userId')
-      // Redirect to homepage or login
+      dispatch(logout());
+
       router.push("/auth/login");
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to delete account");

@@ -48,13 +48,19 @@ router.post(
     });
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message:
-          existingUser.email === email
-            ? "This email is already registered. Please try logging in instead."
-            : "This username is already taken. Please choose a different username.",
-      });
+      // If account exists but is deleted, allow re-registration
+      if (!existingUser.isActive) {
+       
+        await User.findByIdAndDelete(existingUser._id);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message:
+            existingUser.email === email
+              ? "This email is already registered. Please try logging in instead."
+              : "This username is already taken. Please choose a different username.",
+        });
+      }
     }
 
     // Create user
@@ -119,6 +125,14 @@ router.post(
       return res.status(401).json({
         success: false,
         message: "Email not found. Please check your email address or create a new account.",
+      });
+    }
+
+    // Check if account is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: "This account has been deleted. Please contact support if you believe this is an error.",
       });
     }
 

@@ -116,7 +116,6 @@ export default function ProjectsPage() {
           return (b as any).createdAt?.localeCompare?.((a as any).createdAt) || 0;
         case "trending":
         default:
-          // Trending heuristic: likes + slight boost for those with image
           const score = (p: Project) => (p.likesCount || 0) + (p.image ? 1 : 0);
           return score(b) - score(a);
       }
@@ -160,6 +159,19 @@ export default function ProjectsPage() {
       toast.success("Project deleted!");
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to delete project");
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/projects?limit=50");
+      setProjects(res.data.data);
+      toast.success("Projects refreshed!");
+    } catch (err: any) {
+      toast.error("Failed to refresh projects");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -279,6 +291,14 @@ export default function ProjectsPage() {
                 </button>
                 <button
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  title="Refresh projects"
+                >
+                  <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+                </button>
+                <button
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50"
                   onClick={() => {
                     setCategoryFilter("all");
                     setStatusFilter("all");
@@ -288,7 +308,7 @@ export default function ProjectsPage() {
                   }}
                   title="Reset filters"
                 >
-                  <FiRefreshCw className="w-4 h-4" /> Reset
+                  <FiFilter className="w-4 h-4" /> Reset
                 </button>
                 <button
                   className="sm:hidden inline-flex items-center bg-primary-600 text-white px-3 py-2 rounded-lg shadow hover:bg-primary-700"
