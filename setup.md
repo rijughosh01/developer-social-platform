@@ -29,6 +29,7 @@
     - [📊 Analytics Endpoints](#-analytics-endpoints)
     - [🔥 Trending Endpoints](#-trending-endpoints)
     - [📤 Upload Endpoints](#-upload-endpoints)
+    - [💬 Discussions Endpoints](#-discussions-endpoints)
     - [🏥 Health Check](#-health-check)
   - [Development](#development)
     - [Backend Scripts](#backend-scripts)
@@ -46,6 +47,8 @@
 - Node.js (v18 or higher)
 - MongoDB (local or cloud)
 - Git
+- OpenAI API Key (for AI features)
+- Cloudinary Account (for image uploads)
 
 ---
 
@@ -70,6 +73,12 @@ cp env.example .env
 # NODE_ENV=development
 # JWT_EXPIRE=7d
 # FRONTEND_URL=http://localhost:3000
+# OPENAI_API_KEY=your_openai_api_key_here
+# AI_RATE_LIMIT=10
+# AI_RATE_LIMIT_WINDOW=60000
+# CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+# CLOUDINARY_API_KEY=your_cloudinary_api_key
+# CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 npm run dev
 ```
 
@@ -105,6 +114,9 @@ FRONTEND_URL=http://localhost:3000
 OPENAI_API_KEY=your_openai_api_key_here
 AI_RATE_LIMIT=10
 AI_RATE_LIMIT_WINDOW=60000
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 ```
 
 ### Frontend (.env.local)
@@ -134,7 +146,10 @@ NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 - **Advanced Notifications** (mentions, invites, review requests, forks, etc.)
 - **Saved Items** (save posts and projects for later)
 - **Real-time chat and notifications (Socket.IO)**
-- **Badge & Achievement System** (earn badges for key actions, see your progress in the Badge Gallery, and get real-time notifications when you earn a badge)
+- **🏆 Badge & Achievement System** (earn badges for key actions, see your progress in the Badge Gallery, and get real-time notifications when you earn a badge)
+- **💬 Discussion Forums** (threaded discussions with categories, tags, voting, and moderation)
+- **📸 Image Upload** (Cloudinary integration for profile pictures, post images, and project screenshots)
+- **🔒 Advanced Security** (rate limiting, input validation, and secure authentication)
 - **Responsive UI with Tailwind CSS**
 
 > For a full and up-to-date list of features and all available badges, see [README.md](./README.md#badges--achievements)
@@ -246,6 +261,22 @@ NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 ### 📤 Upload Endpoints
 - `POST /api/upload` - Upload an image file
 
+### 💬 Discussions Endpoints
+- `GET /api/discussions` - Get all discussions (with filters and pagination)
+- `GET /api/discussions/categories` - Get available discussion categories
+- `GET /api/discussions/tags` - Get popular discussion tags
+- `POST /api/discussions` - Create a new discussion
+- `GET /api/discussions/:id` - Get specific discussion with comments
+- `PUT /api/discussions/:id` - Update a discussion
+- `DELETE /api/discussions/:id` - Delete a discussion
+- `POST /api/discussions/:id/vote` - Vote on a discussion
+- `POST /api/discussions/:id/comments` - Add comment to discussion
+- `PUT /api/discussions/:id/comments/:commentId` - Update a comment
+- `DELETE /api/discussions/:id/comments/:commentId` - Delete a comment
+- `POST /api/discussions/:id/comments/:commentId/vote` - Vote on a comment
+- `POST /api/discussions/:id/flag` - Flag a discussion
+- `POST /api/discussions/:id/comments/:commentId/flag` - Flag a comment
+
 ### 🏥 Health Check
 - `GET /api/health` - API health check endpoint
 
@@ -276,18 +307,72 @@ npm run lint     # Run ESLint
 developer-social-platform/
 ├── backend/
 │   ├── models/          # MongoDB schemas
+│   │   ├── User.js      # User model with badges and reputation
+│   │   ├── Post.js      # Post model with likes, comments, forks
+│   │   ├── Project.js   # Project model with collaborators
+│   │   ├── Chat.js      # Chat model for messaging
+│   │   ├── Discussion.js # Discussion model for forums
+│   │   ├── Comment.js   # Comment model
+│   │   ├── Notification.js # Notification model
+│   │   ├── AIConversation.js # AI conversation model
+│   │   └── AIUsage.js   # AI usage tracking model
 │   ├── routes/          # API routes
+│   │   ├── auth.js      # Authentication routes
+│   │   ├── users.js     # User management routes
+│   │   ├── posts.js     # Post management routes
+│   │   ├── projects.js  # Project management routes
+│   │   ├── chat.js      # Chat routes
+│   │   ├── discussions.js # Discussion forum routes
+│   │   ├── comments.js  # Comment routes
+│   │   ├── notifications.js # Notification routes
+│   │   ├── ai.js        # AI chatbot routes
+│   │   ├── analytics.js # Analytics routes
+│   │   ├── trending.js  # Trending routes
+│   │   └── upload.js    # File upload routes
 │   ├── middleware/      # Custom middleware
+│   │   ├── auth.js      # JWT authentication middleware
+│   │   ├── validate.js  # Input validation middleware
+│   │   ├── errorHandler.js # Error handling middleware
+│   │   ├── aiRateLimit.js # AI rate limiting middleware
+│   │   └── aiValidation.js # AI input validation middleware
 │   ├── utils/           # Utility functions
+│   │   ├── asyncHandler.js # Async error handler
+│   │   ├── generateToken.js # JWT token generation
+│   │   ├── cloudinary.js # Cloudinary configuration
+│   │   ├── aiService.js # AI service integration
+│   │   └── notificationService.js # Notification service
 │   ├── socket/          # Socket.IO setup
+│   │   └── socket.js    # Real-time communication
 │   └── server.js        # Express server
 ├── frontend/
 │   ├── app/             # Next.js app router
+│   │   ├── auth/        # Authentication pages
+│   │   ├── dashboard/   # Dashboard pages
+│   │   ├── posts/       # Post pages
+│   │   ├── projects/    # Project pages
+│   │   ├── discussions/ # Discussion forum pages
+│   │   ├── ai/          # AI chatbot pages
+│   │   ├── messages/    # Chat pages
+│   │   ├── notifications/ # Notification pages
+│   │   ├── badges/      # Badge gallery page
+│   │   ├── profile/     # Profile pages
+│   │   └── settings/    # Settings pages
 │   ├── components/      # React components
+│   │   ├── ui/          # UI components
+│   │   ├── posts/       # Post components
+│   │   ├── projects/    # Project components
+│   │   ├── discussions/ # Discussion components
+│   │   ├── ai/          # AI chatbot components
+│   │   ├── chat/        # Chat components
+│   │   ├── notifications/ # Notification components
+│   │   └── dashboard/   # Dashboard components
 │   ├── store/           # Redux store
-│   ├── hooks/           # Custom hooks
+│   │   ├── slices/      # Redux slices
+│   │   └── index.ts     # Store configuration
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utility libraries
 │   ├── types/           # TypeScript types
-│   └── lib/             # Utility libraries
+│   └── public/          # Static assets
 └── README.md
 ```
 
@@ -301,26 +386,59 @@ developer-social-platform/
    - Ensure MongoDB is running
    - Check MONGODB_URI in .env file
    - Verify network connectivity
+   - For MongoDB Atlas: Check IP whitelist and connection string
 
 2. **Port Already in Use**
    - Change PORT in .env file
    - Kill existing processes on the port
+   - Use `lsof -i :5000` (Linux/Mac) or `netstat -ano | findstr :5000` (Windows)
 
 3. **JWT Token Issues**
    - Ensure JWT_SECRET is set
    - Check token expiration settings
+   - Verify JWT_EXPIRE format (e.g., "7d", "24h")
 
 4. **Frontend API Errors**
    - Verify NEXT_PUBLIC_API_URL in .env.local
    - Check CORS settings in backend
+   - Ensure backend is running on the correct port
 
-5. **Windows-specific Issues**
+5. **AI Features Not Working**
+   - Verify OPENAI_API_KEY is set correctly
+   - Check AI rate limiting settings
+   - Ensure sufficient OpenAI API credits
+
+6. **Image Upload Issues**
+   - Verify Cloudinary credentials in .env
+   - Check CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+   - Ensure Cloudinary account is active
+
+7. **Socket.IO Connection Issues**
+   - Verify NEXT_PUBLIC_SOCKET_URL in .env.local
+   - Check CORS settings in backend socket configuration
+   - Ensure JWT token is valid for socket authentication
+
+8. **Windows-specific Issues**
    - Use PowerShell or Git Bash for commands
    - If `cp` fails, use `copy` (Windows) or manually create .env files
+   - Ensure Node.js is properly installed and in PATH
 
-6. **npm install errors**
+9. **npm install errors**
    - Delete node_modules and package-lock.json, then retry
    - Ensure Node.js version is >= 18
+   - Clear npm cache: `npm cache clean --force`
+   - Try using yarn instead: `yarn install`
+
+10. **Build Errors**
+    - Check TypeScript compilation errors
+    - Verify all required environment variables are set
+    - Ensure all dependencies are properly installed
+
+11. **Performance Issues**
+    - Check MongoDB indexes are properly set
+    - Monitor API response times
+    - Verify rate limiting is not too restrictive
+    - Check for memory leaks in long-running processes
 
 ---
 

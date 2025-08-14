@@ -23,6 +23,9 @@ A modern social platform for developers to connect, collaborate, and showcase th
 - **Saved Items**: Save posts and projects for later.
 - **Professional Networking**: Earn badges, discover developers, and grow your network.
 - **💬 Discussion Forums**: Create and participate in threaded discussions with categories, tags, voting, and moderation.
+- **🏆 Badge & Achievement System**: Earn badges for key actions, see your progress in the Badge Gallery, and get real-time notifications when you earn a badge.
+- **📸 Image Upload**: Cloudinary integration for profile pictures, post images, and project screenshots.
+- **🔒 Advanced Security**: Rate limiting, input validation, and secure authentication.
 
 ---
 
@@ -34,6 +37,7 @@ DevLink uses a modern full-stack architecture:
 - **Database:** MongoDB (Mongoose)
 - **Real-time:** Socket.IO for chat and notifications
 - **AI Integration:** OpenAI API with LangChain for intelligent coding assistance
+- **Image Storage:** Cloudinary for image uploads and management
 - **Static Assets:** Served from the public/uploads directory
 
 ---
@@ -83,6 +87,7 @@ DevLink uses a modern full-stack architecture:
 ### Professional Networking
 - **Developer Discovery**: Find and follow developers
 - **Profile Badges**: Earn badges for collaboration and engagement
+- **Achievement System**: Track progress and earn badges for various activities
 
 ### Discussion Forums
 - **Threaded Discussions**: Create and participate in deep technical discussions
@@ -99,6 +104,18 @@ DevLink uses a modern full-stack architecture:
 - **Saved Posts/Projects**: Save items for later
 - **Personalized Feeds**: Code feed, trending, and more
 
+### 🏆 Badge & Achievement System
+- **First Post**: Create your first post on the platform
+- **Top Commenter**: Write 10 comments on posts
+- **Code Forked 10+**: Have one of your code posts forked 10 or more times
+- **Streak Master**: Log in 7 days in a row
+- **Helper**: Answer 5+ questions/comments from others
+- **Popular Post**: A post received 50+ likes
+- **Project Creator**: Create 3+ projects
+- **Collaborator**: Collaborate on 2+ projects
+- **First Like**: Receive your first like on a post
+- **Milestone**: Reach 100 followers
+
 ---
 
 ## 🛠️ Tech Stack
@@ -108,6 +125,11 @@ DevLink uses a modern full-stack architecture:
 - Tailwind CSS
 - Redux Toolkit
 - Socket.IO Client
+- React Hook Form
+- React Hot Toast
+- Framer Motion
+- React Syntax Highlighter
+- React Quill (Rich Text Editor)
 
 ### Backend
 - Node.js
@@ -118,8 +140,11 @@ DevLink uses a modern full-stack architecture:
 - bcrypt
 - OpenAI API
 - LangChain
+- Cloudinary
 - Rate Limiting
 - AI Middleware
+- Express Validator
+- Multer (File Upload)
 
 ---
 
@@ -128,7 +153,19 @@ DevLink uses a modern full-stack architecture:
 ```text
 developer-social-platform/
 ├── frontend/   # Next.js frontend
+│   ├── app/    # Next.js app router pages
+│   ├── components/ # React components
+│   ├── store/  # Redux store and slices
+│   ├── hooks/  # Custom React hooks
+│   ├── lib/    # Utility libraries
+│   └── types/  # TypeScript type definitions
 ├── backend/    # Node.js/Express backend
+│   ├── models/ # MongoDB schemas
+│   ├── routes/ # API routes
+│   ├── middleware/ # Custom middleware
+│   ├── utils/  # Utility functions
+│   ├── socket/ # Socket.IO setup
+│   └── server.js # Express server
 └── README.md   # Project documentation
 ```
 
@@ -166,9 +203,14 @@ PORT=5000
 MONGODB_URI=mongodb://localhost:27017/devlink
 JWT_SECRET=your_jwt_secret_here
 NODE_ENV=development
+JWT_EXPIRE=7d
+FRONTEND_URL=http://localhost:3000
 OPENAI_API_KEY=your_openai_api_key_here
 AI_RATE_LIMIT=10
 AI_RATE_LIMIT_WINDOW=60000
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 ```
 
 #### Frontend (.env.local)
