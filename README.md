@@ -35,6 +35,7 @@ DevLink uses a modern full-stack architecture:
 - **Frontend:** Next.js 14 (React), connects to backend via REST API and WebSockets
 - **Backend:** Node.js/Express, handles API requests, authentication, analytics, and real-time events
 - **Database:** MongoDB (Mongoose)
+- **Caching:** Redis (Traditional + Upstash) for performance optimization
 - **Real-time:** Socket.IO for chat and notifications
 - **AI Integration:** OpenAI API with LangChain for intelligent coding assistance
 - **Image Storage:** Cloudinary for image uploads and management

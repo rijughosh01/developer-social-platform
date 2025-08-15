@@ -28,7 +28,7 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-2024
 JWT_EXPIRE=7d
 
 # ========================================
-# REDIS CONFIGURATION (For Load Balancing)
+# REDIS CONFIGURATION
 # ========================================
 # Redis URL for Socket.IO and caching (Traditional Redis)
 REDIS_URL=redis://localhost:6379

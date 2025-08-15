@@ -29,7 +29,7 @@ const redisService = require("./utils/redisService");
 const app = express();
 const server = createServer(app);
 
-// Socket.IO setup with Redis adapter for multiple instances
+// Socket.IO setup with Redis adapter
 const io = new Server(server, {
   cors: {
     origin:
@@ -38,13 +38,8 @@ const io = new Server(server, {
         : "http://localhost:3000",
     methods: ["GET", "POST"],
   },
-  // Enable sticky sessions for load balancing
   transports: ['websocket', 'polling'],
-  allowEIO3: true,
-  // Add instance ID for debugging
-  ...(process.env.INSTANCE_ID && { 
-    extraHeaders: { 'X-Instance-ID': process.env.INSTANCE_ID } 
-  })
+  allowEIO3: true
 });
 
 // Make io available to routes
@@ -94,7 +89,6 @@ app.get("/api/health", (req, res) => {
     status: "OK",
     message: "DevLink API is running",
     timestamp: new Date().toISOString(),
-    instance: process.env.INSTANCE_ID || 'single',
     pid: process.pid,
     uptime: process.uptime(),
     memory: process.memoryUsage(),
@@ -136,7 +130,7 @@ mongoose
       console.log("⚠️  Redis not available - using in-memory for Socket.IO");
     }
 
-    // Setup Redis adapter for Socket.IO (for multi-instance support)
+    // Setup Redis adapter for Socket.IO
     setupRedisAdapter(io);
     
     // Setup Socket.IO
@@ -145,7 +139,6 @@ mongoose
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📊 Instance ID: ${process.env.INSTANCE_ID || 'single'}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
       console.log(`🆔 Process ID: ${process.pid}`);
       console.log(`💾 Redis Type: ${redisService.getRedisType()}`);
