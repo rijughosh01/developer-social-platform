@@ -23,11 +23,13 @@ const discussionRoutes = require("./routes/discussions");
 
 
 const { setupSocketIO } = require("./socket/socket");
+const { setupRedisAdapter } = require("./socket/redis-adapter");
+const redisService = require("./utils/redisService");
 
 const app = express();
 const server = createServer(app);
 
-// Socket.IO setup
+// Socket.IO setup with Redis adapter for multiple instances
 const io = new Server(server, {
   cors: {
     origin:
@@ -36,6 +38,13 @@ const io = new Server(server, {
         : "http://localhost:3000",
     methods: ["GET", "POST"],
   },
+  // Enable sticky sessions for load balancing
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  // Add instance ID for debugging
+  ...(process.env.INSTANCE_ID && { 
+    extraHeaders: { 'X-Instance-ID': process.env.INSTANCE_ID } 
+  })
 });
 
 // Make io available to routes
@@ -85,6 +94,14 @@ app.get("/api/health", (req, res) => {
     status: "OK",
     message: "DevLink API is running",
     timestamp: new Date().toISOString(),
+    instance: process.env.INSTANCE_ID || 'single',
+    pid: process.pid,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    redis: {
+      available: redisService.isAvailable(),
+      type: redisService.getRedisType()
+    }
   });
 });
 
@@ -108,16 +125,30 @@ app.use("*", (req, res) => {
 // Database connection
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log("Connected to MongoDB");
 
+    // Initialize Redis service
+    console.log(`🔧 Redis Service: ${redisService.getRedisType()}`);
+    if (redisService.isAvailable()) {
+      console.log("✅ Redis is available for caching and Socket.IO");
+    } else {
+      console.log("⚠️  Redis not available - using in-memory for Socket.IO");
+    }
+
+    // Setup Redis adapter for Socket.IO (for multi-instance support)
+    setupRedisAdapter(io);
+    
     // Setup Socket.IO
     setupSocketIO(io);
 
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📊 Instance ID: ${process.env.INSTANCE_ID || 'single'}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+      console.log(`🆔 Process ID: ${process.pid}`);
+      console.log(`💾 Redis Type: ${redisService.getRedisType()}`);
     });
   })
   .catch((err) => {

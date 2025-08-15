@@ -344,8 +344,7 @@ userSchema.index({
   lastName: "text",
   skills: "text",
 });
-userSchema.index({ username: 1 });
-userSchema.index({ email: 1 });
+// Note: username and email indexes are automatically created by unique: true
 
 // Hash password before saving
 userSchema.pre("save", async function (next) {
