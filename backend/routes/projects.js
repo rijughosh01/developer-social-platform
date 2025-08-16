@@ -234,9 +234,9 @@ router.post(
       .isString()
       .trim()
       .isLength({ min: 1, max: 30 })
-      .matches(/^[a-zA-Z0-9\s\-_]+$/)
+      .matches(/^[a-zA-Z0-9\s\-_.,!?()&+#@]+$/)
       .withMessage(
-        "Tags can only contain letters, numbers, spaces, hyphens, and underscores"
+        "Tags can only contain letters, numbers, spaces, hyphens, underscores, periods, commas, exclamation marks, question marks, parentheses, ampersands, plus signs, hash symbols, and at symbols"
       ),
     body("screenshots")
       .optional()

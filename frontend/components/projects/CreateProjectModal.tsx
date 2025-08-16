@@ -243,6 +243,9 @@ export default function CreateProjectModal({
       .map((tech) => tech.trim())
       .filter((tech) => tech.length > 0);
     setFormData((prev) => ({ ...prev, technologies }));
+    if (errors.technologies) {
+      setErrors((prev) => ({ ...prev, technologies: "" }));
+    }
   };
 
   const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,6 +254,9 @@ export default function CreateProjectModal({
       .map((tag) => tag.trim())
       .filter((tag) => tag.length > 0);
     setFormData((prev) => ({ ...prev, tags }));
+    if (errors.tags) {
+      setErrors((prev) => ({ ...prev, tags: "" }));
+    }
   };
 
   const handleCollaboratorsChange = (newCollaborators: Collaborator[]) => {
@@ -421,7 +427,29 @@ export default function CreateProjectModal({
       onProjectCreated(response.data.data);
       handleClose();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to create project");
+      // Handle detailed validation errors from backend
+      if (error?.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        const validationErrors: Record<string, string> = {};
+        error.response.data.errors.forEach((err: any) => {
+          validationErrors[err.field] = err.message;
+        });
+        setErrors(validationErrors);
+        
+        
+        const firstError = error.response.data.errors[0];
+        let errorMessage = `${firstError.field}: ${firstError.message}`;
+        
+        
+        if (firstError.field === 'title' && firstError.message.includes('invalid characters')) {
+          errorMessage = `Title contains invalid characters. Only letters, numbers, spaces, hyphens (-), underscores (_), periods (.), commas (,), exclamation marks (!), and parentheses () are allowed.`;
+        }
+        
+        toast.error(errorMessage);
+      } else {
+        
+        const errorMessage = error?.response?.data?.message || "Failed to create project";
+        toast.error(errorMessage);
+      }
     } finally {
       setIsCreating(false);
     }
@@ -535,7 +563,7 @@ export default function CreateProjectModal({
                       maxLength={100}
                     />
                     <div className="mt-1 text-xs text-gray-500">
-                      {formData.title.length}/100
+                      {formData.title.length}/100 • Only letters, numbers, spaces, hyphens, underscores, periods, commas, exclamation marks, and parentheses are allowed
                     </div>
                     {errors.title && (
                       <p className="text-red-500 text-sm mt-1">
@@ -679,9 +707,16 @@ export default function CreateProjectModal({
                       type="text"
                       value={formData.technologies.join(", ")}
                       onChange={handleTechnologiesChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                        errors.technologies ? "border-red-500" : "border-gray-300"
+                      }`}
                       placeholder="e.g., React, Node.js, MongoDB"
                     />
+                    {errors.technologies && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.technologies}
+                      </p>
+                    )}
                     <div className="mt-3">
                       <p className="text-sm text-gray-600 mb-2">Quick add:</p>
                       <div className="flex flex-wrap gap-2">
@@ -717,9 +752,16 @@ export default function CreateProjectModal({
                         name="githubUrl"
                         value={formData.githubUrl}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                          errors.githubUrl ? "border-red-500" : "border-gray-300"
+                        }`}
                         placeholder="https://github.com/username/repo"
                       />
+                      {errors.githubUrl && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.githubUrl}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -731,9 +773,16 @@ export default function CreateProjectModal({
                         name="liveUrl"
                         value={formData.liveUrl}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                          errors.liveUrl ? "border-red-500" : "border-gray-300"
+                        }`}
                         placeholder="https://your-project.com"
                       />
+                      {errors.liveUrl && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.liveUrl}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -746,9 +795,16 @@ export default function CreateProjectModal({
                       type="text"
                       value={formData.tags.join(", ")}
                       onChange={handleTagsChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                        errors.tags ? "border-red-500" : "border-gray-300"
+                      }`}
                       placeholder="e.g., open source, video editor, productivity"
                     />
+                    {errors.tags && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.tags}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
