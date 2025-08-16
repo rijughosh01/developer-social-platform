@@ -20,6 +20,7 @@ const notificationRoutes = require("./routes/notifications");
 const analyticsRoutes = require("./routes/analytics");
 const aiRoutes = require("./routes/ai");
 const discussionRoutes = require("./routes/discussions");
+const searchRoutes = require("./routes/search");
 
 const { setupSocketIO } = require("./socket/socket");
 const { setupRedisAdapter } = require("./socket/redis-adapter");
@@ -113,6 +114,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/discussions", discussionRoutes);
+app.use("/api/search", searchRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

@@ -9,8 +9,8 @@ import { logout } from "@/store/slices/authSlice";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import { SearchBar } from "@/components/search/SearchBar";
 import {
-  FiSearch,
   FiBell,
   FiMessageSquare,
   FiUser,
@@ -50,7 +50,6 @@ const navigation = [
 export function DashboardHeader() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -109,29 +108,8 @@ export function DashboardHeader() {
               </button>
             </div>
 
-            {/* Center Section - Search Bar */}
-            <div className="flex-1 max-w-2xl mx-4 lg:mx-8">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <FiSearch
-                    className={`h-4 w-4 transition-colors duration-200 ${
-                      isSearchFocused ? "text-primary-500" : "text-gray-400"
-                    }`}
-                  />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search developers, projects, posts..."
-                  className={`block w-full pl-10 pr-4 py-2.5 border rounded-xl leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm transition-all duration-200 ${
-                    isSearchFocused
-                      ? "bg-white border-primary-500 shadow-md"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                />
-              </div>
-            </div>
+            
+            <SearchBar />
 
             {/* Right Section - Actions & User Menu */}
             <div className="flex items-center space-x-2 sm:space-x-3">

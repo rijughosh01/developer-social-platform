@@ -278,6 +278,21 @@ export const notificationsAPI = {
     api.get<ApiResponse>("/notifications/collaboration"),
 };
 
+export const searchAPI = {
+  // Global search
+  search: (params: {
+    q: string;
+    type?: "users" | "projects" | "posts" | "discussions";
+    limit?: number;
+  }) => api.get<ApiResponse>("/search", { params }),
+
+  // Search suggestions/autocomplete
+  getSuggestions: (params: {
+    q: string;
+    type?: "users" | "projects" | "posts" | "discussions";
+  }) => api.get<ApiResponse>("/search/suggestions", { params }),
+};
+
 export const aiAPI = {
   // Get available AI contexts
   getContexts: () => api.get<ApiResponse>("/ai/contexts"),

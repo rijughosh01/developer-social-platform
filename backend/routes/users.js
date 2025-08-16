@@ -3,7 +3,7 @@ const { query } = require("express-validator");
 const asyncHandler = require("../utils/asyncHandler");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
-const { cacheMiddleware, userCacheMiddleware } = require("../middleware/cache");
+const { cacheMiddleware, userCacheMiddleware, invalidateCache } = require("../middleware/cache");
 const User = require("../models/User");
 const NotificationService = require("../utils/notificationService");
 const multer = require("multer");
@@ -130,6 +130,7 @@ router.get(
 router.put(
   "/:id",
   auth.protect,
+  invalidateCache(["users", "search"]),
   asyncHandler(async (req, res) => {
     if (req.params.id !== req.user._id.toString()) {
       return res.status(403).json({

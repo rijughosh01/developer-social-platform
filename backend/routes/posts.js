@@ -395,7 +395,7 @@ router.get(
 router.post(
   "/",
   protect,
-  invalidateCache(["posts"]),
+  invalidateCache(["posts", "search"]),
   [
     body("title")
       .trim()
@@ -499,6 +499,7 @@ router.post(
 router.put(
   "/:id",
   protect,
+  invalidateCache(["posts", "search"]),
   [
     body("title")
       .optional()
@@ -576,6 +577,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  invalidateCache(["posts", "search"]),
   asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -828,16 +830,40 @@ router.get(
 // Get post with comments
 router.get("/:postId", async (req, res) => {
   try {
-    const post = await Post.findById(req.params.postId).populate(
-      "author",
-      "firstName lastName"
-    );
+    const post = await Post.findById(req.params.postId)
+      .populate("author", "username firstName lastName avatar bio")
+      .populate({
+        path: "forkedFrom",
+        populate: {
+          path: "author",
+          select: "username firstName lastName avatar",
+        },
+      });
+    
+    if (!post) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Post not found" 
+      });
+    }
+
     const comments = await Comment.find({ post: req.params.postId })
-      .populate("author", "firstName lastName")
+      .populate("author", "username firstName lastName avatar")
       .sort({ createdAt: -1 });
-    res.json({ post, comments });
+
+    res.json({ 
+      success: true, 
+      data: {
+        ...post.toObject(),
+        comments
+      }
+    });
   } catch (err) {
-    res.status(404).json({ error: "Post not found" });
+    console.error("Error fetching post:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch post" 
+    });
   }
 });
 

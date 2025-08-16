@@ -94,7 +94,14 @@ class RedisService {
         return null;
       }
 
-      return value ? JSON.parse(value) : null;
+      if (!value) return null;
+      
+      try {
+        return JSON.parse(value);
+      } catch (parseError) {
+        console.error("Redis JSON parse error for key:", key, "value:", value);
+        return null;
+      }
     } catch (error) {
       console.error("Redis get error:", error);
       return null;

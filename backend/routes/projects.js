@@ -172,7 +172,7 @@ router.get(
 router.post(
   "/",
   protect,
-  invalidateCache(["projects"]),
+  invalidateCache(["projects", "search"]),
   [
     body("title")
       .trim()
@@ -368,6 +368,7 @@ router.post(
 router.put(
   "/:id",
   protect,
+  invalidateCache(["projects", "search"]),
   [
     body("title")
       .optional()
@@ -520,6 +521,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  invalidateCache(["projects", "search"]),
   asyncHandler(async (req, res) => {
     const project = await Project.findById(req.params.id);
 
@@ -693,6 +695,40 @@ router.delete(
       message: "Collaborator removed successfully",
       data: project.collaborators,
     });
+  })
+);
+
+// Get individual project
+router.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    try {
+      const project = await Project.findById(req.params.id)
+        .populate("owner", "username firstName lastName avatar bio")
+        .populate("collaborators.user", "username firstName lastName avatar");
+      
+      if (!project) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Project not found" 
+        });
+      }
+
+      // Increment view count
+      project.views = (project.views || 0) + 1;
+      await project.save();
+
+      res.json({ 
+        success: true, 
+        data: project
+      });
+    } catch (err) {
+      console.error("Error fetching project:", err);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch project" 
+      });
+    }
   })
 );
 

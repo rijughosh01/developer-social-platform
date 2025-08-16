@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const asyncHandler = require("../utils/asyncHandler");
 const { protect, authorize } = require("../middleware/auth");
+const { invalidateCache } = require("../middleware/cache");
 const Discussion = require("../models/Discussion");
 const User = require("../models/User");
 const NotificationService = require("../utils/notificationService");
@@ -131,6 +132,7 @@ router.get(
 router.post(
   "/",
   protect,
+  invalidateCache(["discussions", "search"]),
   asyncHandler(async (req, res) => {
     const { title, content, category, tags } = req.body;
 
@@ -235,6 +237,7 @@ router.get(
 router.put(
   "/:id",
   protect,
+  invalidateCache(["discussions", "search"]),
   asyncHandler(async (req, res) => {
     const { title, content, category, tags } = req.body;
 
@@ -284,6 +287,7 @@ router.put(
 router.delete(
   "/:id",
   protect,
+  invalidateCache(["discussions", "search"]),
   asyncHandler(async (req, res) => {
     const discussion = await Discussion.findById(req.params.id);
 
