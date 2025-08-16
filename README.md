@@ -178,14 +178,22 @@ For detailed setup instructions, see [setup.md](./setup.md).
 
 ### Quick Start
 
-#### Backend
+#### 1. Backend Setup
 ```bash
 cd backend
 npm install
+cp env-template.txt .env
+# Configure your .env file with Redis settings
 npm run dev
 ```
 
-#### Frontend
+#### 2. Redis Database Setup
+```bash
+# Configure Redis in your .env file
+# See env-template.txt for Redis configuration options
+```
+
+#### 3. Frontend Setup
 ```bash
 cd frontend
 npm install
@@ -243,6 +251,7 @@ See [setup.md](./setup.md#api-endpoints) for a full list of backend API endpoint
 - **[AI Documentation](./AI_DOCUMENTATION.md)** - Complete AI chatbot features, models, middleware, and implementation guide
 - **[System Design](./SYSTEM_DESIGN.md)** - Complete system architecture and scalability guide
 - **[Setup Guide](./setup.md)** - Detailed installation and configuration instructions
+
 
 ## 🛟 Troubleshooting
 

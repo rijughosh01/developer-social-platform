@@ -3,6 +3,7 @@ const { body, query } = require("express-validator");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect, optionalAuth } = require("../middleware/auth");
 const validate = require("../middleware/validate");
+const { cacheMiddleware, invalidateCache } = require("../middleware/cache");
 const Project = require("../models/Project");
 const User = require("../models/User");
 
@@ -54,6 +55,7 @@ router.get(
   ],
   validate,
   optionalAuth,
+  cacheMiddleware(1800),
   asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -170,6 +172,7 @@ router.get(
 router.post(
   "/",
   protect,
+  invalidateCache(["projects"]),
   [
     body("title")
       .trim()

@@ -3,6 +3,7 @@ const { query } = require("express-validator");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect } = require("../middleware/auth");
 const validate = require("../middleware/validate");
+const { userCacheMiddleware } = require("../middleware/cache");
 const Post = require("../models/Post");
 const User = require("../models/User");
 
@@ -19,6 +20,7 @@ router.get(
       .withMessage("Time range must be week, month, or year"),
   ],
   validate,
+  userCacheMiddleware(1800), 
   asyncHandler(async (req, res) => {
     const { timeRange = "month" } = req.query;
     const userId = req.user._id;

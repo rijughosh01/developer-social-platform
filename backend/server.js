@@ -21,7 +21,6 @@ const analyticsRoutes = require("./routes/analytics");
 const aiRoutes = require("./routes/ai");
 const discussionRoutes = require("./routes/discussions");
 
-
 const { setupSocketIO } = require("./socket/socket");
 const { setupRedisAdapter } = require("./socket/redis-adapter");
 const redisService = require("./utils/redisService");
@@ -38,19 +37,52 @@ const io = new Server(server, {
         : "http://localhost:3000",
     methods: ["GET", "POST"],
   },
-  transports: ['websocket', 'polling'],
-  allowEIO3: true
+  transports: ["websocket", "polling"],
+  allowEIO3: true,
 });
 
 // Make io available to routes
 app.set("io", io);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "production" ? 100 : 1000,
-  message: "Too many requests from this IP, please try again later.",
-});
+// Setup Socket.IO Redis adapter
+const { pubClient, subClient } = setupRedisAdapter(io);
+
+// Rate limiting with Redis support
+const createRateLimiter = () => {
+  const redisClient = redisService.getSocketIOClient();
+
+  if (!redisClient) {
+    console.warn("Redis not available for rate limiting, using in-memory");
+    return rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: process.env.NODE_ENV === "production" ? 100 : 1000,
+      message: "Too many requests from this IP, please try again later.",
+    });
+  }
+
+  try {
+    return rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: process.env.NODE_ENV === "production" ? 100 : 1000,
+      message: "Too many requests from this IP, please try again later.",
+      store: new (require("rate-limit-redis"))({
+        sendCommand: (...args) => redisClient.sendCommand(args),
+      }),
+    });
+  } catch (error) {
+    console.warn(
+      "Failed to create Redis rate limiter, falling back to in-memory:",
+      error.message
+    );
+    return rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: process.env.NODE_ENV === "production" ? 100 : 1000,
+      message: "Too many requests from this IP, please try again later.",
+    });
+  }
+};
+
+const limiter = createRateLimiter();
 
 // Middleware
 app.use(helmet());
@@ -82,7 +114,6 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/discussions", discussionRoutes);
 
-
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -94,8 +125,8 @@ app.get("/api/health", (req, res) => {
     memory: process.memoryUsage(),
     redis: {
       available: redisService.isAvailable(),
-      type: redisService.getRedisType()
-    }
+      type: redisService.getRedisType(),
+    },
   });
 });
 
@@ -123,16 +154,16 @@ mongoose
     console.log("Connected to MongoDB");
 
     // Initialize Redis service
-    console.log(`🔧 Redis Service: ${redisService.getRedisType()}`);
+    console.log(`Redis Service: ${redisService.getRedisType()}`);
     if (redisService.isAvailable()) {
-      console.log("✅ Redis is available for caching and Socket.IO");
+      console.log("Redis is available for caching and Socket.IO");
     } else {
-      console.log("⚠️  Redis not available - using in-memory for Socket.IO");
+      console.log("Redis not available - using in-memory for Socket.IO");
     }
 
     // Setup Redis adapter for Socket.IO
     setupRedisAdapter(io);
-    
+
     // Setup Socket.IO
     setupSocketIO(io);
 

@@ -1,5 +1,6 @@
 const express = require("express");
 const asyncHandler = require("../utils/asyncHandler");
+const { cacheMiddleware } = require("../middleware/cache");
 const Post = require("../models/Post");
 const Project = require("../models/Project");
 const User = require("../models/User");
@@ -10,6 +11,7 @@ const router = express.Router();
 // Get trending posts, projects, and developers
 router.get(
   "/",
+  cacheMiddleware(900),
   asyncHandler(async (req, res) => {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 

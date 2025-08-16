@@ -1,43 +1,92 @@
-const { RateLimiterMemory } = require("rate-limiter-flexible");
+const { RateLimiterRedis } = require("rate-limiter-flexible");
 const AIUsage = require("../models/AIUsage");
+const redisService = require("../utils/redisService");
 
-// Rate limiters for different contexts
-const rateLimiters = {
-  general: new RateLimiterMemory({
-    keyGenerator: (req) => req.user.id,
-    points: 50,
-    duration: 3600,
-    blockDuration: 1800,
-  }),
+// Rate limiters for different contexts - using Redis for distributed rate limiting
+const createRateLimiters = () => {
+  const redisClient = redisService.getSocketIOClient();
+  
+  if (!redisClient) {
+    console.warn("Redis not available for rate limiting, falling back to in-memory");
+    return {
+      general: new (require("rate-limiter-flexible").RateLimiterMemory)({
+        keyGenerator: (req) => req.user.id,
+        points: 50,
+        duration: 3600,
+        blockDuration: 1800,
+      }),
+      codeReview: new (require("rate-limiter-flexible").RateLimiterMemory)({
+        keyGenerator: (req) => req.user.id,
+        points: 20,
+        duration: 3600,
+        blockDuration: 1800,
+      }),
+      debugging: new (require("rate-limiter-flexible").RateLimiterMemory)({
+        keyGenerator: (req) => req.user.id,
+        points: 30,
+        duration: 3600,
+        blockDuration: 1800,
+      }),
+      learning: new (require("rate-limiter-flexible").RateLimiterMemory)({
+        keyGenerator: (req) => req.user.id,
+        points: 40,
+        duration: 3600,
+        blockDuration: 1800,
+      }),
+      projectHelp: new (require("rate-limiter-flexible").RateLimiterMemory)({
+        keyGenerator: (req) => req.user.id,
+        points: 25,
+        duration: 3600,
+        blockDuration: 1800,
+      }),
+    };
+  }
 
-  codeReview: new RateLimiterMemory({
-    keyGenerator: (req) => req.user.id,
-    points: 20,
-    duration: 3600,
-    blockDuration: 1800,
-  }),
-
-  debugging: new RateLimiterMemory({
-    keyGenerator: (req) => req.user.id,
-    points: 30,
-    duration: 3600,
-    blockDuration: 1800,
-  }),
-
-  learning: new RateLimiterMemory({
-    keyGenerator: (req) => req.user.id,
-    points: 40,
-    duration: 3600,
-    blockDuration: 1800,
-  }),
-
-  projectHelp: new RateLimiterMemory({
-    keyGenerator: (req) => req.user.id,
-    points: 25,
-    duration: 3600,
-    blockDuration: 1800,
-  }),
+  return {
+    general: new RateLimiterRedis({
+      storeClient: redisClient,
+      keyPrefix: "ai_rate_limit_general",
+      keyGenerator: (req) => req.user.id,
+      points: 50,
+      duration: 3600,
+      blockDuration: 1800,
+    }),
+    codeReview: new RateLimiterRedis({
+      storeClient: redisClient,
+      keyPrefix: "ai_rate_limit_code_review",
+      keyGenerator: (req) => req.user.id,
+      points: 20,
+      duration: 3600,
+      blockDuration: 1800,
+    }),
+    debugging: new RateLimiterRedis({
+      storeClient: redisClient,
+      keyPrefix: "ai_rate_limit_debugging",
+      keyGenerator: (req) => req.user.id,
+      points: 30,
+      duration: 3600,
+      blockDuration: 1800,
+    }),
+    learning: new RateLimiterRedis({
+      storeClient: redisClient,
+      keyPrefix: "ai_rate_limit_learning",
+      keyGenerator: (req) => req.user.id,
+      points: 40,
+      duration: 3600,
+      blockDuration: 1800,
+    }),
+    projectHelp: new RateLimiterRedis({
+      storeClient: redisClient,
+      keyPrefix: "ai_rate_limit_project_help",
+      keyGenerator: (req) => req.user.id,
+      points: 25,
+      duration: 3600,
+      blockDuration: 1800,
+    }),
+  };
 };
+
+const rateLimiters = createRateLimiters();
 
 // Daily usage limits
 const dailyLimits = {
