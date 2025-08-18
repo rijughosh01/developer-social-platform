@@ -1,15 +1,19 @@
 "use client";
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
-import { usersAPI, postsAPI, projectsAPI } from "@/lib/api";
+import { usersAPI, postsAPI, projectsAPI, discussionsAPI } from "@/lib/api";
 import { useAppSelector } from "@/hooks/useAppDispatch";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { chatAPI } from "@/lib/api";
 import { PostCard } from "@/components/posts/PostCard";
+import { DiscussionCard } from "@/components/discussions/DiscussionCard";
 import ProjectDetailsModal from "@/app/projects/ProjectDetailsModal";
 import { getAvatarUrl } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ProfileSkeleton } from "@/components/ui/ProfileSkeleton";
+import { TabContentSkeleton } from "@/components/ui/TabContentSkeleton";
 import {
   FiMapPin,
   FiBriefcase,
@@ -42,9 +46,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const { user: currentUser } = useAppSelector((state) => state.auth);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"Posts" | "Projects">("Posts");
+  const [tab, setTab] = useState<"Posts" | "Projects" | "Discussions">("Posts");
   const [posts, setPosts] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [discussions, setDiscussions] = useState<any[]>([]);
   const [loadingTab, setLoadingTab] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
@@ -52,6 +57,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [following, setFollowing] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -77,10 +85,27 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       postsAPI.getUserPosts(user._id).then((res) => {
         setPosts(res.data.data || []);
         setLoadingTab(false);
+      }).catch((error) => {
+        console.error("Failed to fetch posts:", error);
+        setPosts([]);
+        setLoadingTab(false);
       });
-    } else {
+    } else if (tab === "Projects") {
       projectsAPI.getUserProjects(user._id).then((res) => {
         setProjects(res.data.data || []);
+        setLoadingTab(false);
+      }).catch((error) => {
+        console.error("Failed to fetch projects:", error);
+        setProjects([]);
+        setLoadingTab(false);
+      });
+    } else if (tab === "Discussions") {
+      discussionsAPI.getUserDiscussions(user._id).then((res) => {
+        setDiscussions(res.data.data?.discussions || []);
+        setLoadingTab(false);
+      }).catch((error) => {
+        console.error("Failed to fetch discussions:", error);
+        setDiscussions([]);
         setLoadingTab(false);
       });
     }
@@ -118,36 +143,64 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
   const openFollowers = async () => {
     setShowFollowers(true);
+    setFollowersLoading(true);
     try {
       const res = await usersAPI.getFollowers(user._id);
       setFollowers(res.data.data || []);
     } catch {
       setFollowers([]);
+    } finally {
+      setFollowersLoading(false);
     }
   };
+  
   const openFollowing = async () => {
     setShowFollowing(true);
+    setFollowingLoading(true);
     try {
       const res = await usersAPI.getFollowing(user._id);
       setFollowing(res.data.data || []);
     } catch {
       setFollowing([]);
+    } finally {
+      setFollowingLoading(false);
     }
   };
 
   const handleMessage = async () => {
     if (!user || !currentUser) return;
+    setMessageLoading(true);
     try {
       const res = await chatAPI.startChat({ userId: user._id });
       const chatId = res.data.data._id;
       router.push(`/messages?chatId=${chatId}`);
     } catch {
-      // Optionally show error
+      toast.error("Failed to start chat");
+    } finally {
+      setMessageLoading(false);
     }
   };
 
-  if (loading) return <div style={{ padding: 32 }}>Loading...</div>;
-  if (!user) return <div style={{ padding: 32 }}>User not found.</div>;
+  if (loading) return <ProfileSkeleton />;
+  if (!user) return (
+    <div className="max-w-3xl mx-auto py-8 px-4">
+      <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">User Not Found</h2>
+        <p className="text-gray-600 mb-4">The user you're looking for doesn't exist or has been removed.</p>
+        <button 
+          onClick={() => router.back()} 
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
@@ -285,17 +338,36 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           )}
           {currentUser && currentUser.username !== user.username && (
             <>
-              <Button
-                size="sm"
-                variant={isFollowing ? "secondary" : "default"}
-                onClick={handleFollow}
-                disabled={followLoading}
-              >
-                {isFollowing ? "Unfollow" : "Follow"}
-              </Button>
-              <Button size="sm" variant="outline" onClick={handleMessage}>
-                Message
-              </Button>
+                             <Button
+                 size="sm"
+                 variant={isFollowing ? "secondary" : "default"}
+                 onClick={handleFollow}
+                 disabled={followLoading}
+               >
+                 {followLoading ? (
+                   <div className="flex items-center space-x-2">
+                     <LoadingSpinner size="sm" color="white" />
+                     <span>Loading...</span>
+                   </div>
+                 ) : (
+                   isFollowing ? "Unfollow" : "Follow"
+                 )}
+               </Button>
+                             <Button 
+                 size="sm" 
+                 variant="outline" 
+                 onClick={handleMessage}
+                 disabled={messageLoading}
+               >
+                 {messageLoading ? (
+                   <div className="flex items-center space-x-2">
+                     <LoadingSpinner size="sm" color="gray" />
+                     <span>Loading...</span>
+                   </div>
+                 ) : (
+                   "Message"
+                 )}
+               </Button>
             </>
           )}
         </div>
@@ -448,7 +520,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       {/* Followers Modal */}
       {showFollowers && (
         <Modal onClose={() => setShowFollowers(false)} title="Followers">
-          {followers.length === 0 ? (
+          {followersLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : followers.length === 0 ? (
             <div className="text-gray-500">No followers yet.</div>
           ) : (
             <ul>
@@ -474,7 +550,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       {/* Following Modal */}
       {showFollowing && (
         <Modal onClose={() => setShowFollowing(false)} title="Following">
-          {following.length === 0 ? (
+          {followingLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : following.length === 0 ? (
             <div className="text-gray-500">Not following anyone yet.</div>
           ) : (
             <ul>
@@ -506,6 +586,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               : "border-transparent text-gray-600 hover:text-primary-600"
           }`}
           onClick={() => setTab("Posts")}
+          disabled={loadingTab}
         >
           Posts
         </button>
@@ -516,14 +597,26 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               : "border-transparent text-gray-600 hover:text-primary-600"
           }`}
           onClick={() => setTab("Projects")}
+          disabled={loadingTab}
         >
           Projects
+        </button>
+        <button
+          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+            tab === "Discussions"
+              ? "border-primary-600 text-primary-600"
+              : "border-transparent text-gray-600 hover:text-primary-600"
+          }`}
+          onClick={() => setTab("Discussions")}
+          disabled={loadingTab}
+        >
+          Discussions
         </button>
       </div>
       {/* Tab Content */}
       <div>
         {loadingTab ? (
-          <div>Loading...</div>
+          <TabContentSkeleton type={tab.toLowerCase() as "posts" | "projects" | "discussions"} />
         ) : tab === "Posts" ? (
           posts.length === 0 ? (
             <div className="text-gray-500">No posts yet.</div>
@@ -534,69 +627,81 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               ))}
             </div>
           )
-        ) : projects.length === 0 ? (
-          <div className="text-gray-500">No projects yet.</div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-6">
-              {projects.map((project) => (
-                <div
-                  key={project._id}
-                  className="bg-white rounded-2xl shadow-lg p-6 cursor-pointer group hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 relative"
-                  onClick={(e) => {
-                    if ((e.target as HTMLElement).closest("button")) return;
-                    setSelectedProject(project);
-                    setModalOpen(true);
-                  }}
-                >
-                  <div className="text-xl font-bold text-gray-900 mb-2">
-                    {project.title}
-                  </div>
-                  <div className="text-gray-600 mb-2 line-clamp-2 min-h-[32px]">
-                    {project.shortDescription || project.description}
-                  </div>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {project.technologies &&
-                      project.technologies.map((tech: string, i: number) => (
-                        <span
-                          key={i}
-                          className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-700"
-                        >
-                          {tech}
+        ) : tab === "Projects" ? (
+          projects.length === 0 ? (
+            <div className="text-gray-500">No projects yet.</div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-6">
+                {projects.map((project) => (
+                  <div
+                    key={project._id}
+                    className="bg-white rounded-2xl shadow-lg p-6 cursor-pointer group hover:shadow-xl hover:-translate-y-1 transition-all border border-gray-100 relative"
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest("button")) return;
+                      setSelectedProject(project);
+                      setModalOpen(true);
+                    }}
+                  >
+                    <div className="text-xl font-bold text-gray-900 mb-2">
+                      {project.title}
+                    </div>
+                    <div className="text-gray-600 mb-2 line-clamp-2 min-h-[32px]">
+                      {project.shortDescription || project.description}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {project.technologies &&
+                        project.technologies.map((tech: string, i: number) => (
+                          <span
+                            key={i}
+                            className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-700"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                    </div>
+                    <div className="flex gap-4 text-xs text-gray-500">
+                      <div>
+                        Category:{" "}
+                        <span className="font-medium text-gray-800">
+                          {project.category}
                         </span>
-                      ))}
-                  </div>
-                  <div className="flex gap-4 text-xs text-gray-500">
-                    <div>
-                      Category:{" "}
-                      <span className="font-medium text-gray-800">
-                        {project.category}
-                      </span>
-                    </div>
-                    <div>
-                      Status:{" "}
-                      <span className="font-medium text-gray-800">
-                        {project.status}
-                      </span>
+                      </div>
+                      <div>
+                        Status:{" "}
+                        <span className="font-medium text-gray-800">
+                          {project.status}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
+              </div>
+              <ProjectDetailsModal
+                project={selectedProject}
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                onProjectUpdate={(updated) =>
+                  setProjects((projects) =>
+                    projects.map((p) =>
+                      p._id === updated._id ? { ...p, ...updated } : p
+                    )
+                  )
+                }
+              />
+            </>
+          )
+        ) : tab === "Discussions" ? (
+          discussions.length === 0 ? (
+            <div className="text-gray-500">No discussions yet.</div>
+          ) : (
+            <div className="space-y-4">
+              {discussions.map((discussion) => (
+                <DiscussionCard key={discussion._id} discussion={discussion} />
               ))}
             </div>
-            <ProjectDetailsModal
-              project={selectedProject}
-              open={modalOpen}
-              onClose={() => setModalOpen(false)}
-              onProjectUpdate={(updated) =>
-                setProjects((projects) =>
-                  projects.map((p) =>
-                    p._id === updated._id ? { ...p, ...updated } : p
-                  )
-                )
-              }
-            />
-          </>
-        )}
+          )
+        ) : null}
       </div>
     </div>
   );
