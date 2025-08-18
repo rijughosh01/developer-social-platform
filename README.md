@@ -94,6 +94,12 @@ DevLink uses a modern full-stack architecture:
 - **Threaded Discussions**: Create and participate in deep technical discussions
 - **Categories & Tags**: Organize discussions by topics (General, Help, Showcase, Tutorial, etc.)
 - **Voting System**: Upvote/downvote discussions and comments
+- **Polls System**: Create polls within discussions for quick community feedback
+  - Multiple choice and single choice polls
+  - Poll expiration dates
+  - Real-time vote tracking and results
+  - Vote change functionality
+  - Poll deletion for authors
 - **Rich Text Editor**: Create formatted content with markdown support
 - **Moderation Tools**: Flag inappropriate content, sticky discussions, and moderation features
 - **Search & Filters**: Advanced search with category, tag, and status filters

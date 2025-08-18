@@ -392,6 +392,12 @@ export const discussionsAPI = {
   editComment: (discussionId: string, commentId: string, data: { content: string; richContent?: string; contentType?: "plain" | "rich" }) => api.put<ApiResponse>(`/discussions/${discussionId}/comments/${commentId}`, data),
   flagComment: (discussionId: string, commentId: string, reason: string) => api.post<ApiResponse>(`/discussions/${discussionId}/comments/${commentId}/flag`, { reason }),
   acceptAnswer: (discussionId: string, commentId: string) => api.post<ApiResponse>(`/discussions/${discussionId}/accept-answer`, { commentId }),
+
+  // Poll operations
+  createPoll: (discussionId: string, data: { question: string; options: string[]; isMultipleChoice?: boolean; expiresAt?: string }) => api.post<ApiResponse>(`/discussions/${discussionId}/poll`, data),
+  votePoll: (discussionId: string, optionIndexes: number[]) => api.post<ApiResponse>(`/discussions/${discussionId}/poll/vote`, { optionIndexes }),
+  removePollVote: (discussionId: string) => api.delete<ApiResponse>(`/discussions/${discussionId}/poll/vote`),
+  deletePoll: (discussionId: string) => api.delete<ApiResponse>(`/discussions/${discussionId}/poll`),
 };
 
 

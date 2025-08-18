@@ -394,6 +394,29 @@ export interface DiscussionComment {
   updatedAt: string;
 }
 
+export interface PollOption {
+  _id: string;
+  text: string;
+  votes: string[];
+  voteCount: number;
+}
+
+export interface Poll {
+  _id: string;
+  question: string;
+  options: PollOption[];
+  isMultipleChoice: boolean;
+  isActive: boolean;
+  expiresAt?: string;
+  totalVotes: number;
+  createdBy: User;
+  voters: string[];
+  hasVoted?: boolean;
+  userVotes?: number[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Discussion {
   _id: string;
   author: User;
@@ -414,6 +437,7 @@ export interface Discussion {
   isSticky: boolean;
   isFeatured: boolean;
   views: number;
+  viewedBy: string[];
   upvotes: string[];
   downvotes: string[];
   comments: DiscussionComment[];
@@ -431,6 +455,7 @@ export interface Discussion {
   voteScore: number;
   commentCount: number;
   totalRepliesCount: number;
+  poll?: Poll;
   createdAt: string;
   updatedAt: string;
 }

@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/useAppDispatch";
-import { voteDiscussion, addComment, flagDiscussion } from "@/store/slices/discussionsSlice";
+import {
+  voteDiscussion,
+  addComment,
+  flagDiscussion,
+  deletePoll,
+} from "@/store/slices/discussionsSlice";
 import { Discussion } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +50,8 @@ import toast from "react-hot-toast";
 import { EnhancedComment } from "./EnhancedComment";
 import { RichTextEditor } from "./RichTextEditor";
 import { FlagStatus } from "./FlagStatus";
+import Poll from "./Poll";
+import AddPollButton from "./AddPollButton";
 
 interface DiscussionDetailProps {
   discussion: Discussion;
@@ -70,6 +77,7 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
   const [flagReason, setFlagReason] = useState("");
   const [flagDescription, setFlagDescription] = useState("");
   const [isFlagging, setIsFlagging] = useState(false);
+  const [isDeletingPoll, setIsDeletingPoll] = useState(false);
 
   // Generate share URL when component mounts
   useEffect(() => {
@@ -273,6 +281,21 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
       toast.error("Failed to flag discussion. Please try again.");
     } finally {
       setIsFlagging(false);
+    }
+  };
+
+  const handleDeletePoll = async () => {
+    if (!discussion.poll) return;
+
+    setIsDeletingPoll(true);
+    try {
+      await dispatch(deletePoll(discussion._id)).unwrap();
+      toast.success("Poll deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete poll:", error);
+      toast.error("Failed to delete poll. Please try again.");
+    } finally {
+      setIsDeletingPoll(false);
     }
   };
 
@@ -495,16 +518,34 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
         {/*  Content */}
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {/* Flag Status */}
-          <FlagStatus 
-            content={discussion} 
-            contentType="discussion" 
+          <FlagStatus
+            content={discussion}
+            contentType="discussion"
             className="mb-6"
           />
-          
+
           <div className="prose prose-lg max-w-none mb-6 sm:mb-8">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
               {discussion.content}
             </p>
+          </div>
+
+          {/* Poll Section */}
+          {discussion.poll && (
+            <Poll
+              poll={discussion.poll}
+              discussionId={discussion._id}
+              isAuthor={discussion.author._id === user?._id}
+              onDeletePoll={handleDeletePoll}
+            />
+          )}
+
+          {/* Add Poll Button */}
+          <div className="mb-6 sm:mb-8">
+            <AddPollButton
+              discussionId={discussion._id}
+              hasPoll={!!discussion.poll}
+            />
           </div>
 
           {/*  Tags */}
@@ -903,11 +944,31 @@ export function DiscussionDetail({ discussion }: DiscussionDetailProps) {
                 </label>
                 <div className="space-y-2">
                   {[
-                    { value: "spam", label: "Spam", description: "Unwanted promotional content" },
-                    { value: "inappropriate", label: "Inappropriate", description: "Content that violates community guidelines" },
-                    { value: "offensive", label: "Offensive", description: "Hate speech or offensive language" },
-                    { value: "duplicate", label: "Duplicate", description: "This discussion already exists" },
-                    { value: "other", label: "Other", description: "Other reasons not listed above" },
+                    {
+                      value: "spam",
+                      label: "Spam",
+                      description: "Unwanted promotional content",
+                    },
+                    {
+                      value: "inappropriate",
+                      label: "Inappropriate",
+                      description: "Content that violates community guidelines",
+                    },
+                    {
+                      value: "offensive",
+                      label: "Offensive",
+                      description: "Hate speech or offensive language",
+                    },
+                    {
+                      value: "duplicate",
+                      label: "Duplicate",
+                      description: "This discussion already exists",
+                    },
+                    {
+                      value: "other",
+                      label: "Other",
+                      description: "Other reasons not listed above",
+                    },
                   ].map((reason) => (
                     <label
                       key={reason.value}

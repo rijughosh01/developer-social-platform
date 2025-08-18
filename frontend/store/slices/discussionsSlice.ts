@@ -325,6 +325,83 @@ export const flagComment = createAsyncThunk(
   }
 );
 
+// Poll actions
+export const createPoll = createAsyncThunk(
+  "discussions/createPoll",
+  async (
+    {
+      discussionId,
+      pollData,
+    }: {
+      discussionId: string;
+      pollData: {
+        question: string;
+        options: string[];
+        isMultipleChoice?: boolean;
+        expiresAt?: string;
+      };
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await discussionsAPI.createPoll(discussionId, pollData);
+      return { discussionId, poll: response.data.data };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create poll"
+      );
+    }
+  }
+);
+
+export const votePoll = createAsyncThunk(
+  "discussions/votePoll",
+  async (
+    {
+      discussionId,
+      optionIndexes,
+    }: { discussionId: string; optionIndexes: number[] },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await discussionsAPI.votePoll(discussionId, optionIndexes);
+      return { discussionId, poll: response.data.data };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to vote on poll"
+      );
+    }
+  }
+);
+
+export const removePollVote = createAsyncThunk(
+  "discussions/removePollVote",
+  async (discussionId: string, { rejectWithValue }) => {
+    try {
+      const response = await discussionsAPI.removePollVote(discussionId);
+      return { discussionId, poll: response.data.data };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to remove poll vote"
+      );
+    }
+  }
+);
+
+export const deletePoll = createAsyncThunk(
+  "discussions/deletePoll",
+  async (discussionId: string, { rejectWithValue }) => {
+    try {
+      await discussionsAPI.deletePoll(discussionId);
+      return { discussionId };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete poll"
+      );
+    }
+  }
+);
+
 const discussionsSlice = createSlice({
   name: "discussions",
   initialState,
@@ -549,6 +626,78 @@ const discussionsSlice = createSlice({
     builder
       .addCase(flagComment.fulfilled, (state, action) => {})
       .addCase(flagComment.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+
+    // Create poll
+    builder
+      .addCase(createPoll.fulfilled, (state, action) => {
+        const { discussionId, poll } = action.payload;
+        if (state.currentDiscussion?._id === discussionId) {
+          state.currentDiscussion.poll = poll;
+        }
+        const discussionIndex = state.discussions.findIndex(
+          (d) => d._id === discussionId
+        );
+        if (discussionIndex !== -1) {
+          state.discussions[discussionIndex].poll = poll;
+        }
+      })
+      .addCase(createPoll.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+
+    // Vote poll
+    builder
+      .addCase(votePoll.fulfilled, (state, action) => {
+        const { discussionId, poll } = action.payload;
+        if (state.currentDiscussion?._id === discussionId) {
+          state.currentDiscussion.poll = poll;
+        }
+        const discussionIndex = state.discussions.findIndex(
+          (d) => d._id === discussionId
+        );
+        if (discussionIndex !== -1) {
+          state.discussions[discussionIndex].poll = poll;
+        }
+      })
+      .addCase(votePoll.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+
+    // Remove poll vote
+    builder
+      .addCase(removePollVote.fulfilled, (state, action) => {
+        const { discussionId, poll } = action.payload;
+        if (state.currentDiscussion?._id === discussionId) {
+          state.currentDiscussion.poll = poll;
+        }
+        const discussionIndex = state.discussions.findIndex(
+          (d) => d._id === discussionId
+        );
+        if (discussionIndex !== -1) {
+          state.discussions[discussionIndex].poll = poll;
+        }
+      })
+      .addCase(removePollVote.rejected, (state, action) => {
+        state.error = action.payload as string;
+      });
+
+    // Delete poll
+    builder
+      .addCase(deletePoll.fulfilled, (state, action) => {
+        const { discussionId } = action.payload;
+        if (state.currentDiscussion?._id === discussionId) {
+          state.currentDiscussion.poll = undefined;
+        }
+        const discussionIndex = state.discussions.findIndex(
+          (d) => d._id === discussionId
+        );
+        if (discussionIndex !== -1) {
+          state.discussions[discussionIndex].poll = undefined;
+        }
+      })
+      .addCase(deletePoll.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },

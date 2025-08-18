@@ -7,12 +7,13 @@ const Discussion = require("../models/Discussion");
 const User = require("../models/User");
 const NotificationService = require("../utils/notificationService");
 
-// Initialize notification service
 let notificationService = new NotificationService();
+
+const viewTrackingCache = new Map();
 
 // Middleware to set notification service with io instance
 const setNotificationService = (req, res, next) => {
-  const io = req.app.get('io');
+  const io = req.app.get("io");
   if (io) {
     notificationService = new NotificationService(io);
   }
@@ -181,10 +182,8 @@ router.get(
       .populate("lastCommentBy", "username firstName lastName avatar")
       .populate("acceptedAnswer", "author content createdAt")
       .populate("comments.author", "username firstName lastName avatar")
-      .populate(
-        "comments.replies.author",
-        "username firstName lastName avatar"
-      );
+      .populate("comments.replies.author", "username firstName lastName avatar")
+      .populate("poll.createdBy", "username firstName lastName avatar");
 
     if (!discussion) {
       return res.status(404).json({
@@ -193,9 +192,29 @@ router.get(
       });
     }
 
-    // Increment view count
-    discussion.views += 1;
-    await discussion.save();
+    // Increment view count with rate limiting
+    const userId = req.user?._id?.toString() || "anonymous";
+    const cacheKey = `${discussion._id}-${userId}`;
+    const now = Date.now();
+    const lastViewTime = viewTrackingCache.get(cacheKey) || 0;
+    const timeSinceLastView = now - lastViewTime;
+
+    if (timeSinceLastView > 5000) {
+      console.log(
+        `Incrementing view for discussion ${discussion._id} by user ${userId}`
+      );
+      await discussion.addUniqueView(req.user?._id);
+      viewTrackingCache.set(cacheKey, now);
+
+      // Clean up old entries
+      setTimeout(() => {
+        viewTrackingCache.delete(cacheKey);
+      }, 3600000);
+    } else {
+      console.log(
+        `Skipping view increment for discussion ${discussion._id} by user ${userId} (${timeSinceLastView}ms since last view)`
+      );
+    }
 
     // Add vote status for authenticated users
     if (req.user) {
@@ -205,7 +224,6 @@ router.get(
         ? "downvote"
         : null;
 
-      // Recursive function to add vote status for all comments and their replies
       const addVoteStatusToComments = (comments) => {
         comments.forEach((comment) => {
           comment.userVote = comment.upvotes.includes(req.user._id)
@@ -224,6 +242,17 @@ router.get(
 
       // Add vote status for all comments and their nested replies
       addVoteStatusToComments(discussion.comments);
+
+      if (discussion.poll) {
+        const userVotedOptions = discussion.poll.options
+          .map((option, index) =>
+            option.votes.includes(req.user._id) ? index : -1
+          )
+          .filter((index) => index !== -1);
+
+        discussion.poll.hasVoted = userVotedOptions.length > 0;
+        discussion.poll.userVotes = userVotedOptions;
+      }
     }
 
     res.json({
@@ -830,6 +859,192 @@ router.delete(
     await user.save();
 
     res.json({ success: true, message: "Discussion unsaved" });
+  })
+);
+
+// Create poll for discussion
+router.post(
+  "/:id/poll",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { question, options, isMultipleChoice, expiresAt } = req.body;
+
+    if (!question || !options || options.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Question and at least 2 options are required",
+      });
+    }
+
+    const discussion = await Discussion.findById(req.params.id);
+
+    if (!discussion) {
+      return res.status(404).json({
+        success: false,
+        message: "Discussion not found",
+      });
+    }
+
+    // Check if user is discussion author
+    if (discussion.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the discussion author can create polls",
+      });
+    }
+
+    await discussion.createPoll(
+      {
+        question,
+        options,
+        isMultipleChoice,
+        expiresAt,
+      },
+      req.user._id
+    );
+
+    await discussion.populate(
+      "poll.createdBy",
+      "username firstName lastName avatar"
+    );
+
+    // Add vote status to the response
+    discussion.poll.hasVoted = false;
+    discussion.poll.userVotes = [];
+
+    res.json({
+      success: true,
+      data: discussion.poll,
+    });
+  })
+);
+
+// Vote on poll
+router.post(
+  "/:id/poll/vote",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { optionIndexes } = req.body;
+
+    if (!optionIndexes || !Array.isArray(optionIndexes)) {
+      return res.status(400).json({
+        success: false,
+        message: "Option indexes are required",
+      });
+    }
+
+    const discussion = await Discussion.findById(req.params.id);
+
+    if (!discussion) {
+      return res.status(404).json({
+        success: false,
+        message: "Discussion not found",
+      });
+    }
+
+    try {
+      await discussion.voteOnPoll(req.user._id, optionIndexes);
+
+      await discussion.populate(
+        "poll.createdBy",
+        "username firstName lastName avatar"
+      );
+
+      // Add vote status to the response
+      const userVotedOptions = discussion.poll.options
+        .map((option, index) =>
+          option.votes.includes(req.user._id) ? index : -1
+        )
+        .filter((index) => index !== -1);
+
+      discussion.poll.hasVoted = userVotedOptions.length > 0;
+      discussion.poll.userVotes = userVotedOptions;
+
+      res.json({
+        success: true,
+        data: discussion.poll,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  })
+);
+
+// Remove poll vote
+router.delete(
+  "/:id/poll/vote",
+  protect,
+  asyncHandler(async (req, res) => {
+    const discussion = await Discussion.findById(req.params.id);
+
+    if (!discussion) {
+      return res.status(404).json({
+        success: false,
+        message: "Discussion not found",
+      });
+    }
+
+    try {
+      await discussion.removePollVote(req.user._id);
+
+      await discussion.populate(
+        "poll.createdBy",
+        "username firstName lastName avatar"
+      );
+
+      // Add vote status to the response
+      const userVotedOptions = discussion.poll.options
+        .map((option, index) =>
+          option.votes.includes(req.user._id) ? index : -1
+        )
+        .filter((index) => index !== -1);
+
+      discussion.poll.hasVoted = userVotedOptions.length > 0;
+      discussion.poll.userVotes = userVotedOptions;
+
+      res.json({
+        success: true,
+        data: discussion.poll,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  })
+);
+
+// Delete poll
+router.delete(
+  "/:id/poll",
+  protect,
+  asyncHandler(async (req, res) => {
+    const discussion = await Discussion.findById(req.params.id);
+
+    if (!discussion) {
+      return res.status(404).json({
+        success: false,
+        message: "Discussion not found",
+      });
+    }
+
+    try {
+      await discussion.deletePoll(req.user._id);
+
+      res.json({
+        success: true,
+        message: "Poll deleted successfully",
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
   })
 );
 
