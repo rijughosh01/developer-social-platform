@@ -14,13 +14,16 @@ const initialState: AuthState = {
 // Async thunks
 export const register = createAsyncThunk(
   "auth/register",
-  async (userData: {
-    username: string;
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }, { rejectWithValue }) => {
+  async (
+    userData: {
+      username: string;
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+    },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await api.post<ApiResponse<User>>(
         "/auth/register",
@@ -28,7 +31,6 @@ export const register = createAsyncThunk(
       );
       return response.data;
     } catch (error: any) {
-      
       if (error.response?.data?.message) {
         return rejectWithValue(error.response.data.message);
       } else if (error.response?.status === 400) {
@@ -48,7 +50,10 @@ export const register = createAsyncThunk(
 
 export const login = createAsyncThunk(
   "auth/login",
-  async (credentials: { email: string; password: string }, { rejectWithValue }) => {
+  async (
+    credentials: { email: string; password: string },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await api.post<ApiResponse<User>>(
         "/auth/login",
@@ -56,7 +61,6 @@ export const login = createAsyncThunk(
       );
       return response.data;
     } catch (error: any) {
-      
       if (error.response?.data?.message) {
         return rejectWithValue(error.response.data.message);
       } else if (error.response?.status === 401) {
@@ -101,6 +105,80 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+export const requestOTP = createAsyncThunk(
+  "auth/requestOTP",
+  async (email: string, { rejectWithValue }) => {
+    try {
+      const response = await api.post<ApiResponse>("/auth/request-otp", {
+        email,
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 404) {
+        return rejectWithValue(
+          "Email not found. Please check your email address."
+        );
+      } else if (error.response?.status === 400) {
+        return rejectWithValue("Please enter a valid email address.");
+      } else if (error.response?.status === 429) {
+        return rejectWithValue(
+          "Too many requests. Please wait before trying again."
+        );
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later.");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection.");
+      } else {
+        return rejectWithValue("Failed to send OTP. Please try again.");
+      }
+    }
+  }
+);
+
+export const verifyOTPResetPassword = createAsyncThunk(
+  "auth/verifyOTPResetPassword",
+  async (
+    {
+      email,
+      otp,
+      newPassword,
+    }: { email: string; otp: string; newPassword: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.post<ApiResponse>(
+        "/auth/verify-otp-reset-password",
+        {
+          email,
+          otp,
+          newPassword,
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 400) {
+        return rejectWithValue("Invalid OTP or password. Please try again.");
+      } else if (error.response?.status === 404) {
+        return rejectWithValue("User not found.");
+      } else if (error.response?.status === 429) {
+        return rejectWithValue(
+          "Too many attempts. Please wait before trying again."
+        );
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later.");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection.");
+      } else {
+        return rejectWithValue("Failed to reset password. Please try again.");
+      }
+    }
+  }
+);
+
 export const forgotPassword = createAsyncThunk(
   "auth/forgotPassword",
   async (email: string, { rejectWithValue }) => {
@@ -110,11 +188,12 @@ export const forgotPassword = createAsyncThunk(
       });
       return response.data;
     } catch (error: any) {
-      
       if (error.response?.data?.message) {
         return rejectWithValue(error.response.data.message);
       } else if (error.response?.status === 404) {
-        return rejectWithValue("Email not found. Please check your email address.");
+        return rejectWithValue(
+          "Email not found. Please check your email address."
+        );
       } else if (error.response?.status === 400) {
         return rejectWithValue("Please enter a valid email address.");
       } else if (error.response?.status === 500) {
@@ -189,7 +268,7 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || "Registration failed";
+        state.error = (action.payload as string) || "Registration failed";
       });
 
     // Login
@@ -209,7 +288,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || "Login failed";
+        state.error = (action.payload as string) || "Login failed";
       });
 
     // Get Profile
@@ -261,6 +340,34 @@ const authSlice = createSlice({
         state.error = action.error.message || "Failed to change password";
       });
 
+    // Request OTP
+    builder
+      .addCase(requestOTP.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(requestOTP.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(requestOTP.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as string) || "Failed to send OTP";
+      });
+
+    // Verify OTP Reset Password
+    builder
+      .addCase(verifyOTPResetPassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyOTPResetPassword.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(verifyOTPResetPassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as string) || "Failed to reset password";
+      });
+
     // Forgot Password
     builder
       .addCase(forgotPassword.pending, (state) => {
@@ -272,7 +379,8 @@ const authSlice = createSlice({
       })
       .addCase(forgotPassword.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string || "Failed to send reset email";
+        state.error =
+          (action.payload as string) || "Failed to send reset email";
       });
 
     // Reset Password

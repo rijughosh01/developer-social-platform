@@ -66,13 +66,25 @@ OPENAI_API_KEY=your-openai-api-key
 ANTHROPIC_API_KEY=your-anthropic-api-key
 
 # ========================================
-# EMAIL CONFIGURATION (Optional)
+# EMAIL CONFIGURATION (Required for OTP)
 # ========================================
 # Gmail SMTP (for password reset, notifications)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
+
+# Alternative: Outlook/Hotmail SMTP
+# EMAIL_HOST=smtp-mail.outlook.com
+# EMAIL_PORT=587
+# EMAIL_USER=your-email@outlook.com
+# EMAIL_PASS=your-app-password
+
+# Alternative: Custom SMTP
+# EMAIL_HOST=your-smtp-server.com
+# EMAIL_PORT=587
+# EMAIL_USER=your-email@yourdomain.com
+# EMAIL_PASS=your-smtp-password
 
 # ========================================
 # SOCIAL LOGIN CONFIGURATION (Optional)

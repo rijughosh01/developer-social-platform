@@ -5,6 +5,12 @@ const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const generateToken = require("../utils/generateToken");
 const User = require("../models/User");
+const OTP = require("../models/OTP");
+const EmailService = require("../utils/emailService");
+const {
+  otpRateLimit,
+  otpVerificationRateLimit,
+} = require("../middleware/otpRateLimit");
 
 const router = express.Router();
 
@@ -50,7 +56,6 @@ router.post(
     if (existingUser) {
       // If account exists but is deleted, allow re-registration
       if (!existingUser.isActive) {
-       
         await User.findByIdAndDelete(existingUser._id);
       } else {
         return res.status(400).json({
@@ -124,7 +129,8 @@ router.post(
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Email not found. Please check your email address or create a new account.",
+        message:
+          "Email not found. Please check your email address or create a new account.",
       });
     }
 
@@ -132,7 +138,8 @@ router.post(
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: "This account has been deleted. Please contact support if you believe this is an error.",
+        message:
+          "This account has been deleted. Please contact support if you believe this is an error.",
       });
     }
 
@@ -342,7 +349,118 @@ router.put(
   })
 );
 
-// Forgot password
+// Request OTP for password reset
+router.post(
+  "/request-otp",
+  [
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Please provide a valid email"),
+  ],
+  validate,
+  otpRateLimit,
+  asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    // Check if user exists
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "No account found with this email address. Please check your email or create a new account.",
+      });
+    }
+
+    try {
+      const otpDoc = await OTP.createOTP(email, "password_reset");
+
+      // Send OTP email
+      const emailService = new EmailService();
+      await emailService.sendOTPEmail(email, otpDoc.otp, user.username);
+
+      res.json({
+        success: true,
+        message:
+          "OTP sent successfully! Check your email for the 6-digit code.",
+        email: email,
+      });
+    } catch (error) {
+      console.error("Error in request-otp:", error);
+
+      // Delete the OTP if email sending failed
+      await OTP.deleteOne({ email, type: "password_reset" });
+
+      res.status(500).json({
+        success: false,
+        message: "Failed to send OTP. Please try again later.",
+      });
+    }
+  })
+);
+
+// Verify OTP and reset password
+router.post(
+  "/verify-otp-reset-password",
+  [
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Please provide a valid email"),
+    body("otp")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be 6 digits"),
+    body("newPassword")
+      .isLength({ min: 6 })
+      .withMessage("New password must be at least 6 characters long"),
+  ],
+  validate,
+  otpVerificationRateLimit,
+  asyncHandler(async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+
+    // Verify OTP
+    const otpResult = await OTP.verifyOTP(email, otp, "password_reset");
+
+    if (!otpResult.valid) {
+      return res.status(400).json({
+        success: false,
+        message: otpResult.message,
+      });
+    }
+
+    const user = await User.findOne({ email }).select("+password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    // Send success email
+    try {
+      const emailService = new EmailService();
+      await emailService.sendPasswordResetSuccessEmail(email, user.username);
+    } catch (error) {
+      console.error("Error sending success email:", error);
+    }
+
+    res.json({
+      success: true,
+      message:
+        "Password reset successful! You can now log in with your new password.",
+    });
+  })
+);
+
+// Legacy forgot password route
 router.post(
   "/forgot-password",
   [
@@ -360,7 +478,8 @@ router.post(
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "No account found with this email address. Please check your email or create a new account.",
+        message:
+          "No account found with this email address. Please check your email or create a new account.",
       });
     }
 
@@ -372,7 +491,8 @@ router.post(
     // For now, just return the token
     res.json({
       success: true,
-      message: "Password reset email sent successfully! Check your inbox for the reset link.",
+      message:
+        "Password reset email sent successfully! Check your inbox for the reset link.",
       resetToken:
         process.env.NODE_ENV === "development" ? resetToken : undefined,
     });
