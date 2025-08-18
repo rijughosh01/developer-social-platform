@@ -154,18 +154,16 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[95vh] flex flex-col animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[95vh] flex flex-col animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600 flex-shrink-0 rounded-t-3xl">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 bg-white/20 rounded-lg">
+              <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Create Poll
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h2 className="text-xl font-bold text-white">Create Poll</h2>
+              <p className="text-sm text-blue-100">
                 Engage your community with a quick poll
               </p>
             </div>
@@ -175,7 +173,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
             size="sm"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full p-2"
+            className="text-white hover:text-white hover:bg-white/20 rounded-full p-2"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -187,8 +185,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
             {/* Question Section */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <label className="text-sm font-semibold text-gray-800">
                   Poll Question
                 </label>
                 <span className="text-red-500">*</span>
@@ -198,11 +196,11 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   value={question}
                   onChange={(e) => handleQuestionChange(e.target.value)}
                   placeholder="What would you like to ask your community?"
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200 ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent resize-none transition-all duration-200 ${
                     errors.question
-                      ? "border-red-300 bg-red-50 dark:bg-red-900/20"
-                      : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-                  } dark:text-white placeholder-gray-500 dark:placeholder-gray-400`}
+                      ? "border-red-400 bg-red-50"
+                      : "border-gray-300 bg-gray-50"
+                  } text-gray-800 placeholder-gray-500`}
                   rows={3}
                   maxLength={300}
                   required
@@ -218,9 +216,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   </div>
                   <span
                     className={`text-xs ${
-                      question.length > 280
-                        ? "text-red-500"
-                        : "text-gray-500 dark:text-gray-400"
+                      question.length > 280 ? "text-red-500" : "text-gray-500"
                     }`}
                   >
                     {question.length}/300
@@ -232,8 +228,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
             {/* Options Section */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <label className="text-sm font-semibold text-gray-800">
                   Poll Options
                 </label>
                 <span className="text-red-500">*</span>
@@ -243,7 +239,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                 {options.map((option, index) => (
                   <div key={index} className="relative group">
                     <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-400">
+                      <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium text-gray-700">
                         {index + 1}
                       </div>
                       <div className="flex-1 relative">
@@ -254,11 +250,11 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                             handleOptionChange(index, e.target.value)
                           }
                           placeholder={`Option ${index + 1}`}
-                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all duration-200 ${
                             errors[`option${index}`]
-                              ? "border-red-300 bg-red-50 dark:bg-red-900/20"
-                              : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-                          } dark:text-white placeholder-gray-500 dark:placeholder-gray-400`}
+                              ? "border-red-400 bg-red-50"
+                              : "border-gray-300 bg-gray-50"
+                          } text-gray-800 placeholder-gray-500`}
                           maxLength={200}
                           required
                         />
@@ -274,7 +270,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveOption(index)}
-                          className="text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -303,34 +299,34 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleAddOption}
-                  className="w-full border-dashed border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:text-blue-600 hover:border-blue-300 dark:hover:border-blue-600 rounded-xl py-3 transition-all duration-200"
+                  className="w-auto px-4 py-2 border-dashed border-gray-400 text-gray-600 hover:text-blue-600 hover:border-blue-500 rounded-lg transition-all duration-200"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-3 h-3 mr-1" />
                   Add Option ({options.length}/10)
                 </Button>
               )}
             </div>
 
             {/* Settings Section */}
-            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+            <div className="space-y-4 p-4 bg-blue-50 rounded-xl">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <label className="text-sm font-semibold text-gray-900 dark:text-white">
+                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                <label className="text-sm font-semibold text-gray-800">
                   Poll Settings
                 </label>
               </div>
 
               {/* Multiple Choice Toggle */}
-              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                    <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Users className="w-4 h-4 text-purple-600" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-900 dark:text-white">
+                    <label className="text-sm font-medium text-gray-800">
                       Multiple Choice
                     </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-600">
                       Allow users to select multiple options
                     </p>
                   </div>
@@ -342,21 +338,21 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                     onChange={(e) => setIsMultipleChoice(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
 
               {/* Expiration Date */}
-              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="p-3 bg-white rounded-lg border border-gray-200">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                    <Clock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Clock className="w-4 h-4 text-orange-600" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-900 dark:text-white">
+                    <label className="text-sm font-medium text-gray-800">
                       Expiration Date
                     </label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-600">
                       Optional - when the poll should close
                     </p>
                   </div>
@@ -365,7 +361,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
                   type="datetime-local"
                   value={expiresAt}
                   onChange={(e) => setExpiresAt(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 text-gray-800"
                   min={new Date().toISOString().slice(0, 16)}
                 />
               </div>
@@ -373,29 +369,29 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
 
             {/* Preview */}
             {isValid && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div className="p-4 bg-green-50 rounded-xl border border-green-200">
                 <div className="flex items-center gap-2 mb-3">
-                  <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  <Zap className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">
                     Poll Preview
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-gray-800">
                     {question}
                   </p>
                   <div className="space-y-1">
                     {validOptions.map((option, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+                        className="flex items-center gap-2 text-sm text-gray-600"
                       >
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                        <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                         {option}
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 pt-2">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 pt-2">
                     <span>{validOptions.length} options</span>
                     {isMultipleChoice && <span>• Multiple choice</span>}
                     {expiresAt && (
@@ -411,13 +407,13 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({
         </div>
 
         {/* Footer  */}
-        <div className="flex gap-3 p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
+        <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0 rounded-b-3xl">
           <Button
             type="button"
             variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 h-12"
+            className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-100 h-12"
           >
             Cancel
           </Button>
