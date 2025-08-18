@@ -75,3 +75,13 @@ export function getAvatarUrl(user: {
     `${user.firstName} ${user.lastName}`
   )}&background=3b82f6&color=fff&size=128`;
 }
+
+export function isUserOnline(lastSeen: string | Date): boolean {
+  if (!lastSeen) return false;
+
+  const lastSeenDate = new Date(lastSeen);
+  const now = new Date();
+  const diffInMinutes = (now.getTime() - lastSeenDate.getTime()) / (1000 * 60);
+
+  return diffInMinutes <= 5;
+}

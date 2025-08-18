@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { 
-  FiTrendingUp, 
-  FiMapPin, 
-  FiBriefcase, 
-  FiUsers, 
-  FiStar, 
+import {
+  FiTrendingUp,
+  FiMapPin,
+  FiBriefcase,
+  FiUsers,
+  FiStar,
   FiArrowRight,
   FiZap,
   FiAward,
-  FiEye
+  FiEye,
 } from "react-icons/fi";
 import { api } from "@/lib/api";
-import { getAvatarUrl } from "@/lib/utils";
+import { getAvatarUrl, isUserOnline } from "@/lib/utils";
 
 export function TrendingDevelopers({ limit }: { limit?: number }) {
   const [trendingUsers, setTrendingUsers] = useState<any[]>([]);
@@ -47,9 +47,7 @@ export function TrendingDevelopers({ limit }: { limit?: number }) {
               <h3 className="text-lg font-semibold text-gray-900">
                 Trending Developers
               </h3>
-              <p className="text-sm text-gray-600">
-                Top developers this week
-              </p>
+              <p className="text-sm text-gray-600">Top developers this week</p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-500 bg-white px-2 py-1 rounded-lg border border-gray-200">
@@ -108,7 +106,9 @@ export function TrendingDevelopers({ limit }: { limit?: number }) {
                     />
                   </div>
                   {/* Online Status */}
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                  {isUserOnline(user.lastSeen) && (
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                  )}
                 </div>
 
                 {/* User Info */}
@@ -120,15 +120,17 @@ export function TrendingDevelopers({ limit }: { limit?: number }) {
                     {index < 3 && (
                       <div className="flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full">
                         <FiStar className="w-3 h-3 text-white fill-current" />
-                        <span className="text-xs font-bold text-white">Top</span>
+                        <span className="text-xs font-bold text-white">
+                          Top
+                        </span>
                       </div>
                     )}
                   </div>
-                  
+
                   <p className="text-xs text-gray-500 truncate mb-1">
                     @{user.username}
                   </p>
-                  
+
                   {user.location && (
                     <div className="flex items-center gap-1 mb-2">
                       <FiMapPin className="h-3 w-3 text-gray-400" />
@@ -148,14 +150,16 @@ export function TrendingDevelopers({ limit }: { limit?: number }) {
                       <>
                         <span className="text-gray-300">•</span>
                         <div className="flex items-center gap-1">
-                          {user.skills.slice(0, 2).map((skill: string, skillIndex: number) => (
-                            <span
-                              key={skillIndex}
-                              className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium"
-                            >
-                              {skill}
-                            </span>
-                          ))}
+                          {user.skills
+                            .slice(0, 2)
+                            .map((skill: string, skillIndex: number) => (
+                              <span
+                                key={skillIndex}
+                                className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium"
+                              >
+                                {skill}
+                              </span>
+                            ))}
                           {user.skills.length > 2 && (
                             <span className="text-xs text-gray-500">
                               +{user.skills.length - 2}
