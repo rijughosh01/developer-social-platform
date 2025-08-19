@@ -9,6 +9,7 @@ import {
   requestEmailVerification,
   verifyEmailOTP,
   completeRegistration,
+  clearError,
 } from "@/store/slices/authSlice";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import {
   FiUserCheck,
   FiArrowLeft,
   FiCheckCircle,
+  FiAlertCircle,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
@@ -76,6 +78,7 @@ export default function RegisterPage() {
   // Step 1: Submit initial form and request email verification
   const onSubmitForm = async (data: RegisterForm) => {
     try {
+      dispatch(clearError());
       const { password, confirmPassword, ...verificationData } = data;
       setRegistrationData(data);
 
@@ -84,8 +87,11 @@ export default function RegisterPage() {
       setCurrentStep("otp");
       toast.success("Verification code sent to your email!");
     } catch (error: any) {
+      console.error("Registration error:", error);
       const errorMessage =
-        error.message || "Failed to send verification code. Please try again.";
+        error?.message ||
+        error ||
+        "Failed to send verification code. Please try again.";
       toast.error(errorMessage);
     }
   };
@@ -93,14 +99,18 @@ export default function RegisterPage() {
   // Step 2: Verify OTP
   const onSubmitOTP = async (data: OTPForm) => {
     try {
+      dispatch(clearError());
       await dispatch(
         verifyEmailOTP({ email: verifiedEmail, otp: data.otp })
       ).unwrap();
       setCurrentStep("password");
       toast.success("Email verified successfully!");
     } catch (error: any) {
+      console.error("OTP verification error:", error);
       const errorMessage =
-        error.message || "Invalid verification code. Please try again.";
+        error?.message ||
+        error ||
+        "Invalid verification code. Please try again.";
       toast.error(errorMessage);
     }
   };
@@ -111,6 +121,7 @@ export default function RegisterPage() {
     confirmPassword: string;
   }) => {
     try {
+      dispatch(clearError());
       if (
         registrationData.username &&
         registrationData.email &&
@@ -132,14 +143,16 @@ export default function RegisterPage() {
         toast.error("Registration data is incomplete. Please start over.");
       }
     } catch (error: any) {
+      console.error("Complete registration error:", error);
       const errorMessage =
-        error.message || "Registration failed. Please try again.";
+        error?.message || error || "Registration failed. Please try again.";
       toast.error(errorMessage);
     }
   };
 
   const handleResendOTP = async () => {
     try {
+      dispatch(clearError());
       const { password, confirmPassword, ...verificationData } =
         registrationData;
       if (
@@ -161,8 +174,9 @@ export default function RegisterPage() {
         toast.error("Registration data is incomplete. Please start over.");
       }
     } catch (error: any) {
+      console.error("Resend OTP error:", error);
       const errorMessage =
-        error.message || "Failed to resend verification code.";
+        error?.message || error || "Failed to resend verification code.";
       toast.error(errorMessage);
     }
   };
@@ -205,6 +219,20 @@ export default function RegisterPage() {
               "Create a secure password for your account"}
           </p>
         </div>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <FiAlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Step 1: Registration Form */}
         {currentStep === "form" && (
