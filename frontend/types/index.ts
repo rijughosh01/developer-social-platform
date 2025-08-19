@@ -25,6 +25,7 @@ export interface User {
   lastSeen: string;
   createdAt: string;
   updatedAt: string;
+  isFollowing?: boolean;
 }
 
 export interface Post {

@@ -225,9 +225,9 @@ function ProfileForm() {
     setAvatarUploading(true);
     try {
       const res = await usersAPI.uploadAvatar(avatarFile);
-      setAvatarPreview(res.data.avatar);
+      setAvatarPreview((res.data as any)?.avatar || '');
       toast.success("Profile picture updated!");
-      dispatch(getProfile()); // Refresh user state in Redux
+      dispatch(getProfile());
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "Failed to upload avatar");
     }

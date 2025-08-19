@@ -14,6 +14,233 @@ const {
 
 const router = express.Router();
 
+// Request email verification for registration
+router.post(
+  "/request-email-verification",
+  [
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Please provide a valid email"),
+    body("username")
+      .trim()
+      .isLength({ min: 3, max: 30 })
+      .withMessage("Username must be between 3 and 30 characters")
+      .matches(/^[a-zA-Z0-9_]+$/)
+      .withMessage(
+        "Username can only contain letters, numbers, and underscores"
+      ),
+    body("firstName")
+      .trim()
+      .isLength({ min: 1, max: 50 })
+      .withMessage(
+        "First name is required and must be less than 50 characters"
+      ),
+    body("lastName")
+      .trim()
+      .isLength({ min: 1, max: 50 })
+      .withMessage("Last name is required and must be less than 50 characters"),
+  ],
+  validate,
+  otpRateLimit,
+  asyncHandler(async (req, res) => {
+    const { email, username, firstName, lastName } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
+
+    if (existingUser && existingUser.isActive) {
+      return res.status(400).json({
+        success: false,
+        message:
+          existingUser.email === email
+            ? "This email is already registered. Please try logging in instead."
+            : "This username is already taken. Please choose a different username.",
+      });
+    }
+
+    try {
+      // Create OTP for email verification
+      const otpDoc = await OTP.createOTP(email, "email_verification");
+
+      // Send verification email
+      const emailService = new EmailService();
+      await emailService.sendRegistrationOTPEmail(email, otpDoc.otp, username);
+
+      res.json({
+        success: true,
+        message:
+          "Verification OTP sent successfully! Check your email for the 6-digit code.",
+        email: email,
+      });
+    } catch (error) {
+      console.error("Error in request-email-verification:", error);
+
+      // Delete the OTP if email sending failed
+      await OTP.deleteOne({ email, type: "email_verification" });
+
+      res.status(500).json({
+        success: false,
+        message: "Failed to send verification OTP. Please try again later.",
+      });
+    }
+  })
+);
+
+// Verify email OTP for registration
+router.post(
+  "/verify-email-otp",
+  [
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Please provide a valid email"),
+    body("otp")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be 6 digits"),
+  ],
+  validate,
+  otpVerificationRateLimit,
+  asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    // Verify OTP
+    const otpResult = await OTP.verifyOTP(email, otp, "email_verification");
+
+    if (!otpResult.valid) {
+      return res.status(400).json({
+        success: false,
+        message: otpResult.message,
+      });
+    }
+
+    res.json({
+      success: true,
+      message:
+        "Email verified successfully! You can now complete your registration.",
+    });
+  })
+);
+
+// Complete registration after email verification
+router.post(
+  "/complete-registration",
+  [
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Please provide a valid email"),
+    body("username")
+      .trim()
+      .isLength({ min: 3, max: 30 })
+      .withMessage("Username must be between 3 and 30 characters")
+      .matches(/^[a-zA-Z0-9_]+$/)
+      .withMessage(
+        "Username can only contain letters, numbers, and underscores"
+      ),
+    body("password")
+      .isLength({ min: 6 })
+      .withMessage("Password must be at least 6 characters long"),
+    body("firstName")
+      .trim()
+      .isLength({ min: 1, max: 50 })
+      .withMessage(
+        "First name is required and must be less than 50 characters"
+      ),
+    body("lastName")
+      .trim()
+      .isLength({ min: 1, max: 50 })
+      .withMessage("Last name is required and must be less than 50 characters"),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { username, email, password, firstName, lastName } = req.body;
+
+    // Check if email was verified
+    const verifiedOTP = await OTP.findOne({
+      email,
+      type: "email_verification",
+      isUsed: true,
+    });
+
+    if (!verifiedOTP) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please verify your email first before completing registration.",
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
+
+    if (existingUser && existingUser.isActive) {
+      return res.status(400).json({
+        success: false,
+        message:
+          existingUser.email === email
+            ? "This email is already registered. Please try logging in instead."
+            : "This username is already taken. Please choose a different username.",
+      });
+    }
+
+    // Create user
+    const user = await User.create({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      isVerified: true, // Mark as verified since email was verified
+    });
+
+    if (user) {
+      // Send welcome email
+      try {
+        const emailService = new EmailService();
+        await emailService.sendWelcomeEmail(email, username, firstName);
+      } catch (error) {
+        console.error("Error sending welcome email:", error);
+      }
+
+      // Clean up used OTP
+      await OTP.deleteOne({ email, type: "email_verification" });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          fullName: user.fullName,
+          avatar: user.avatar,
+          bio: user.bio,
+          skills: user.skills,
+          socialLinks: user.socialLinks,
+          location: user.location,
+          company: user.company,
+          role: user.role,
+          isVerified: user.isVerified,
+          followersCount: user.followersCount,
+          followingCount: user.followingCount,
+          token: generateToken(user._id),
+        },
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Invalid user data",
+      });
+    }
+  })
+);
+
 // Register user
 router.post(
   "/register",
@@ -46,66 +273,11 @@ router.post(
   ],
   validate,
   asyncHandler(async (req, res) => {
-    const { username, email, password, firstName, lastName } = req.body;
-
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
+    res.status(400).json({
+      success: false,
+      message:
+        "Please use the new registration flow with email verification. Use /request-email-verification endpoint.",
     });
-
-    if (existingUser) {
-      // If account exists but is deleted, allow re-registration
-      if (!existingUser.isActive) {
-        await User.findByIdAndDelete(existingUser._id);
-      } else {
-        return res.status(400).json({
-          success: false,
-          message:
-            existingUser.email === email
-              ? "This email is already registered. Please try logging in instead."
-              : "This username is already taken. Please choose a different username.",
-        });
-      }
-    }
-
-    // Create user
-    const user = await User.create({
-      username,
-      email,
-      password,
-      firstName,
-      lastName,
-    });
-
-    if (user) {
-      res.status(201).json({
-        success: true,
-        data: {
-          _id: user._id,
-          username: user.username,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          fullName: user.fullName,
-          avatar: user.avatar,
-          bio: user.bio,
-          skills: user.skills,
-          socialLinks: user.socialLinks,
-          location: user.location,
-          company: user.company,
-          role: user.role,
-          isVerified: user.isVerified,
-          followersCount: user.followersCount,
-          followingCount: user.followingCount,
-          token: generateToken(user._id),
-        },
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: "Invalid user data",
-      });
-    }
   })
 );
 

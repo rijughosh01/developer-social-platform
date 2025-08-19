@@ -25,11 +25,20 @@ export const register = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await api.post<ApiResponse<User>>(
-        "/auth/register",
-        userData
-      );
-      return response.data;
+      // Step 1: Request email verification
+      await api.post<ApiResponse>("/auth/request-email-verification", {
+        username: userData.username,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+      });
+
+      return {
+        success: true,
+        message: "Please check your email for verification code",
+        step: "verification_sent",
+        email: userData.email,
+      };
     } catch (error: any) {
       if (error.response?.data?.message) {
         return rejectWithValue(error.response.data.message);
@@ -37,6 +46,10 @@ export const register = createAsyncThunk(
         return rejectWithValue("Please check your input data");
       } else if (error.response?.status === 409) {
         return rejectWithValue("User already exists");
+      } else if (error.response?.status === 429) {
+        return rejectWithValue(
+          "Too many requests. Please wait before trying again."
+        );
       } else if (error.response?.status === 500) {
         return rejectWithValue("Server error. Please try again later");
       } else if (error.code === "NETWORK_ERROR") {
@@ -226,6 +239,120 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+// Request email verification for registration
+export const requestEmailVerification = createAsyncThunk(
+  "auth/requestEmailVerification",
+  async (
+    userData: {
+      username: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.post<ApiResponse>(
+        "/auth/request-email-verification",
+        userData
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 400) {
+        return rejectWithValue("Please check your input data");
+      } else if (error.response?.status === 409) {
+        return rejectWithValue("User already exists");
+      } else if (error.response?.status === 429) {
+        return rejectWithValue(
+          "Too many requests. Please wait before trying again."
+        );
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection");
+      } else {
+        return rejectWithValue(
+          "Failed to send verification email. Please try again"
+        );
+      }
+    }
+  }
+);
+
+// Verify email OTP for registration
+export const verifyEmailOTP = createAsyncThunk(
+  "auth/verifyEmailOTP",
+  async (
+    { email, otp }: { email: string; otp: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.post<ApiResponse>("/auth/verify-email-otp", {
+        email,
+        otp,
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 400) {
+        return rejectWithValue("Invalid OTP. Please try again.");
+      } else if (error.response?.status === 429) {
+        return rejectWithValue(
+          "Too many attempts. Please wait before trying again."
+        );
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection");
+      } else {
+        return rejectWithValue("Failed to verify OTP. Please try again");
+      }
+    }
+  }
+);
+
+// Complete registration after email verification
+export const completeRegistration = createAsyncThunk(
+  "auth/completeRegistration",
+  async (
+    userData: {
+      username: string;
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.post<ApiResponse<User>>(
+        "/auth/complete-registration",
+        userData
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      } else if (error.response?.status === 400) {
+        return rejectWithValue(
+          "Please verify your email first or check your input data"
+        );
+      } else if (error.response?.status === 409) {
+        return rejectWithValue("User already exists");
+      } else if (error.response?.status === 500) {
+        return rejectWithValue("Server error. Please try again later");
+      } else if (error.code === "NETWORK_ERROR") {
+        return rejectWithValue("Network error. Please check your connection");
+      } else {
+        return rejectWithValue("Registration failed. Please try again");
+      }
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -395,6 +522,56 @@ const authSlice = createSlice({
       .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || "Failed to reset password";
+      });
+
+    // Request Email Verification
+    builder
+      .addCase(requestEmailVerification.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(requestEmailVerification.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(requestEmailVerification.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error =
+          (action.payload as string) || "Failed to send verification email";
+      });
+
+    // Verify Email OTP
+    builder
+      .addCase(verifyEmailOTP.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyEmailOTP.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(verifyEmailOTP.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as string) || "Failed to verify OTP";
+      });
+
+    // Complete Registration
+    builder
+      .addCase(completeRegistration.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(completeRegistration.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.data;
+        state.token = action.payload.data.token;
+        state.isAuthenticated = true;
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", action.payload.data.token);
+        }
+      })
+      .addCase(completeRegistration.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error =
+          (action.payload as string) || "Failed to complete registration";
       });
   },
 });

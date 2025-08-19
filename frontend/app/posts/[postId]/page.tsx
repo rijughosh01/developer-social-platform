@@ -6,7 +6,7 @@ import { PostCard } from "@/components/posts/PostCard";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 
-export default function PostDetailPage({ params }) {
+export default function PostDetailPage({ params }: { params: { postId: string } }) {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
