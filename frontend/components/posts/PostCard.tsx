@@ -49,6 +49,7 @@ import php from "react-syntax-highlighter/dist/esm/languages/hljs/php";
 import sql from "react-syntax-highlighter/dist/esm/languages/hljs/sql";
 import bash from "react-syntax-highlighter/dist/esm/languages/hljs/bash";
 import { getAvatarUrl } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 SyntaxHighlighter.registerLanguage("javascript", js);
 SyntaxHighlighter.registerLanguage("typescript", ts);
@@ -92,7 +93,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
-  console.log("POSTCARD POST DATA:", post);
+  logger.debug("POSTCARD POST DATA:", post);
   const [showMenu, setShowMenu] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [commentInput, setCommentInput] = useState("");
@@ -408,9 +409,9 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
   // Track copy count
   const trackCopyCount = async () => {
     try {
-      console.log("Sending copy request for post:", post._id);
+      logger.debug("Sending copy request for post:", post._id);
       const response = await api.post(`/posts/${post._id}/copy`);
-      console.log("Copy response:", response.data);
+              logger.debug("Copy response:", response.data);
       setCopyCount(response.data.copies);
     } catch (err) {
       console.error("Copy count error:", err);
@@ -477,11 +478,11 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
 
   // Get difficulty level
   const getDifficultyLevel = (post: any) => {
-    console.log("Post difficulty from DB:", post.difficulty);
-    console.log("Post object:", post);
+    logger.debug("Post difficulty from DB:", post.difficulty);
+    logger.debug("Post object:", post);
 
     if (post.difficulty) {
-      console.log("Using user-selected difficulty:", post.difficulty);
+      logger.debug("Using user-selected difficulty:", post.difficulty);
       return post.difficulty;
     }
 
@@ -498,7 +499,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
         ? "intermediate"
         : "beginner";
 
-    console.log("Auto-detected difficulty:", autoDetected);
+    logger.debug("Auto-detected difficulty:", autoDetected);
     return autoDetected;
   };
 

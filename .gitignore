@@ -3,7 +3,7 @@
 # Root .gitignore File
 # ========================================
 
-# Environment files (contains sensitive data)
+# Environment files
 .env
 .env.local
 .env.development
@@ -65,7 +65,7 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# parcel-bundler cache (https://parceljs.org/)
+# parcel-bundler cache
 .cache
 .parcel-cache
 
@@ -112,7 +112,7 @@ Thumbs.db
 # Redis dump
 dump.rdb
 
-# Uploads (user-uploaded content)
+# Uploads
 uploads/
 */uploads/
 
@@ -120,11 +120,7 @@ uploads/
 test-*.js
 check-*.js
 
-# Documentation files (keep only essential ones)
-# LOAD_BALANCING_EXPLAINED.md
-# REDIS_*.md
-# UPSTASH_*.md
-# *_GUIDE.md
+# Documentation files
 # *_SETUP.md
 
 # Backup files

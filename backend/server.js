@@ -25,6 +25,7 @@ const searchRoutes = require("./routes/search");
 const { setupSocketIO } = require("./socket/socket");
 const { setupRedisAdapter } = require("./socket/redis-adapter");
 const redisService = require("./utils/redisService");
+const { logHelper } = require("./utils/logger");
 
 const app = express();
 const server = createServer(app);
@@ -53,7 +54,7 @@ const createRateLimiter = () => {
   const redisClient = redisService.getSocketIOClient();
 
   if (!redisClient) {
-    console.warn("Redis not available for rate limiting, using in-memory");
+    logHelper.warn("Redis not available for rate limiting, using in-memory");
     return rateLimit({
       windowMs: 15 * 60 * 1000,
       max: process.env.NODE_ENV === "production" ? 100 : 1000,
@@ -71,7 +72,7 @@ const createRateLimiter = () => {
       }),
     });
   } catch (error) {
-    console.warn(
+    logHelper.warn(
       "Failed to create Redis rate limiter, falling back to in-memory:",
       error.message
     );
@@ -134,7 +135,7 @@ app.get("/api/health", (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logHelper.error("Server error:", { error: err.stack });
   res.status(500).json({
     message: "Something went wrong!",
     error:
@@ -153,14 +154,14 @@ app.use("*", (req, res) => {
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(async () => {
-    console.log("Connected to MongoDB");
+    logHelper.info("Connected to MongoDB");
 
     // Initialize Redis service
-    console.log(`Redis Service: ${redisService.getRedisType()}`);
+    logHelper.info(`Redis Service: ${redisService.getRedisType()}`);
     if (redisService.isAvailable()) {
-      console.log("Redis is available for caching and Socket.IO");
+      logHelper.info("Redis is available for caching and Socket.IO");
     } else {
-      console.log("Redis not available - using in-memory for Socket.IO");
+      logHelper.info("Redis not available - using in-memory for Socket.IO");
     }
 
     // Setup Redis adapter for Socket.IO
@@ -171,22 +172,22 @@ mongoose
 
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-      console.log(`🆔 Process ID: ${process.pid}`);
-      console.log(`💾 Redis Type: ${redisService.getRedisType()}`);
+      logHelper.info(`🚀 Server running on port ${PORT}`);
+      logHelper.info(`🌍 Environment: ${process.env.NODE_ENV}`);
+      logHelper.info(`🆔 Process ID: ${process.pid}`);
+      logHelper.info(`💾 Redis Type: ${redisService.getRedisType()}`);
     });
   })
   .catch((err) => {
-    console.error("MongoDB connection error:", err);
+    logHelper.error("MongoDB connection error:", err);
     process.exit(1);
   });
 
 // Graceful shutdown
 process.on("SIGTERM", () => {
-  console.log("SIGTERM received, shutting down gracefully");
+  logHelper.info("SIGTERM received, shutting down gracefully");
   server.close(() => {
-    console.log("Process terminated");
+    logHelper.info("Process terminated");
   });
 });
 
