@@ -51,8 +51,11 @@ export interface Post {
 
 export interface Comment {
   _id: string;
-  user: User;
+  user?: User;
+  author?: User;
   content: string;
+  parentComment?: string;
+  replies: Comment[];
   likes: User[];
   createdAt: string;
   updatedAt: string;

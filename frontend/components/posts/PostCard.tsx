@@ -31,6 +31,7 @@ import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
 import { commentsAPI, savedAPI, api } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { NestedComment } from "./NestedComment";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
   atomOneLight,
@@ -159,8 +160,108 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
     setLoadingComments(true);
     try {
       const res = await commentsAPI.getComments(post._id);
-      setComments(res.data.data.comments || []);
+      console.log("API Response:", res.data);
+
+      // Combine top-level comments with their replies
+      const topLevelComments = res.data.data.comments || [];
+      const allReplies = res.data.data.replies || [];
+
+      console.log("Top-level comments:", topLevelComments);
+      console.log("All replies:", allReplies);
+
+      // Attach replies to their parent comments
+      const commentsWithReplies = topLevelComments.map((comment) => {
+        let commentReplies = [];
+
+        if (comment.replies && comment.replies.length > 0) {
+          if (
+            comment.replies[0] &&
+            typeof comment.replies[0] === "object" &&
+            comment.replies[0].author
+          ) {
+            commentReplies = comment.replies;
+          } else {
+            commentReplies = allReplies.filter(
+              (reply) => reply.parentComment === comment._id
+            );
+          }
+        } else {
+          // Fallback: filter from allReplies
+          commentReplies = allReplies.filter(
+            (reply) => reply.parentComment === comment._id
+          );
+        }
+
+        // Process nested replies for each reply
+        const processedReplies = commentReplies.map((reply) => {
+          console.log("Processing reply:", {
+            id: reply._id,
+            author: reply.author?.firstName,
+            hasReplies: reply.replies && reply.replies.length > 0,
+            repliesCount: reply.replies?.length || 0,
+          });
+
+          if (reply.replies && reply.replies.length > 0) {
+            const nestedReplies = reply.replies
+              .map((nestedReply) => {
+                console.log("Processing nested reply:", {
+                  id: nestedReply._id,
+                  author: nestedReply.author?.firstName,
+                  isPopulated:
+                    nestedReply &&
+                    typeof nestedReply === "object" &&
+                    nestedReply.author,
+                });
+
+                // If nested reply is already populated, use it
+                if (
+                  nestedReply &&
+                  typeof nestedReply === "object" &&
+                  nestedReply.author
+                ) {
+                  return nestedReply;
+                }
+                // Otherwise, find it in allReplies
+                const foundReply = allReplies.find(
+                  (r) => r._id === nestedReply
+                );
+                console.log(
+                  "Found reply in allReplies:",
+                  foundReply?.author?.firstName
+                );
+                return foundReply;
+              })
+              .filter(Boolean);
+
+            console.log(
+              "Final nested replies for",
+              reply._id,
+              ":",
+              nestedReplies.map((r) => r.author?.firstName)
+            );
+
+            return {
+              ...reply,
+              replies: nestedReplies,
+            };
+          }
+          return reply;
+        });
+
+        console.log(
+          `Comment ${comment._id} has ${processedReplies.length} replies:`,
+          processedReplies
+        );
+        return {
+          ...comment,
+          replies: processedReplies,
+        };
+      });
+
+      console.log("Final comments with replies:", commentsWithReplies);
+      setComments(commentsWithReplies);
     } catch (err) {
+      console.error("Error fetching comments:", err);
       setComments([]);
     }
     setLoadingComments(false);
@@ -298,7 +399,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
     setDeletingCommentId(commentId);
     try {
       await commentsAPI.deleteComment(commentId);
-      setComments(comments.filter((comment) => comment._id !== commentId));
+      fetchComments();
       toast.success("Comment deleted");
     } catch (err) {
       toast.error("Failed to delete comment");
@@ -411,7 +512,7 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
     try {
       logger.debug("Sending copy request for post:", post._id);
       const response = await api.post(`/posts/${post._id}/copy`);
-              logger.debug("Copy response:", response.data);
+      logger.debug("Copy response:", response.data);
       setCopyCount(response.data.copies);
     } catch (err) {
       console.error("Copy count error:", err);
@@ -909,7 +1010,11 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                   : "text-gray-500 hover:text-red-600 hover:bg-red-50"
               }`}
             >
-              <FiHeart className={`h-5 w-5 md:h-6 md:w-6 ${post.isLiked ? "fill-current" : ""}`} />
+              <FiHeart
+                className={`h-5 w-5 md:h-6 md:w-6 ${
+                  post.isLiked ? "fill-current" : ""
+                }`}
+              />
               <span className="text-sm font-medium">
                 {post.likesCount || 0}
               </span>
@@ -921,7 +1026,30 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
             >
               <FiMessageCircle className="h-5 w-5 md:h-6 md:w-6" />
               <span className="text-sm font-medium">
-                {post.commentsCount || 0}
+                {(() => {
+                  // Function to count all comments including nested replies
+                  const countAllComments = (commentList: any[]): number => {
+                    return commentList.reduce((total, comment) => {
+                      let count = 1;
+                      if (comment.replies && comment.replies.length > 0) {
+                        count += countAllComments(comment.replies);
+                      }
+                      return total + count;
+                    }, 0);
+                  };
+
+                  const totalComments = countAllComments(comments);
+                  console.log("Comment count debug:", {
+                    topLevelComments: comments.length,
+                    totalComments,
+                    postCommentsCount: post.commentsCount,
+                    comments: comments.map((c) => ({
+                      id: c._id,
+                      replies: c.replies?.length || 0,
+                    })),
+                  });
+                  return totalComments || post.commentsCount || 0;
+                })()}
               </span>
             </button>
 
@@ -931,7 +1059,9 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                 className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
               >
                 <FiShare className="h-5 w-5 md:h-6 md:w-6" />
-                <span className="text-sm font-medium hidden sm:inline">Share</span>
+                <span className="text-sm font-medium hidden sm:inline">
+                  Share
+                </span>
               </button>
               {showShareMenu && (
                 <div className="absolute z-20 mt-2 w-56 right-0 bg-white border border-gray-200 rounded-lg shadow-lg p-3 flex flex-col gap-2">
@@ -1017,7 +1147,9 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                 className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
                 disabled={unsaving}
               >
-                <span className="text-sm font-medium hidden sm:inline">Unsave</span>
+                <span className="text-sm font-medium hidden sm:inline">
+                  Unsave
+                </span>
               </button>
             ) : (
               <button
@@ -1028,7 +1160,11 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                     : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                 }`}
               >
-                <FiBookmark className={`h-5 w-5 md:h-6 md:w-6 ${isSaved ? "fill-current" : ""}`} />
+                <FiBookmark
+                  className={`h-5 w-5 md:h-6 md:w-6 ${
+                    isSaved ? "fill-current" : ""
+                  }`}
+                />
                 <span className="text-sm font-medium hidden sm:inline">
                   {isSaved ? "Saved" : "Save"}
                 </span>
@@ -1077,56 +1213,21 @@ export function PostCard({ post, onUnsave, onPostUpdate }: PostCardProps) {
                 <span>No comments yet. Be the first to comment!</span>
               </div>
             ) : (
-              comments.map((comment) => (
-                <div
-                  key={comment._id}
-                  className={`flex items-start space-x-2 group transition-opacity duration-200 ${
-                    deletingCommentId === comment._id
-                      ? "opacity-50"
-                      : "opacity-100"
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold overflow-hidden">
-                    <img
-                      src={getAvatarUrl(comment.author)}
-                      alt=""
-                      className="w-8 h-8 rounded-full object-cover"
+              <>
+                {console.log("Rendering comments:", comments)}
+                {comments.map((comment) => {
+                  console.log("Rendering comment:", comment);
+                  return (
+                    <NestedComment
+                      key={comment._id}
+                      comment={comment}
+                      postId={post._id}
+                      onCommentUpdate={fetchComments}
+                      onDeleteComment={handleDeleteComment}
                     />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900 text-xs">
-                        {comment.author?.firstName} {comment.author?.lastName}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        ·{" "}
-                        {comment.createdAt
-                          ? formatDistanceToNow(new Date(comment.createdAt), {
-                              addSuffix: true,
-                            })
-                          : ""}
-                      </span>
-                      {(user?._id === comment.author?._id ||
-                        user?.role === "admin") && (
-                        <button
-                          onClick={() => handleDeleteComment(comment._id)}
-                          disabled={deletingCommentId === comment._id}
-                          className="ml-2 text-xs text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition"
-                          title="Delete comment"
-                        >
-                          <FiTrash2 className="w-4 h-4" />
-                          {deletingCommentId === comment._id
-                            ? "Deleting..."
-                            : "Delete"}
-                        </button>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-700 break-words">
-                      {comment.content}
-                    </div>
-                  </div>
-                </div>
-              ))
+                  );
+                })}
+              </>
             )}
           </div>
         </div>

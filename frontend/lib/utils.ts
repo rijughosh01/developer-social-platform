@@ -63,16 +63,25 @@ export function generateInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
-export function getAvatarUrl(user: {
+export function getAvatarUrl(user?: {
   avatar?: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
 }) {
+  if (!user) {
+    return `https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff&size=128`;
+  }
+
   if (user.avatar) {
     return user.avatar;
   }
+
+  const firstName = user.firstName || "User";
+  const lastName = user.lastName || "";
+  const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    `${user.firstName} ${user.lastName}`
+    fullName
   )}&background=3b82f6&color=fff&size=128`;
 }
 

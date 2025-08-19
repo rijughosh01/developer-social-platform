@@ -192,10 +192,14 @@ export const chatAPI = {
 
 export const commentsAPI = {
   getComments: (postId: string) => api.get<ApiResponse>(`/comments/${postId}`),
-  addComment: (postId: string, data: { content: string }) =>
-    api.post<ApiResponse>(`/comments/${postId}`, data),
+  addComment: (
+    postId: string,
+    data: { content: string; parentCommentId?: string }
+  ) => api.post<ApiResponse>(`/comments/${postId}`, data),
   deleteComment: (commentId: string) =>
     api.delete<ApiResponse>(`/comments/${commentId}`),
+  likeComment: (commentId: string) =>
+    api.post<ApiResponse>(`/comments/${commentId}/like`),
 };
 
 export const savedAPI = {
