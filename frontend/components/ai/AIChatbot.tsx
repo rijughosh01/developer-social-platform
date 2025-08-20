@@ -4,12 +4,17 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
+import toast from "react-hot-toast";
 import {
   sendAIMessage,
   fetchAIContexts,
+  fetchAIModels,
   fetchAIStats,
+  fetchTokenUsage,
   setCurrentContext,
+  setCurrentModel,
   clearResponses,
+  clearError,
 } from "@/store/slices/aiSlice";
 import {
   MessageCircle,
@@ -40,12 +45,22 @@ interface AIChatbotProps {
 
 const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { responses, contexts, stats, isLoading, error, currentContext } =
-    useSelector((state: RootState) => state.ai);
+  const {
+    responses,
+    contexts,
+    models,
+    stats,
+    tokenUsage,
+    isLoading,
+    error,
+    currentContext,
+    currentModel,
+  } = useSelector((state: RootState) => state.ai);
   const { user } = useSelector((state: RootState) => state.auth);
 
   const [message, setMessage] = useState("");
   const [showContexts, setShowContexts] = useState(false);
+  const [showModels, setShowModels] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -102,7 +117,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       dispatch(fetchAIContexts());
+      dispatch(fetchAIModels());
       dispatch(fetchAIStats());
+      dispatch(fetchTokenUsage());
       inputRef.current?.focus();
     }
   }, [isOpen, dispatch]);
@@ -113,6 +130,23 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, stats, dispatch]);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (
+        !target.closest(".model-selector") &&
+        !target.closest(".context-selector")
+      ) {
+        setShowModels(false);
+        setShowContexts(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [responses]);
@@ -121,9 +155,55 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Check if a model is available for the current user
+  const isModelAvailable = (model: any) => {
+    if (!user) return false;
+
+    if (model.requiresPremium && user.subscription?.plan === "free") {
+      return false;
+    }
+
+    return true;
+  };
+
+  // Get user's subscription plan
+  const userPlan = user?.subscription?.plan || "free";
+
+  // Show toast notification for errors
+  useEffect(() => {
+    if (error) {
+      if (error.includes("Premium subscription required")) {
+        toast.error(
+          "Premium subscription required for this model. Please upgrade or switch to a free model.",
+          {
+            duration: 6000,
+            icon: "🔒",
+          }
+        );
+      } else if (error.includes("Daily token limit exceeded")) {
+        toast.error(
+          "Daily token limit exceeded. Please try again tomorrow or upgrade your plan.",
+          {
+            duration: 6000,
+            icon: "⏰",
+          }
+        );
+      } else {
+        toast.error(error, {
+          duration: 5000,
+        });
+      }
+    }
+  }, [error]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || isLoading) return;
+
+    // Clear any previous errors when sending a new message
+    if (error) {
+      dispatch(clearError());
+    }
 
     const currentMessage = message;
     setMessage("");
@@ -132,6 +212,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
       sendAIMessage({
         message: currentMessage,
         context: currentContext,
+        model: currentModel,
       })
     );
   };
@@ -139,6 +220,43 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   const handleContextChange = (context: string) => {
     dispatch(setCurrentContext(context));
     setShowContexts(false);
+  };
+
+  const handleModelChange = (model: string) => {
+    const selectedModel = models.find((m) => m.id === model);
+
+    if (selectedModel && !isModelAvailable(selectedModel)) {
+      if (userPlan === "free") {
+        toast.error(
+          "This model requires a premium subscription. Please upgrade your plan to access premium models.",
+          {
+            duration: 6000,
+            icon: "🔒",
+          }
+        );
+      } else {
+        toast.error(
+          "This model is not available for your current subscription plan.",
+          {
+            duration: 5000,
+          }
+        );
+      }
+      return;
+    }
+
+    dispatch(setCurrentModel(model));
+    setShowModels(false);
+
+    dispatch(fetchTokenUsage());
+
+    // Show success toast for model change
+    if (selectedModel) {
+      toast.success(`Switched to ${selectedModel.name}`, {
+        duration: 3000,
+        icon: "🤖",
+      });
+    }
   };
 
   const copyToClipboard = async (text: string, id: string) => {
@@ -173,55 +291,184 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
       {/* Main Modal - Mobile Responsive */}
       <div className="relative w-full max-w-5xl h-[90vh] sm:h-[85vh] bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
-        <div className="relative p-3 sm:p-6 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white">
+        <div className="relative p-2 sm:p-4 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
           </div>
 
-          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
             {/* Logo and Title - Mobile Stacked */}
-            <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="relative">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
-                  <Bot className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                  <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+                <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full border-2 border-white animate-pulse" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                <h2 className="text-base sm:text-lg font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
                   DevLink AI Assistant
                 </h2>
-                <p className="text-xs sm:text-sm text-blue-200 flex items-center gap-2">
+                <p className="text-xs text-blue-200 flex items-center gap-2">
                   <Sparkles className="w-3 h-3" />
-                  Powered by GPT-4o-mini
+                  Powered by{" "}
+                  {models.find((m) => m.id === currentModel)?.name ||
+                    "GPT-4o-mini"}
+                  {userPlan !== "free" && (
+                    <span className="px-2 py-0.5 bg-green-500/20 text-green-300 rounded-full text-xs">
+                      {userPlan.charAt(0).toUpperCase() + userPlan.slice(1)}
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
 
-            {/* Context Selector and Close - Mobile Responsive */}
-            <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-3">
-              <div className="relative flex-1 sm:flex-none">
+            {/* Context and Model Selectors and Close */}
+            <div className="flex items-center justify-between sm:justify-end space-x-1 sm:space-x-2">
+              {/* Model Selector */}
+              <div className="relative flex-1 sm:flex-none model-selector">
+                <button
+                  onClick={() => setShowModels(!showModels)}
+                  className="w-full sm:w-auto flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+                >
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-md flex items-center justify-center">
+                    <Cpu className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
+                  </div>
+                  <div className="text-left flex-1 sm:flex-none">
+                    <span className="text-xs font-medium block sm:hidden">
+                      {models.find((m) => m.id === currentModel)?.name ||
+                        "GPT-4o-mini"}
+                    </span>
+                    <div className="hidden sm:block">
+                      <span className="text-xs font-medium">
+                        {models.find((m) => m.id === currentModel)?.name ||
+                          "GPT-4o-mini"}
+                      </span>
+                      <p className="text-xs text-blue-200">
+                        {models.find((m) => m.id === currentModel)?.provider ===
+                        "openrouter"
+                          ? "Free Model"
+                          : "Premium Model"}
+                      </p>
+                      {userPlan === "free" && (
+                        <p className="text-xs text-yellow-300 mt-0.5">
+                          💡 Upgrade for premium models
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-200 group-hover:rotate-90 transition-transform duration-200" />
+                </button>
+
+                {/* Model Dropdown */}
+                {showModels && (
+                  <div className="absolute right-0 top-full mt-2 w-64 sm:w-72 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 z-10 overflow-hidden">
+                    <div className="p-3 sm:p-4">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        Choose AI Model
+                      </h3>
+                      {models.map((model) => {
+                        const isAvailable = isModelAvailable(model);
+                        const isCurrent = currentModel === model.id;
+
+                        return (
+                          <button
+                            key={model.id}
+                            onClick={() =>
+                              isAvailable ? handleModelChange(model.id) : null
+                            }
+                            disabled={!isAvailable}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 mb-2 ${
+                              isCurrent
+                                ? "bg-purple-50 border-2 border-purple-200"
+                                : isAvailable
+                                ? "hover:bg-gray-50 border border-transparent"
+                                : "opacity-50 cursor-not-allowed bg-gray-50 border border-gray-200"
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                  isAvailable
+                                    ? "bg-gradient-to-r from-purple-500 to-pink-500"
+                                    : "bg-gray-400"
+                                }`}
+                              >
+                                <Cpu className="w-4 h-4 text-white" />
+                              </div>
+                              <div className="text-left">
+                                <span
+                                  className={`text-sm font-medium ${
+                                    isAvailable
+                                      ? "text-gray-700"
+                                      : "text-gray-500"
+                                  }`}
+                                >
+                                  {model.name}
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                  <p
+                                    className={`text-xs ${
+                                      isAvailable
+                                        ? "text-gray-500"
+                                        : "text-gray-400"
+                                    }`}
+                                  >
+                                    {model.provider === "openrouter"
+                                      ? "Free"
+                                      : "Premium"}
+                                  </p>
+                                  {!isAvailable && (
+                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                                      {userPlan === "free"
+                                        ? "Upgrade Required"
+                                        : "Not Available"}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {isCurrent && (
+                                <Check className="w-4 h-4 text-purple-600" />
+                              )}
+                              {!isAvailable && (
+                                <div className="w-4 h-4 bg-gray-300 rounded-full flex items-center justify-center">
+                                  <X className="w-3 h-3 text-gray-500" />
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Context Selector */}
+              <div className="relative flex-1 sm:flex-none context-selector">
                 <button
                   onClick={() => setShowContexts(!showContexts)}
-                  className="w-full sm:w-auto flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-2.5 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-200 group"
+                  className="w-full sm:w-auto flex items-center space-x-2 sm:space-x-3 px-2 sm:px-3 py-1.5 sm:py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-200 group"
                 >
                   <div
-                    className={`w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r ${
+                    className={`w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r ${
                       contextConfigs[
                         currentContext as keyof typeof contextConfigs
                       ]?.color
-                    } rounded-lg flex items-center justify-center`}
+                    } rounded-md flex items-center justify-center`}
                   >
-                    <CurrentContextIcon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                    <CurrentContextIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                   </div>
                   <div className="text-left flex-1 sm:flex-none">
-                    <span className="text-xs sm:text-sm font-medium block sm:hidden">
+                    <span className="text-xs font-medium block sm:hidden">
                       {contextConfigs[
                         currentContext as keyof typeof contextConfigs
                       ]?.label || "General"}
                     </span>
                     <div className="hidden sm:block">
-                      <span className="text-sm font-medium">
+                      <span className="text-xs font-medium">
                         {contextConfigs[
                           currentContext as keyof typeof contextConfigs
                         ]?.label || "General"}
@@ -235,7 +482,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       </p>
                     </div>
                   </div>
-                  <Settings className="w-3 h-3 sm:w-4 sm:h-4 text-blue-200 group-hover:rotate-90 transition-transform duration-200" />
+                  <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-200 group-hover:rotate-90 transition-transform duration-200" />
                 </button>
 
                 {/* Context Dropdown  */}
@@ -288,9 +535,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                 type="button"
                 aria-label="Close"
                 onClick={onClose}
-                className="p-2 sm:p-2.5 hover:bg-white/10 rounded-xl transition-all duration-200 group"
+                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-all duration-200 group"
               >
-                <X className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-90 transition-transform duration-200" />
+                <X className="w-3 h-3 sm:w-4 sm:h-4 group-hover:rotate-90 transition-transform duration-200" />
               </button>
             </div>
           </div>
@@ -486,10 +733,103 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
         {/* Enhanced Error Display */}
         {error && (
-          <div className="mx-3 sm:mx-6 mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="mx-3 sm:mx-6 mb-3 sm:mb-4 p-4 sm:p-6 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-xl sm:rounded-2xl shadow-lg">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3 flex-1">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                    <X className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-red-800 mb-1">
+                    Error Occurred
+                  </h4>
+                  <p className="text-sm text-red-700 leading-relaxed">
+                    {error}
+                  </p>
+                  {error.includes("Premium subscription required") && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-blue-700 mb-2">
+                        💡 <strong>Tip:</strong> You can upgrade your
+                        subscription to access premium models, or switch to a
+                        free model like GPT-4o Mini or DeepSeek R1.
+                      </p>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            toast.info("Upgrade feature coming soon!", {
+                              duration: 3000,
+                            });
+                          }}
+                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Upgrade Plan
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Switch to a free model
+                            const freeModel = models.find(
+                              (m) => !m.requiresPremium
+                            );
+                            if (freeModel) {
+                              handleModelChange(freeModel.id);
+                            }
+                          }}
+                          className="px-3 py-1 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                          Switch to Free Model
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {error.includes("Daily token limit exceeded") && (
+                    <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-xs text-orange-700 mb-2">
+                        ⏰ <strong>Daily Limit Reached:</strong> You've used all
+                        your daily tokens for this model. Limits reset at
+                        midnight.
+                      </p>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            toast.info("Upgrade feature coming soon!", {
+                              duration: 3000,
+                            });
+                          }}
+                          className="px-3 py-1 bg-orange-600 text-white text-xs rounded-lg hover:bg-orange-700 transition-colors"
+                        >
+                          Upgrade for Higher Limits
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Switch to a model with remaining tokens
+                            const availableModel = models.find((m) => {
+                              const usage = tokenUsage?.modelBreakdown.find(
+                                (u) => u.model === m.id
+                              );
+                              return usage && usage.remaining > 0;
+                            });
+                            if (availableModel) {
+                              handleModelChange(availableModel.id);
+                            }
+                          }}
+                          className="px-3 py-1 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                          Switch to Available Model
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => dispatch(clearError())}
+                className="flex-shrink-0 p-1 hover:bg-red-200 rounded-lg transition-colors duration-200"
+                aria-label="Dismiss error"
+              >
+                <X className="w-4 h-4 text-red-600" />
+              </button>
             </div>
           </div>
         )}
@@ -527,7 +867,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-            {/* Enhanced Stats */}
+            {/* Stats */}
             {stats && (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-4">
@@ -543,6 +883,18 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       Total: {stats.totalRequests}
                     </span>
                   </div>
+                  {/* Token Usage Display */}
+                  {tokenUsage && (
+                    <div className="flex items-center space-x-2 text-gray-600">
+                      <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
+                      <span className="font-medium text-xs sm:text-sm">
+                        {tokenUsage.modelBreakdown
+                          .find((m) => m.model === currentModel)
+                          ?.remaining?.toLocaleString() || 0}{" "}
+                        tokens left
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-xs text-gray-500 text-center sm:text-right">
                   Press Enter to send • Shift+Enter for new line

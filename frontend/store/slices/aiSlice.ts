@@ -7,18 +7,22 @@ import {
   AIContext,
   AIConversation,
   AIConversationStats,
+  DailyTokenUsage,
 } from "@/types";
 
 const initialState: AIState = {
   responses: [],
   stats: null,
   contexts: [],
+  models: [],
   conversations: [],
   conversationStats: null,
   currentConversation: null,
   isLoading: false,
   error: null,
   currentContext: "general",
+  currentModel: "gpt-4o-mini",
+  tokenUsage: null,
   pagination: {
     page: 1,
     limit: 10,
@@ -42,6 +46,20 @@ export const fetchAIContexts = createAsyncThunk(
   }
 );
 
+export const fetchAIModels = createAsyncThunk(
+  "ai/fetchModels",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await aiAPI.getModels();
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch AI models"
+      );
+    }
+  }
+);
+
 export const fetchAIStats = createAsyncThunk(
   "ai/fetchStats",
   async (_, { rejectWithValue }) => {
@@ -57,14 +75,33 @@ export const fetchAIStats = createAsyncThunk(
   }
 );
 
+export const fetchTokenUsage = createAsyncThunk(
+  "ai/fetchTokenUsage",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await aiAPI.getTokenUsage();
+      return response.data.data;
+    } catch (error: any) {
+      console.error("Error fetching token usage:", error);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch token usage"
+      );
+    }
+  }
+);
+
 export const sendAIMessage = createAsyncThunk(
   "ai/sendMessage",
   async (
-    { message, context }: { message: string; context?: string },
+    {
+      message,
+      context,
+      model,
+    }: { message: string; context?: string; model?: string },
     { rejectWithValue }
   ) => {
     try {
-      const response = await aiAPI.chat({ message, context });
+      const response = await aiAPI.chat({ message, context, model });
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -77,11 +114,15 @@ export const sendAIMessage = createAsyncThunk(
 export const codeReview = createAsyncThunk(
   "ai/codeReview",
   async (
-    { code, language }: { code: string; language: string },
+    {
+      code,
+      language,
+      model,
+    }: { code: string; language: string; model?: string },
     { rejectWithValue }
   ) => {
     try {
-      const response = await aiAPI.codeReview({ code, language });
+      const response = await aiAPI.codeReview({ code, language, model });
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -98,15 +139,17 @@ export const debugCode = createAsyncThunk(
       code,
       error,
       language,
+      model,
     }: {
       code: string;
       error: string;
       language: string;
+      model?: string;
     },
     { rejectWithValue }
   ) => {
     try {
-      const response = await aiAPI.debugCode({ code, error, language });
+      const response = await aiAPI.debugCode({ code, error, language, model });
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -178,9 +221,12 @@ export const fetchPinnedMessages = createAsyncThunk(
 
 export const learnTopic = createAsyncThunk(
   "ai/learnTopic",
-  async ({ topic }: { topic: string }, { rejectWithValue }) => {
+  async (
+    { topic, model }: { topic: string; model?: string },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await aiAPI.learn({ topic });
+      const response = await aiAPI.learn({ topic, model });
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -192,9 +238,12 @@ export const learnTopic = createAsyncThunk(
 
 export const getProjectAdvice = createAsyncThunk(
   "ai/projectAdvice",
-  async ({ description }: { description: string }, { rejectWithValue }) => {
+  async (
+    { description, model }: { description: string; model?: string },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await aiAPI.projectAdvice({ description });
+      const response = await aiAPI.projectAdvice({ description, model });
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -350,6 +399,9 @@ const aiSlice = createSlice({
     setCurrentContext: (state, action: PayloadAction<string>) => {
       state.currentContext = action.payload;
     },
+    setCurrentModel: (state, action: PayloadAction<string>) => {
+      state.currentModel = action.payload;
+    },
     clearResponses: (state) => {
       state.responses = [];
     },
@@ -414,6 +466,21 @@ const aiSlice = createSlice({
         state.error = action.payload as string;
       });
 
+    // Fetch models
+    builder
+      .addCase(fetchAIModels.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAIModels.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.models = action.payload;
+      })
+      .addCase(fetchAIModels.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
     // Fetch stats
     builder
       .addCase(fetchAIStats.pending, (state) => {
@@ -425,6 +492,21 @@ const aiSlice = createSlice({
         state.stats = action.payload;
       })
       .addCase(fetchAIStats.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch token usage
+    builder
+      .addCase(fetchTokenUsage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTokenUsage.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.tokenUsage = action.payload;
+      })
+      .addCase(fetchTokenUsage.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
@@ -682,6 +764,7 @@ const aiSlice = createSlice({
 
 export const {
   setCurrentContext,
+  setCurrentModel,
   clearResponses,
   clearError,
   addResponse,

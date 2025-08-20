@@ -6,15 +6,18 @@ A modern social platform for developers to connect, collaborate, and showcase th
 
 ## 🆕 What's New / Advanced Features
 
-- **🤖 AI-Powered Chatbot**: Intelligent coding assistant with multiple contexts (General, Code Review, Debugging, Learning, Project Help)
+- **🤖 Multi-Model AI Assistant**: Choose from 4 different AI models (GPT-4o Mini, GPT-4o, GPT-3.5 Turbo, DeepSeek R1) based on your needs
+- **💳 Subscription-Based AI Access**: Different AI models available based on subscription plans (Free, Premium, Pro)
+- **📊 Daily Token Limits**: Intelligent usage management with plan-based daily token limits and real-time tracking
+- **🎯 Context-Aware AI**: Specialized AI assistance for different coding scenarios (General, Code Review, Debugging, Learning, Project Help)
 - **🧠 AI Conversation Management**: Pin important messages, delete conversations, and track AI usage analytics
-- **🎯 Context-Aware AI**: Specialized AI assistance for different coding scenarios and learning needs
-- **📊 AI Analytics Dashboard**: Track AI usage, response times, and conversation history
+- **📈 AI Analytics Dashboard**: Track AI usage, response times, conversation history, and token consumption
 - **🔗 Draggable AI Interface**: Floating AI button that can be moved anywhere on the page
 - **💬 Real-time AI Chat**: Instant responses with modern UI/UX and code syntax highlighting
 - **📌 Message Pinning System**: Pin and organize important AI responses for future reference
 - **🗑️ Conversation Management**: Delete entire AI conversations with confirmation dialogs
 - **🔔 AI Notifications**: Toast notifications for all AI interactions and actions
+- **⚡ Enhanced Error Handling**: Contextual error messages with suggestions for model switching and plan upgrades
 - **Collaboration Analytics Dashboard**: Track reviews, forks, collaboration score, badges, and more.
 - **Trending Feed**: Discover trending posts, projects, and developers based on recent activity.
 - **Project Collaboration**: Add collaborators with roles, fork projects, and manage collaboration history.
@@ -56,7 +59,21 @@ DevLink uses a modern full-stack architecture:
 - **Discussion Forums**: Threaded discussions with categories, tags, voting, and moderation
 
 ### 🤖 AI-Powered Features
-- **Intelligent Chatbot**: Context-aware AI assistant with 5 specialized modes
+- **Multi-Model AI Assistant**: Choose from multiple AI models based on your needs
+  - **GPT-4o Mini** (OpenAI): Fast, efficient coding assistance
+  - **GPT-4o** (OpenAI): Advanced reasoning and complex problem solving
+  - **GPT-3.5 Turbo** (OpenAI): Balanced performance and cost
+  - **DeepSeek R1** (OpenRouter): Specialized coding and development tasks
+- **Subscription-Based Access**: Different models available based on subscription plans
+  - **Free Plan**: Access to GPT-4o Mini, GPT-3.5 Turbo, and DeepSeek R1
+  - **Premium Plan**: Access to all models with higher daily limits
+  - **Pro Plan**: Unlimited access to all models with maximum daily limits
+- **Daily Token Limits**: Intelligent usage management with plan-based limits
+  - **Free**: 10K-20K tokens per day depending on model
+  - **Premium**: 50K-100K tokens per day depending on model  
+  - **Pro**: 200K-500K tokens per day depending on model
+  - **Real-time tracking**: See remaining tokens and usage statistics
+- **Context-Aware AI Assistant**: 5 specialized modes for different coding scenarios
   - **General**: General coding assistance and questions
   - **Code Review**: Code analysis, improvements, and best practices
   - **Debugging**: Bug fixing, troubleshooting, and error resolution
@@ -67,12 +84,21 @@ DevLink uses a modern full-stack architecture:
   - Delete entire conversations with confirmation
   - View conversation history and analytics
   - Track AI usage and response times
-- **Modern AI Interface**:
+  - Model-specific conversation tracking
+- **Enhanced AI Interface**:
   - Draggable floating AI button
   - Real-time chat with syntax highlighting
+  - Model selection dropdown with availability indicators
+  - Token usage display with progress tracking
   - Toast notifications for all actions
   - Responsive design with glassmorphism effects
-- **AI Analytics**: Usage tracking, response analytics, and performance metrics
+  - Error handling with contextual suggestions
+- **AI Analytics & Usage Tracking**: 
+  - Daily token usage per model
+  - Usage breakdown and statistics
+  - Response analytics and performance metrics
+  - Subscription plan integration
+  - Reset time tracking for daily limits
 
 ### Collaboration & Projects
 - **Project Collaboration**: Add collaborators (developer, designer, tester, manager)
@@ -125,6 +151,36 @@ DevLink uses a modern full-stack architecture:
 
 ---
 
+## 🤖 AI Models & Capabilities
+
+### Available AI Models
+- **GPT-4o Mini** (OpenAI)
+  - Fast and efficient for general coding tasks
+  - Available on all subscription plans
+  - Daily limits: Free (10K), Premium (50K), Pro (200K) tokens
+
+- **GPT-4o** (OpenAI)
+  - Advanced reasoning and complex problem solving
+  - Premium and Pro plans only
+  - Daily limits: Premium (50K), Pro (200K) tokens
+
+- **GPT-3.5 Turbo** (OpenAI)
+  - Balanced performance and cost
+  - Available on all subscription plans
+  - Daily limits: Free (15K), Premium (100K), Pro (500K) tokens
+
+- **DeepSeek R1** (OpenRouter)
+  - Specialized coding and development tasks
+  - Available on all subscription plans
+  - Daily limits: Free (20K), Premium (100K), Pro (500K) tokens
+
+### AI Features
+- **Smart Model Selection**: Choose the best model for your specific task
+- **Usage Tracking**: Real-time monitoring of token consumption
+- **Plan-Based Access**: Different models available based on subscription
+- **Context Switching**: Seamlessly switch between different AI contexts
+- **Error Recovery**: Intelligent suggestions when limits are reached
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -146,12 +202,16 @@ DevLink uses a modern full-stack architecture:
 - Socket.IO
 - bcrypt
 - OpenAI API
+- OpenRouter API (DeepSeek R1)
 - LangChain
 - Cloudinary
 - Rate Limiting
 - AI Middleware
 - Express Validator
 - Multer (File Upload)
+- Axios (HTTP client for AI APIs)
+- Rate Limiter Flexible (Token limit management)
+- Node Cache (Caching for AI responses)
 
 ---
 
@@ -220,9 +280,17 @@ JWT_SECRET=your_jwt_secret_here
 NODE_ENV=development
 JWT_EXPIRE=7d
 FRONTEND_URL=http://localhost:3000
+
+# AI Configuration
 OPENAI_API_KEY=your_openai_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+DEFAULT_AI_MODEL=gpt-4o-mini
+
+# AI Rate Limiting
 AI_RATE_LIMIT=10
 AI_RATE_LIMIT_WINDOW=60000
+
+# Cloudinary Configuration
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret

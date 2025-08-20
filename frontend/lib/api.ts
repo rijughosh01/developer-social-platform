@@ -301,6 +301,12 @@ export const aiAPI = {
   // Get available AI contexts
   getContexts: () => api.get<ApiResponse>("/ai/contexts"),
 
+  // Get available AI models
+  getModels: () => api.get<ApiResponse>("/ai/models"),
+
+  // Get user's daily token usage and limits
+  getTokenUsage: () => api.get<ApiResponse>("/ai/token-usage"),
+
   // Get user's AI usage statistics
   getStats: () => api.get<ApiResponse>("/ai/stats"),
 
@@ -309,21 +315,22 @@ export const aiAPI = {
     message: string;
     context?: string;
     conversationId?: string;
+    model?: string;
   }) => api.post<ApiResponse>("/ai/chat", data),
 
   // Code review
-  codeReview: (data: { code: string; language: string }) =>
+  codeReview: (data: { code: string; language: string; model?: string }) =>
     api.post<ApiResponse>("/ai/code-review", data),
 
   // Debugging
-  debugCode: (data: { code: string; error: string; language: string }) =>
+  debugCode: (data: { code: string; error: string; language: string; model?: string }) =>
     api.post<ApiResponse>("/ai/debug", data),
 
   // Learning assistance
-  learn: (data: { topic: string }) => api.post<ApiResponse>("/ai/learn", data),
+  learn: (data: { topic: string; model?: string }) => api.post<ApiResponse>("/ai/learn", data),
 
   // Project advice
-  projectAdvice: (data: { description: string }) =>
+  projectAdvice: (data: { description: string; model?: string }) =>
     api.post<ApiResponse>("/ai/project-advice", data),
 
   // Conversation History

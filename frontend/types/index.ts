@@ -272,17 +272,28 @@ export interface SocketListeners {
 }
 
 // AI Types
+export interface AIModel {
+  id: string;
+  name: string;
+  provider: "openai" | "openrouter";
+  costPer1kInput: number;
+  costPer1kOutput: number;
+  maxTokens: number;
+  contextWindow: number;
+  modelId?: string;
+}
+
 export interface AIResponse {
   content: string;
   model: string;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+  modelName?: string;
+  tokens: number;
+  cost: number;
   timestamp: string;
   context: string;
   cached?: boolean;
+  conversationId?: string;
+  processingTime?: number;
 }
 
 export interface AIStats {
@@ -352,16 +363,36 @@ export interface AIConversationStats {
   }>;
 }
 
+export interface TokenUsage {
+  model: string;
+  tokensUsed: number;
+  limit: number;
+  remaining: number;
+  percentageUsed: number;
+}
+
+export interface DailyTokenUsage {
+  userPlan: string;
+  totalTokensUsed: number;
+  totalRequests: number;
+  totalCost: number;
+  modelBreakdown: TokenUsage[];
+  resetTime: string;
+}
+
 export interface AIState {
   responses: AIResponse[];
   stats: AIStats | null;
   contexts: AIContext[];
+  models: AIModel[];
   conversations: AIConversation[];
   conversationStats: AIConversationStats | null;
   currentConversation: AIConversation | null;
   isLoading: boolean;
   error: string | null;
   currentContext: string;
+  currentModel: string;
+  tokenUsage: DailyTokenUsage | null;
   pagination: {
     page: number;
     limit: number;

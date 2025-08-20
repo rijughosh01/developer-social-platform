@@ -3,7 +3,11 @@ const { query } = require("express-validator");
 const asyncHandler = require("../utils/asyncHandler");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
-const { cacheMiddleware, userCacheMiddleware, invalidateCache } = require("../middleware/cache");
+const {
+  cacheMiddleware,
+  userCacheMiddleware,
+  invalidateCache,
+} = require("../middleware/cache");
 const User = require("../models/User");
 const NotificationService = require("../utils/notificationService");
 const multer = require("multer");
@@ -176,6 +180,48 @@ router.put(
     res.json({
       success: true,
       data: updatedUser,
+    });
+  })
+);
+
+// Update user subscription plan (Admin only)
+router.put(
+  "/:id/subscription",
+  [auth.protect, auth.authorize("admin")],
+  asyncHandler(async (req, res) => {
+    const { plan, endDate } = req.body;
+    const { id } = req.params;
+
+    if (!["free", "premium", "pro"].includes(plan)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid subscription plan. Must be 'free', 'premium', or 'pro'",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      {
+        "subscription.plan": plan,
+        "subscription.startDate": new Date(),
+        "subscription.endDate": endDate ? new Date(endDate) : null,
+        "subscription.isActive": true,
+      },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User subscription updated successfully",
+      data: user,
     });
   })
 );
@@ -509,16 +555,19 @@ router.get(
     }));
 
     // Add isSaved: true to all discussions since they are from the saved discussions list
-    const savedDiscussionsWithFlag = user.savedDiscussions.map((discussion) => ({
-      ...discussion.toObject(),
-      isSaved: true,
-      type: "discussion",
-    }));
+    const savedDiscussionsWithFlag = user.savedDiscussions.map(
+      (discussion) => ({
+        ...discussion.toObject(),
+        isSaved: true,
+        type: "discussion",
+      })
+    );
 
     // Combine and sort by creation date
-    const allSavedItems = [...savedPostsWithFlag, ...savedDiscussionsWithFlag].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    const allSavedItems = [
+      ...savedPostsWithFlag,
+      ...savedDiscussionsWithFlag,
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.json({ success: true, data: allSavedItems });
   })
@@ -777,7 +826,7 @@ router.get(
   auth.protect,
   asyncHandler(async (req, res) => {
     const { q, limit = 10, excludeIds } = req.query;
-    
+
     // Build search query
     const searchQuery = {
       $or: [
@@ -785,16 +834,16 @@ router.get(
         { email: { $regex: q, $options: "i" } },
         { firstName: { $regex: q, $options: "i" } },
         { lastName: { $regex: q, $options: "i" } },
-        { 
+        {
           $expr: {
             $regexMatch: {
               input: { $concat: ["$firstName", " ", "$lastName"] },
               regex: q,
-              options: "i"
-            }
-          }
-        }
-      ]
+              options: "i",
+            },
+          },
+        },
+      ],
     };
 
     // Exclude current user and already added collaborators
@@ -802,7 +851,7 @@ router.get(
     if (excludeIds) {
       excludeUserIds.push(...excludeIds.split(","));
     }
-    
+
     if (excludeUserIds.length > 0) {
       searchQuery._id = { $nin: excludeUserIds };
     }
@@ -812,7 +861,7 @@ router.get(
       .limit(parseInt(limit))
       .sort({ username: 1 });
 
-    const suggestions = users.map(user => ({
+    const suggestions = users.map((user) => ({
       _id: user._id,
       username: user.username,
       email: user.email,
@@ -820,12 +869,12 @@ router.get(
       avatar: user.avatar,
       bio: user.bio,
       skills: user.skills,
-      displayText: `${user.username} (${user.firstName} ${user.lastName})`
+      displayText: `${user.username} (${user.firstName} ${user.lastName})`,
     }));
 
     res.json({
       success: true,
-      data: suggestions
+      data: suggestions,
     });
   })
 );

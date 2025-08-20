@@ -6,6 +6,7 @@ const aiService = require("../utils/aiService");
 const User = require("../models/User");
 const AIConversation = require("../models/AIConversation");
 const AIUsage = require("../models/AIUsage");
+const DailyTokenUsage = require("../models/DailyTokenUsage");
 const {
   aiRateLimit,
   trackAIUsage,
@@ -38,6 +39,19 @@ router.get(
   })
 );
 
+// Get available AI models
+router.get(
+  "/models",
+  protect,
+  asyncHandler(async (req, res) => {
+    const models = aiService.getAvailableModels();
+    res.json({
+      success: true,
+      data: models,
+    });
+  })
+);
+
 // Get user's AI usage statistics
 router.get(
   "/stats",
@@ -46,6 +60,86 @@ router.get(
     res.json({
       success: true,
       data: req.aiStats,
+    });
+  })
+);
+
+// Get user's daily token usage and limits
+router.get(
+  "/token-usage",
+  protect,
+  asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const today = new Date();
+
+    // Get user's subscription plan
+    const user = await User.findById(userId).select("subscription");
+    const userPlan = user.subscription.plan;
+
+    // Get daily usage for all models
+    const dailyUsage = await DailyTokenUsage.getTotalDailyUsage(userId, today);
+    const usageData = dailyUsage[0] || {
+      totalTokens: 0,
+      totalRequests: 0,
+      totalCost: 0,
+      modelBreakdown: [],
+    };
+
+    // Get limits for user's plan
+    const limits = {
+      free: {
+        "gpt-4o": 0,
+        "gpt-4o-mini": 10000,
+        "gpt-3.5-turbo": 15000,
+        "deepseek-r1": 20000,
+      },
+      premium: {
+        "gpt-4o": 50000,
+        "gpt-4o-mini": 50000,
+        "gpt-3.5-turbo": 100000,
+        "deepseek-r1": 100000,
+      },
+      pro: {
+        "gpt-4o": 200000,
+        "gpt-4o-mini": 200000,
+        "gpt-3.5-turbo": 500000,
+        "deepseek-r1": 500000,
+      },
+    };
+
+    const userLimits = limits[userPlan];
+
+    // Calculate remaining tokens for each model
+    const modelBreakdown = Object.keys(userLimits).map((model) => {
+      const modelUsage = usageData.modelBreakdown.find(
+        (m) => m.model === model
+      );
+      const tokensUsed = modelUsage ? modelUsage.tokens : 0;
+      const limit = userLimits[model];
+
+      return {
+        model,
+        tokensUsed,
+        limit,
+        remaining: Math.max(0, limit - tokensUsed),
+        percentageUsed: limit > 0 ? Math.round((tokensUsed / limit) * 100) : 0,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        userPlan,
+        totalTokensUsed: usageData.totalTokens,
+        totalRequests: usageData.totalRequests,
+        totalCost: usageData.totalCost,
+        modelBreakdown,
+        resetTime: new Date(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate() + 1
+        ).toISOString(),
+      },
     });
   })
 );
@@ -436,7 +530,7 @@ router.post(
       message,
       context = "general",
       conversationId,
-      model = "gpt-3.5-turbo",
+      model = "gpt-4o-mini",
     } = req.body;
 
     const user = await User.findById(req.user._id).select(
@@ -512,7 +606,13 @@ router.post(
     handleValidationErrors,
   ],
   asyncHandler(async (req, res) => {
-    const { code, language, focus = "all", conversationId } = req.body;
+    const {
+      code,
+      language,
+      focus = "all",
+      conversationId,
+      model = "gpt-4o-mini",
+    } = req.body;
 
     // Get user context
     const user = await User.findById(req.user._id).select(
@@ -553,14 +653,15 @@ router.post(
       code,
       language,
       userContext,
-      focus
+      focus,
+      model
     );
     const processingTime = Date.now() - startTime;
 
     // Add AI response to conversation
     await conversation.addMessage("assistant", response.content, {
       tokens: response.tokens,
-      model: "gpt-3.5-turbo",
+      model: model,
       processingTime,
     });
 
@@ -587,7 +688,13 @@ router.post(
     handleValidationErrors,
   ],
   asyncHandler(async (req, res) => {
-    const { code, error, language, conversationId } = req.body;
+    const {
+      code,
+      error,
+      language,
+      conversationId,
+      model = "gpt-4o-mini",
+    } = req.body;
 
     // Get user context
     const user = await User.findById(req.user._id).select(
@@ -628,14 +735,15 @@ router.post(
       code,
       error,
       language,
-      userContext
+      userContext,
+      model
     );
     const processingTime = Date.now() - startTime;
 
     // Add AI response to conversation
     await conversation.addMessage("assistant", response.content, {
       tokens: response.tokens,
-      model: "gpt-3.5-turbo",
+      model: model,
       processingTime,
     });
 
@@ -662,7 +770,13 @@ router.post(
     handleValidationErrors,
   ],
   asyncHandler(async (req, res) => {
-    const { topic, level, focus = "all", conversationId } = req.body;
+    const {
+      topic,
+      level,
+      focus = "all",
+      conversationId,
+      model = "gpt-4o-mini",
+    } = req.body;
 
     // Get user context
     const user = await User.findById(req.user._id).select(
@@ -705,14 +819,15 @@ router.post(
       topic,
       userContext,
       level,
-      focus
+      focus,
+      model
     );
     const processingTime = Date.now() - startTime;
 
     // Add AI response to conversation
     await conversation.addMessage("assistant", response.content, {
       tokens: response.tokens,
-      model: "gpt-3.5-turbo",
+      model: model,
       processingTime,
     });
 
@@ -739,7 +854,13 @@ router.post(
     handleValidationErrors,
   ],
   asyncHandler(async (req, res) => {
-    const { description, projectId, aspect = "all", conversationId } = req.body;
+    const {
+      description,
+      projectId,
+      aspect = "all",
+      conversationId,
+      model = "gpt-4o-mini",
+    } = req.body;
 
     // Get user context
     const user = await User.findById(req.user._id).select(
@@ -783,14 +904,15 @@ router.post(
       description,
       userContext,
       projectId,
-      aspect
+      aspect,
+      model
     );
     const processingTime = Date.now() - startTime;
 
     // Add AI response to conversation
     await conversation.addMessage("assistant", response.content, {
       tokens: response.tokens,
-      model: "gpt-3.5-turbo",
+      model: model,
       processingTime,
     });
 

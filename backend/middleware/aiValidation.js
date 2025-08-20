@@ -20,7 +20,7 @@ const validateAIChat = [
 
   body("model")
     .optional()
-    .isIn(["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"])
+    .isIn(["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo", "deepseek-r1"])
     .withMessage("Invalid model specified"),
 ];
 

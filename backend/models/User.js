@@ -85,6 +85,24 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    subscription: {
+      plan: {
+        type: String,
+        enum: ["free", "premium", "pro"],
+        default: "free",
+      },
+      startDate: {
+        type: Date,
+        default: Date.now,
+      },
+      endDate: {
+        type: Date,
+      },
+      isActive: {
+        type: Boolean,
+        default: true,
+      },
+    },
     isVerified: {
       type: Boolean,
       default: false,
