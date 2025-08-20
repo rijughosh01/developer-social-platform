@@ -14,6 +14,8 @@ import {
   FiLink,
   FiMonitor,
   FiTrash2,
+  FiMenu,
+  FiX,
 } from "react-icons/fi";
 import { getProfile, logout } from "@/store/slices/authSlice";
 
@@ -29,6 +31,7 @@ const TABS = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("Profile");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   const router = useRouter();
 
@@ -40,10 +43,63 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
-      <main className="p-6 flex justify-center">
-        <div className="max-w-5xl w-full flex flex-col md:flex-row gap-8">
-          {/* Settings Sidebar styled like DashboardSidebar */}
-          <aside className="hidden md:flex flex-col w-64 fixed inset-y-0 left-0 pt-0 pb-0 overflow-y-auto border-r border-gray-200 bg-white z-10">
+      <main className="p-4 sm:p-6 flex justify-center">
+        <div className="max-w-5xl w-full flex flex-col lg:flex-row gap-6 lg:gap-8">
+          <div className="lg:hidden">
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h1 className="text-xl font-bold text-primary-600">
+                    Settings
+                  </h1>
+                  <p className="text-sm text-gray-500">Manage your account</p>
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="p-2 rounded-lg hover:bg-gray-100"
+                >
+                  {isMobileMenuOpen ? (
+                    <FiX className="h-5 w-5" />
+                  ) : (
+                    <FiMenu className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+
+              {isMobileMenuOpen && (
+                <div className="border-t pt-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {TABS.map((tab) => (
+                      <button
+                        key={tab.label}
+                        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                          ${
+                            activeTab === tab.label
+                              ? "bg-primary-100 text-primary-900"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                        onClick={() => {
+                          setActiveTab(tab.label);
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <tab.icon
+                          className={`h-4 w-4 ${
+                            activeTab === tab.label
+                              ? "text-primary-500"
+                              : "text-gray-400"
+                          }`}
+                        />
+                        <span className="truncate">{tab.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 left-0 pt-0 pb-0 overflow-y-auto border-r border-gray-200 bg-white z-10">
             <div className="flex flex-col items-center justify-center py-4 bg-gray-50 border-b border-gray-200">
               <span className="text-2xl font-bold text-primary-600 tracking-tight">
                 Settings
@@ -76,10 +132,13 @@ export default function SettingsPage() {
               ))}
             </nav>
           </aside>
+
           {/* Content */}
-          <section className="flex-1 md:ml-64">
-            <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
-              <h1 className="text-2xl font-bold mb-6">{activeTab}</h1>
+          <section className="flex-1 lg:ml-64">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
+              <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
+                {activeTab}
+              </h1>
               {activeTab === "Profile" && (
                 <>
                   <ProfileForm />
@@ -225,7 +284,7 @@ function ProfileForm() {
     setAvatarUploading(true);
     try {
       const res = await usersAPI.uploadAvatar(avatarFile);
-      setAvatarPreview((res.data as any)?.avatar || '');
+      setAvatarPreview((res.data as any)?.avatar || "");
       toast.success("Profile picture updated!");
       dispatch(getProfile());
     } catch (err: any) {
@@ -240,50 +299,66 @@ function ProfileForm() {
     <form className="space-y-4" onSubmit={handleSubmit}>
       {/* Avatar Upload */}
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-sm font-medium mb-2">
           Profile Picture
         </label>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <img
             src={avatarPreview || "/default-avatar.png"}
             alt="Avatar Preview"
             className="w-16 h-16 rounded-full object-cover border"
           />
-          <input type="file" accept="image/*" onChange={handleAvatarChange} />
-          <button
-            type="button"
-            className="bg-primary-600 text-white px-3 py-1 rounded"
-            onClick={handleAvatarUpload}
-            disabled={avatarUploading || !avatarFile}
-          >
-            {avatarUploading ? "Uploading..." : "Upload"}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <input
+              aria-label="Upload profile picture"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="text-sm"
+            />
+            <button
+              type="button"
+              className="bg-primary-600 text-white px-3 py-2 rounded text-sm whitespace-nowrap"
+              onClick={handleAvatarUpload}
+              disabled={avatarUploading || !avatarFile}
+            >
+              {avatarUploading ? "Uploading..." : "Upload"}
+            </button>
+          </div>
         </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">First Name</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="firstName"
-          value={form.firstName}
-          onChange={handleChange}
-        />
+
+      {/* Personal Information */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">First Name</label>
+          <input
+            aria-label="First Name"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="firstName"
+            value={form.firstName}
+            onChange={handleChange}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Last Name</label>
+          <input
+            aria-label="Last Name"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="lastName"
+            value={form.lastName}
+            onChange={handleChange}
+          />
+        </div>
       </div>
+
       <div>
-        <label className="block text-sm font-medium mb-1">Last Name</label>
+        <label className="block text-sm font-medium mb-2">Email</label>
         <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="lastName"
-          value={form.lastName}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Email</label>
-        <input
-          className="w-full border rounded px-3 py-2"
+          aria-label="Email"
+          className="w-full border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           type="email"
           name="email"
           value={form.email}
@@ -291,43 +366,51 @@ function ProfileForm() {
           disabled
         />
       </div>
+
       <div>
-        <label className="block text-sm font-medium mb-1">Bio</label>
+        <label className="block text-sm font-medium mb-2">Bio</label>
         <textarea
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           name="bio"
           rows={3}
           value={form.bio}
           onChange={handleChange}
+          placeholder="Tell us about yourself..."
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Location</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="location"
-          value={form.location}
-          onChange={handleChange}
-        />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Location</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="location"
+            value={form.location}
+            onChange={handleChange}
+            placeholder="City, Country"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Company</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="company"
+            value={form.company}
+            onChange={handleChange}
+            placeholder="Your company"
+          />
+        </div>
       </div>
+
       <div>
-        <label className="block text-sm font-medium mb-1">Company</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="company"
-          value={form.company}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-sm font-medium mb-2">
           Skills{" "}
           <span className="text-xs text-gray-400">(comma separated)</span>
         </label>
         <input
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           type="text"
           name="skills"
           value={form.skills}
@@ -335,42 +418,50 @@ function ProfileForm() {
           placeholder="e.g. React, Node.js, MongoDB"
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">GitHub</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="socialLinks.github"
-          value={form.socialLinks.github}
-          onChange={handleChange}
-          placeholder="https://github.com/username"
-        />
+
+      {/* Social Links */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900">Social Links</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">GitHub</label>
+            <input
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              type="text"
+              name="socialLinks.github"
+              value={form.socialLinks.github}
+              onChange={handleChange}
+              placeholder="https://github.com/username"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">LinkedIn</label>
+            <input
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              type="text"
+              name="socialLinks.linkedin"
+              value={form.socialLinks.linkedin}
+              onChange={handleChange}
+              placeholder="https://linkedin.com/in/username"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Website</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="socialLinks.website"
+            value={form.socialLinks.website}
+            onChange={handleChange}
+            placeholder="https://yourwebsite.com"
+          />
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">LinkedIn</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="socialLinks.linkedin"
-          value={form.socialLinks.linkedin}
-          onChange={handleChange}
-          placeholder="https://linkedin.com/in/username"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Website</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="socialLinks.website"
-          value={form.socialLinks.website}
-          onChange={handleChange}
-          placeholder="https://yourwebsite.com"
-        />
-      </div>
+
       <button
         type="submit"
-        className="bg-primary-600 text-white px-4 py-2 rounded"
+        className="w-full sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
         disabled={submitting}
       >
         {submitting ? "Updating..." : "Update Profile"}
@@ -406,11 +497,12 @@ function PasswordForm() {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-sm font-medium mb-2">
           Current Password
         </label>
         <input
-          className="w-full border rounded px-3 py-2"
+          aria-label="Current Password"
+          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           type="password"
           name="currentPassword"
           value={form.currentPassword}
@@ -418,9 +510,10 @@ function PasswordForm() {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">New Password</label>
+        <label className="block text-sm font-medium mb-2">New Password</label>
         <input
-          className="w-full border rounded px-3 py-2"
+          aria-label="New Password"
+          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           type="password"
           name="newPassword"
           value={form.newPassword}
@@ -429,7 +522,7 @@ function PasswordForm() {
       </div>
       <button
         type="submit"
-        className="bg-primary-600 text-white px-4 py-2 rounded"
+        className="w-full sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
         disabled={submitting}
       >
         {submitting ? "Changing..." : "Change Password"}
@@ -493,53 +586,62 @@ function PrivacyForm({ userId }: { userId: string }) {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Private Account
-        </label>
+    <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="flex items-start gap-3 p-4 border rounded-lg">
         <input
+          aria-label="Private Account"
           type="checkbox"
           name="isPrivate"
           checked={form.isPrivate}
           onChange={handleChange}
+          className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
         />
-        <span className="ml-2">
-          Only approved followers can see your posts and profile.
-        </span>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Private Account
+          </label>
+          <p className="text-sm text-gray-600">
+            Only approved followers can see your posts and profile.
+          </p>
+        </div>
       </div>
+
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-sm font-medium mb-2">
           Who can message you?
         </label>
         <select
+          aria-label="Who can message you?"
           name="allowMessagesFrom"
           value={form.allowMessagesFrom}
           onChange={handleChange}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         >
           <option value="everyone">Everyone</option>
           <option value="followers">Followers only</option>
           <option value="noone">No one</option>
         </select>
       </div>
+
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-sm font-medium mb-2">
           Who can follow you?
         </label>
         <select
+          aria-label="Who can follow you?"
           name="allowFollowsFrom"
           value={form.allowFollowsFrom}
           onChange={handleChange}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         >
           <option value="everyone">Everyone</option>
           <option value="noone">No one</option>
         </select>
       </div>
+
       <button
         type="submit"
-        className="bg-primary-600 text-white px-4 py-2 rounded"
+        className="w-full sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
         disabled={submitting}
       >
         {submitting ? "Saving..." : "Save Changes"}
@@ -598,46 +700,67 @@ function NotificationsForm({ userId }: { userId: string }) {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Email Notifications
-        </label>
+    <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="flex items-start gap-3 p-4 border rounded-lg">
         <input
+          aria-label="Email Notifications"
           type="checkbox"
           name="email"
           checked={form.email}
           onChange={handleChange}
+          className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
         />
-        <span className="ml-2">Receive important updates via email.</span>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Email Notifications
+          </label>
+          <p className="text-sm text-gray-600">
+            Receive important updates via email.
+          </p>
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Push Notifications
-        </label>
+
+      <div className="flex items-start gap-3 p-4 border rounded-lg">
         <input
+          aria-label="Push Notifications"
           type="checkbox"
           name="push"
           checked={form.push}
           onChange={handleChange}
+          className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
         />
-        <span className="ml-2">Get real-time push notifications.</span>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Push Notifications
+          </label>
+          <p className="text-sm text-gray-600">
+            Get real-time push notifications.
+          </p>
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Marketing Emails
-        </label>
+
+      <div className="flex items-start gap-3 p-4 border rounded-lg">
         <input
+          aria-label="Marketing Emails"
           type="checkbox"
           name="marketing"
           checked={form.marketing}
           onChange={handleChange}
+          className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
         />
-        <span className="ml-2">Receive news, tips, and offers.</span>
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Marketing Emails
+          </label>
+          <p className="text-sm text-gray-600">
+            Receive news, tips, and offers.
+          </p>
+        </div>
       </div>
+
       <button
         type="submit"
-        className="bg-primary-600 text-white px-4 py-2 rounded"
+        className="w-full sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
         disabled={submitting}
       >
         {submitting ? "Saving..." : "Save Changes"}
@@ -697,53 +820,59 @@ function ConnectedAccountsForm({ userId }: { userId: string }) {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <div>
-        <label className="block text-sm font-medium mb-1">GitHub</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="github"
-          value={form.github}
-          onChange={handleChange}
-          placeholder="GitHub profile URL or username"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">GitHub</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="github"
+            value={form.github}
+            onChange={handleChange}
+            placeholder="GitHub profile URL or username"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">LinkedIn</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="linkedin"
+            value={form.linkedin}
+            onChange={handleChange}
+            placeholder="LinkedIn profile URL or username"
+          />
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">LinkedIn</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="linkedin"
-          value={form.linkedin}
-          onChange={handleChange}
-          placeholder="LinkedIn profile URL or username"
-        />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Twitter</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="twitter"
+            value={form.twitter}
+            onChange={handleChange}
+            placeholder="Twitter profile URL or username"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Website</label>
+          <input
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            type="text"
+            name="website"
+            value={form.website}
+            onChange={handleChange}
+            placeholder="Personal website URL"
+          />
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Twitter</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="twitter"
-          value={form.twitter}
-          onChange={handleChange}
-          placeholder="Twitter profile URL or username"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Website</label>
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="text"
-          name="website"
-          value={form.website}
-          onChange={handleChange}
-          placeholder="Personal website URL"
-        />
-      </div>
+
       <button
         type="submit"
-        className="bg-primary-600 text-white px-4 py-2 rounded"
+        className="w-full sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
         disabled={submitting}
       >
         {submitting ? "Saving..." : "Save Changes"}
@@ -792,11 +921,13 @@ function ThemeForm({ userId }: { userId: string }) {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
+        <label className="block text-sm font-medium mb-2">Theme</label>
         <select
+          aria-label="Select Theme"
           name="theme"
           value={theme}
           onChange={handleChange}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
         >
           <option value="system">System</option>
           <option value="light">Light</option>
@@ -805,7 +936,7 @@ function ThemeForm({ userId }: { userId: string }) {
       </div>
       <button
         type="submit"
-        className="bg-primary-600 text-white px-4 py-2 rounded"
+        className="w-full sm:w-auto bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
         disabled={submitting}
       >
         {submitting ? "Saving..." : "Save Changes"}
@@ -842,11 +973,17 @@ function DeleteAccountForm({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-4">
-      <p className="text-red-600 font-medium">
-        Warning: Deleting your account is permanent and cannot be undone.
-      </p>
+      <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
+        <p className="text-red-600 font-medium mb-2">
+          ⚠️ Warning: Deleting your account is permanent and cannot be undone.
+        </p>
+        <p className="text-sm text-red-600">
+          This will permanently delete all your data, posts, projects, and
+          account information.
+        </p>
+      </div>
       <button
-        className="bg-red-600 text-white px-4 py-2 rounded disabled:opacity-60"
+        className="w-full sm:w-auto bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-60"
         onClick={handleDelete}
         disabled={loading}
       >

@@ -139,7 +139,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   const avatar = notification.sender.avatar ? (
     <img
       src={notification.sender.avatar}
-      alt={notification.sender.fullName}
+      alt={`${notification.sender.firstName} ${notification.sender.lastName}`}
       className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
     />
   ) : (

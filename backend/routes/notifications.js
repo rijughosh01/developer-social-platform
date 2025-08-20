@@ -18,6 +18,7 @@ router.get(
     const query = { recipient: req.user._id, isDeleted: { $ne: true } };
 
     const notifications = await Notification.find(query)
+      .populate("sender", "firstName lastName username avatar")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -63,7 +64,7 @@ router.put(
     const notification = await Notification.findOne({
       _id: req.params.id,
       recipient: req.user._id,
-    });
+    }).populate("sender", "firstName lastName username avatar");
 
     if (!notification) {
       return res.status(404).json({
@@ -126,7 +127,7 @@ router.delete(
     const notification = await Notification.findOne({
       _id: req.params.id,
       recipient: req.user._id,
-    });
+    }).populate("sender", "firstName lastName username avatar");
 
     if (!notification) {
       return res.status(404).json({
@@ -252,7 +253,7 @@ router.put(
       { _id: req.params.id, recipient: req.user._id },
       { isRead: true },
       { new: true }
-    );
+    ).populate("sender", "firstName lastName username avatar");
 
     if (!notification) {
       return res
