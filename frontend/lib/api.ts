@@ -294,6 +294,9 @@ export const aiAPI = {
 
   getModels: () => api.get<ApiResponse>("/ai/models"),
 
+  getModelRecommendations: (params?: { context?: string; [key: string]: any }) =>
+    api.get<ApiResponse>("/ai/model-recommendations", { params }),
+
   getHealth: () => api.get<ApiResponse>("/ai/health"),
 
   getTokenUsage: () => api.get<ApiResponse>("/ai/token-usage"),

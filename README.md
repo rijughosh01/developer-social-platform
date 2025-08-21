@@ -6,7 +6,7 @@ A modern social platform for developers to connect, collaborate, and showcase th
 
 ## 🆕 What's New / Advanced Features
 
-- **🤖 Multi-Model AI Assistant**: Choose from 4 different AI models (GPT-4o Mini, GPT-4o, GPT-3.5 Turbo, DeepSeek R1) based on your needs
+- **🤖 Multi-Model AI Assistant**: Choose from 5 different AI models (GPT-4o Mini, GPT-4o, GPT-3.5 Turbo, DeepSeek R1, Qwen3 Coder) based on your needs
 - **💳 Subscription-Based AI Access**: Different AI models available based on subscription plans (Free, Premium, Pro)
 - **📊 Daily Token Limits**: Intelligent usage management with plan-based daily token limits and real-time tracking
 - **🎯 Context-Aware AI**: Specialized AI assistance for different coding scenarios (General, Code Review, Debugging, Learning, Project Help)
@@ -40,7 +40,7 @@ DevLink uses a modern full-stack architecture:
 - **Database:** MongoDB (Mongoose)
 - **Caching:** Redis (Traditional + Upstash) for performance optimization
 - **Real-time:** Socket.IO for chat and notifications
-- **AI Integration:** OpenAI API with LangChain for intelligent coding assistance
+- **AI Integration:** OpenAI API and OpenRouter API for multi-model intelligent coding assistance
 - **Image Storage:** Cloudinary for image uploads and management
 - **Static Assets:** Served from the public/uploads directory
 
@@ -64,14 +64,15 @@ DevLink uses a modern full-stack architecture:
   - **GPT-4o** (OpenAI): Advanced reasoning and complex problem solving
   - **GPT-3.5 Turbo** (OpenAI): Balanced performance and cost
   - **DeepSeek R1** (OpenRouter): Specialized coding and development tasks
+  - **Qwen3 Coder** (OpenRouter): Advanced coding with function calling and long-context reasoning
 - **Subscription-Based Access**: Different models available based on subscription plans
-  - **Free Plan**: Access to GPT-4o Mini, GPT-3.5 Turbo, and DeepSeek R1
+  - **Free Plan**: Access to GPT-4o Mini, GPT-3.5 Turbo, DeepSeek R1, and Qwen3 Coder
   - **Premium Plan**: Access to all models with higher daily limits
   - **Pro Plan**: Unlimited access to all models with maximum daily limits
 - **Daily Token Limits**: Intelligent usage management with plan-based limits
-  - **Free**: 10K-20K tokens per day depending on model
-  - **Premium**: 50K-100K tokens per day depending on model  
-  - **Pro**: 200K-500K tokens per day depending on model
+  - **Free**: 10K-25K tokens per day depending on model
+- **Premium**: 50K-150K tokens per day depending on model  
+- **Pro**: 200K-750K tokens per day depending on model
   - **Real-time tracking**: See remaining tokens and usage statistics
 - **Context-Aware AI Assistant**: 5 specialized modes for different coding scenarios
   - **General**: General coding assistance and questions
@@ -173,6 +174,12 @@ DevLink uses a modern full-stack architecture:
   - Specialized coding and development tasks
   - Available on all subscription plans
   - Daily limits: Free (20K), Premium (100K), Pro (500K) tokens
+
+- **Qwen3 Coder** (OpenRouter)
+  - Advanced coding with function calling and long-context reasoning
+  - Optimized for complex programming problems and agentic coding tasks
+  - Available on all subscription plans
+  - Daily limits: Free (25K), Premium (150K), Pro (750K) tokens
 
 ### AI Features
 - **Smart Model Selection**: Choose the best model for your specific task

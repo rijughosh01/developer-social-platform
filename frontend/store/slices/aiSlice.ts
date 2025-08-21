@@ -57,6 +57,27 @@ export const fetchAIModels = createAsyncThunk(
   }
 );
 
+export const fetchModelRecommendations = createAsyncThunk(
+  "ai/fetchModelRecommendations",
+  async (
+    {
+      context,
+      ...userContext
+    }: {
+      context?: string;
+      [key: string]: any;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await aiAPI.getModelRecommendations({ context, ...userContext });
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(parseAIError(error));
+    }
+  }
+);
+
 export const fetchAIHealth = createAsyncThunk(
   "ai/fetchHealth",
   async (_, { rejectWithValue }) => {
@@ -482,6 +503,21 @@ const aiSlice = createSlice({
         state.models = action.payload;
       })
       .addCase(fetchAIModels.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch model recommendations
+    builder
+      .addCase(fetchModelRecommendations.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchModelRecommendations.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Store recommendations in state if needed
+      })
+      .addCase(fetchModelRecommendations.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

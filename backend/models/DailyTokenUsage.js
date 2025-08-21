@@ -135,4 +135,46 @@ dailyTokenUsageSchema.statics.createOrUpdateUsage = async function (
   return usage.save();
 };
 
+// Static method to get user's token usage for all models (today)
+dailyTokenUsageSchema.statics.getUserTokenUsage = async function (userId) {
+  const today = new Date();
+  const startOfDay = new Date(today);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(today);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const result = await this.aggregate([
+    {
+      $match: {
+        user: new mongoose.Types.ObjectId(userId),
+        date: { $gte: startOfDay, $lte: endOfDay },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalTokens: { $sum: "$tokensUsed" },
+        totalRequests: { $sum: "$requestsCount" },
+        totalCost: { $sum: "$totalCost" },
+        modelBreakdown: {
+          $push: {
+            model: "$model",
+            tokensUsed: "$tokensUsed",
+            requestsCount: "$requestsCount",
+            cost: "$totalCost",
+          },
+        },
+      },
+    },
+  ]);
+
+  return result[0] || {
+    totalTokens: 0,
+    totalRequests: 0,
+    totalCost: 0,
+    modelBreakdown: []
+  };
+};
+
 module.exports = mongoose.model("DailyTokenUsage", dailyTokenUsageSchema);

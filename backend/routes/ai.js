@@ -52,6 +52,30 @@ router.get(
   })
 );
 
+// Get intelligent model recommendations
+router.get(
+  "/model-recommendations",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { context = "general", ...userContext } = req.query;
+    
+    const recommendations = await aiService.getModelRecommendations(
+      req.user._id,
+      context,
+      userContext
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        context,
+        recommendations,
+        timestamp: new Date().toISOString()
+      },
+    });
+  })
+);
+
 // Get AI models health status
 router.get(
   "/health",
