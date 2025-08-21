@@ -16,7 +16,7 @@ const dailyTokenUsageSchema = new mongoose.Schema(
     model: {
       type: String,
       required: true,
-      enum: ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo", "deepseek-r1"],
+      enum: ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo", "deepseek-r1", "qwen3-coder"],
     },
     tokensUsed: {
       type: Number,

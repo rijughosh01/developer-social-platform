@@ -79,6 +79,16 @@ const AI_MODELS = {
     contextWindow: 163840,
     requiresPremium: false,
   },
+  "qwen3-coder": {
+    provider: "openrouter",
+    name: "Qwen3 Coder",
+    modelId: "qwen/qwen3-coder",
+    costPer1kInput: 0,
+    costPer1kOutput: 0,
+    maxTokens: 8192,
+    contextWindow: 32768,
+    requiresPremium: false,
+  },
 };
 
 // Daily token limits for different subscription plans
@@ -88,18 +98,21 @@ const DAILY_TOKEN_LIMITS = {
     "gpt-4o-mini": 10000,
     "gpt-3.5-turbo": 15000,
     "deepseek-r1": 20000,
+    "qwen3-coder": 25000,
   },
   premium: {
     "gpt-4o": 50000,
     "gpt-4o-mini": 50000,
     "gpt-3.5-turbo": 100000,
     "deepseek-r1": 100000,
+    "qwen3-coder": 150000,
   },
   pro: {
     "gpt-4o": 200000,
     "gpt-4o-mini": 200000,
     "gpt-3.5-turbo": 500000,
     "deepseek-r1": 500000,
+    "qwen3-coder": 750000,
   },
 };
 
@@ -136,6 +149,16 @@ const SYSTEM_PROMPTS = {
   - Best practices for the specific domain
   - Common pitfalls to avoid
   - Resource and tool suggestions`,
+
+  // Special prompt for Qwen3 Coder model
+  qwen3Coder: `You are Qwen3 Coder, a specialized AI model optimized for coding tasks. You excel at:
+  - Code generation and completion
+  - Function calling and tool use
+  - Long-context reasoning over repositories
+  - Agentic coding tasks
+  - Complex programming problems
+  - Code analysis and optimization
+  Provide precise, efficient, and production-ready code solutions.`,
 };
 
 class AIService {
@@ -315,11 +338,24 @@ class AIService {
 
     try {
       console.log(
-        `🔍 Making OpenRouter request for ${model} with modelId: ${modelConfig.modelId}`
+        `Making OpenRouter request for ${model} with modelId: ${modelConfig.modelId}`
       );
 
+      // Additional debugging for Qwen3 Coder
+      if (model === "qwen3-coder") {
+        console.log(
+          `Qwen3 Coder specific debug - API Key configured: ${!!process.env
+            .OPENROUTER_API_KEY}`
+        );
+        console.log(
+          `Qwen3 Coder specific debug - OpenRouter API instance: ${!!openRouterAPI}`
+        );
+      }
+
       const actualMaxTokens =
-        model === "deepseek-r1" ? Math.max(maxTokens, 2000) : maxTokens;
+        model === "deepseek-r1" || model === "qwen3-coder"
+          ? Math.max(maxTokens, 2000)
+          : maxTokens;
 
       const response = await openRouterAPI.post("/chat/completions", {
         model: modelConfig.modelId,
@@ -351,7 +387,7 @@ class AIService {
       let content = choice.message?.content || "";
       if (!content && choice.message?.reasoning) {
         console.log(
-          `⚠️ DeepSeek R1 returned empty content but has reasoning: ${choice.message.reasoning.substring(
+          `⚠️ ${model} returned empty content but has reasoning: ${choice.message.reasoning.substring(
             0,
             100
           )}...`
@@ -436,6 +472,11 @@ class AIService {
 
     let systemPrompt = SYSTEM_PROMPTS[context] || SYSTEM_PROMPTS.general;
 
+    // Use special prompt for Qwen3 Coder model
+    if (model === "qwen3-coder") {
+      systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
+    }
+
     if (userContext.skills && userContext.skills.length > 0) {
       systemPrompt += `\n\nThe user has experience with: ${userContext.skills.join(
         ", "
@@ -476,9 +517,10 @@ class AIService {
           throw new Error(`Unsupported provider: ${modelConfig.provider}`);
         }
       } catch (primaryError) {
-        if (model === "deepseek-r1") {
+        // Fallback mechanism for OpenRouter models
+        if (model === "deepseek-r1" || model === "qwen3-coder") {
           console.warn(
-            `DeepSeek R1 failed, attempting fallback to GPT-4o Mini: ${primaryError.message}`
+            `${model} failed, attempting fallback to GPT-4o Mini: ${primaryError.message}`
           );
 
           try {
@@ -677,7 +719,9 @@ class AIService {
 
     try {
       const testMessage =
-        model === "deepseek-r1" ? "Hi" : "Hello, this is a health check.";
+        model === "deepseek-r1" || model === "qwen3-coder"
+          ? "Hi"
+          : "Hello, this is a health check.";
       const messages = [
         {
           role: "system",
@@ -740,4 +784,39 @@ class AIService {
   }
 }
 
-module.exports = new AIService();
+const aiServiceInstance = new AIService();
+
+module.exports = {
+  ...aiServiceInstance,
+  DAILY_TOKEN_LIMITS,
+  // Explicitly export all methods to ensure they're available
+  getAvailableModels:
+    aiServiceInstance.getAvailableModels.bind(aiServiceInstance),
+  getAvailableContexts:
+    aiServiceInstance.getAvailableContexts.bind(aiServiceInstance),
+  validateModel: aiServiceInstance.validateModel.bind(aiServiceInstance),
+  checkModelAccess: aiServiceInstance.checkModelAccess.bind(aiServiceInstance),
+  checkDailyTokenLimit:
+    aiServiceInstance.checkDailyTokenLimit.bind(aiServiceInstance),
+  recordTokenUsage: aiServiceInstance.recordTokenUsage.bind(aiServiceInstance),
+  calculateCost: aiServiceInstance.calculateCost.bind(aiServiceInstance),
+  makeOpenAIRequest:
+    aiServiceInstance.makeOpenAIRequest.bind(aiServiceInstance),
+  makeOpenRouterRequest:
+    aiServiceInstance.makeOpenRouterRequest.bind(aiServiceInstance),
+  chat: aiServiceInstance.chat.bind(aiServiceInstance),
+  codeReview: aiServiceInstance.codeReview.bind(aiServiceInstance),
+  debugCode: aiServiceInstance.debugCode.bind(aiServiceInstance),
+  learningHelp: aiServiceInstance.learningHelp.bind(aiServiceInstance),
+  projectAdvice: aiServiceInstance.projectAdvice.bind(aiServiceInstance),
+  getUserStats: aiServiceInstance.getUserStats.bind(aiServiceInstance),
+  checkModelHealth: aiServiceInstance.checkModelHealth.bind(aiServiceInstance),
+  getAllModelsHealth:
+    aiServiceInstance.getAllModelsHealth.bind(aiServiceInstance),
+  clearCache: aiServiceInstance.clearCache.bind(aiServiceInstance),
+  checkRateLimit: aiServiceInstance.checkRateLimit.bind(aiServiceInstance),
+  generateCacheKey: aiServiceInstance.generateCacheKey.bind(aiServiceInstance),
+  getCachedResponse:
+    aiServiceInstance.getCachedResponse.bind(aiServiceInstance),
+  cacheResponse: aiServiceInstance.cacheResponse.bind(aiServiceInstance),
+};

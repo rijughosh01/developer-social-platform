@@ -281,6 +281,7 @@ export interface AIModel {
   maxTokens: number;
   contextWindow: number;
   modelId?: string;
+  requiresPremium?: boolean;
 }
 
 export interface AIResponse {

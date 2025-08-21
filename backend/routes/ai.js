@@ -98,27 +98,9 @@ router.get(
       modelBreakdown: [],
     };
 
-    // Get limits for user's plan
-    const limits = {
-      free: {
-        "gpt-4o": 0,
-        "gpt-4o-mini": 10000,
-        "gpt-3.5-turbo": 15000,
-        "deepseek-r1": 20000,
-      },
-      premium: {
-        "gpt-4o": 50000,
-        "gpt-4o-mini": 50000,
-        "gpt-3.5-turbo": 100000,
-        "deepseek-r1": 100000,
-      },
-      pro: {
-        "gpt-4o": 200000,
-        "gpt-4o-mini": 200000,
-        "gpt-3.5-turbo": 500000,
-        "deepseek-r1": 500000,
-      },
-    };
+    // Import limits from aiService to ensure consistency
+    const { DAILY_TOKEN_LIMITS } = require("../utils/aiService");
+    const limits = DAILY_TOKEN_LIMITS;
 
     const userLimits = limits[userPlan];
 
