@@ -8,10 +8,12 @@ import toast from "react-hot-toast";
 import { parseAIError } from "@/lib/utils";
 import {
   sendAIMessage,
+  sendAIMessageStream,
   fetchAIContexts,
   fetchAIModels,
   fetchAIStats,
   fetchTokenUsage,
+  fetchConversation,
   setCurrentContext,
   setCurrentModel,
   clearResponses,
@@ -74,6 +76,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   >(null);
   const [thinkingPhase, setThinkingPhase] = useState(0);
   const [thinkingThought, setThinkingThought] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingResponse, setStreamingResponse] = useState("");
+  const [useStreaming, setUseStreaming] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -239,7 +244,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || isLoading) return;
+    if (!message.trim() || isLoading || isStreaming) return;
 
     if (error) {
       dispatch(clearError());
@@ -248,21 +253,64 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     const currentMessage = message;
     setMessage("");
 
-    const result = await dispatch(
-      sendAIMessage({
-        message: currentMessage,
-        context: currentContext,
-        model: currentModel,
-        conversationId: currentConversationId,
-      })
-    );
+    if (useStreaming) {
+      setIsStreaming(true);
+      setStreamingResponse("");
 
-    if (
-      result.payload &&
-      result.payload.conversationId &&
-      !currentConversationId
-    ) {
-      setCurrentConversationId(result.payload.conversationId);
+      const result = await dispatch(
+        sendAIMessageStream({
+          message: currentMessage,
+          context: currentContext,
+          model: currentModel,
+          conversationId: currentConversationId,
+          onChunk: (chunk) => {
+            if (chunk.type === "content") {
+              setStreamingResponse((prev) => prev + chunk.content);
+            }
+          },
+          onComplete: (data) => {
+            setIsStreaming(false);
+            setStreamingResponse("");
+            if (data.conversationId && !currentConversationId) {
+              setCurrentConversationId(data.conversationId);
+            }
+
+            if (data.conversationId) {
+              dispatch(fetchConversation(data.conversationId));
+            }
+          },
+          onError: (error) => {
+            setIsStreaming(false);
+            setStreamingResponse("");
+            console.error("Streaming error:", error);
+          },
+        })
+      );
+
+      if (
+        result.payload &&
+        result.payload.conversationId &&
+        !currentConversationId
+      ) {
+        setCurrentConversationId(result.payload.conversationId);
+      }
+    } else {
+      const result = await dispatch(
+        sendAIMessage({
+          message: currentMessage,
+          context: currentContext,
+          model: currentModel,
+          conversationId: currentConversationId,
+        })
+      );
+
+      if (
+        result.payload &&
+        result.payload.conversationId &&
+        !currentConversationId
+      ) {
+        setCurrentConversationId(result.payload.conversationId);
+      }
     }
   };
 
@@ -612,6 +660,40 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                 )}
               </div>
 
+              {/* Streaming Toggle */}
+              <button
+                type="button"
+                onClick={() => setUseStreaming(!useStreaming)}
+                className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 group ${
+                  useStreaming
+                    ? "bg-green-500/20 hover:bg-green-500/30"
+                    : "bg-gray-500/20 hover:bg-gray-500/30"
+                }`}
+                title={useStreaming ? "Disable streaming" : "Enable streaming"}
+              >
+                <div
+                  className={`w-3 h-3 sm:w-4 sm:h-4 ${
+                    useStreaming ? "text-green-400" : "text-gray-400"
+                  }`}
+                >
+                  {useStreaming ? (
+                    <div className="flex space-x-0.5">
+                      <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
+                      <div
+                        className="w-1 h-1 bg-green-400 rounded-full animate-pulse"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-1 h-1 bg-green-400 rounded-full animate-pulse"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full border-2 border-gray-400 rounded-sm"></div>
+                  )}
+                </div>
+              </button>
+
               <button
                 type="button"
                 aria-label="Close"
@@ -786,7 +868,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
             ))
           )}
 
-          {isLoading && (
+          {(isLoading || isStreaming) && (
             <div className="flex space-x-3 sm:space-x-4">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden">
@@ -1004,6 +1086,79 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                         style={{ animationDelay: "0.2s" }}
                       ></div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Streaming Response Display */}
+          {isStreaming && streamingResponse && (
+            <div className="space-y-4">
+              <div className="flex space-x-3 sm:space-x-4 group">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+                    <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-100 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 space-y-2 sm:space-y-0">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-semibold text-gray-700">
+                        DevLink AI
+                      </span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 sm:px-3 py-1 rounded-full font-medium">
+                        Streaming...
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xs text-gray-500 font-medium">
+                        {formatTimestamp(new Date().toISOString())}
+                      </span>
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                        <div
+                          className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      components={{
+                        code({ node, inline, className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || "");
+                          return !inline && match ? (
+                            <div className="relative group/code">
+                              <SyntaxHighlighter
+                                style={tomorrow}
+                                language={match[1]}
+                                PreTag="div"
+                                className="rounded-xl border border-gray-200 text-xs sm:text-sm"
+                                {...props}
+                              >
+                                {String(children).replace(/\n$/, "")}
+                              </SyntaxHighlighter>
+                            </div>
+                          ) : (
+                            <code
+                              className={`${className} bg-gray-100 px-2 py-1 rounded-md text-xs sm:text-sm`}
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        },
+                      }}
+                    >
+                      {streamingResponse}
+                    </ReactMarkdown>
                   </div>
                 </div>
               </div>
@@ -1236,13 +1391,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       handleSendMessage(e);
                     }
                   }}
-                  disabled={isLoading}
+                  disabled={isLoading || isStreaming}
                 />
               </div>
               <button
                 type="submit"
                 aria-label="Send message"
-                disabled={!message.trim() || isLoading}
+                disabled={!message.trim() || isLoading || isStreaming}
                 className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl sm:rounded-2xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center"
               >
                 <Send className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1277,6 +1432,19 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       </span>
                     </div>
                   )}
+                  {/* Streaming Status */}
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        useStreaming
+                          ? "bg-green-400 animate-pulse"
+                          : "bg-gray-400"
+                      }`}
+                    ></div>
+                    <span className="font-medium text-xs sm:text-sm">
+                      {useStreaming ? "Streaming ON" : "Streaming OFF"}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-xs text-gray-500 text-center sm:text-right">
                   Press Enter to send • Shift+Enter for new line

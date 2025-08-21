@@ -52,25 +52,64 @@ router.get(
   })
 );
 
+// Get token limits and model availability for user
+router.get(
+  "/token-limits",
+  protect,
+  asyncHandler(async (req, res) => {
+    const userPlan = req.user.subscriptionPlan || "free";
+    const userId = req.user._id;
+
+    const models = Object.keys(aiService.AI_MODELS);
+    const tokenLimits = {};
+
+    for (const modelId of models) {
+      const availability = aiService.checkModelAvailability(modelId, userPlan);
+
+      const usage = await aiService.checkTokenLimit(userId, modelId, userPlan);
+
+      tokenLimits[modelId] = {
+        modelId,
+        name: aiService.AI_MODELS[modelId]?.name || modelId,
+        available: availability.available,
+        requiresPremium: availability.requiresPremium,
+        currentUsage: usage.currentUsage,
+        limit: usage.limit,
+        remaining: usage.remaining,
+        exceeded: usage.exceeded,
+      };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        userPlan,
+        tokenLimits,
+        availableModels: Object.values(tokenLimits).filter((m) => m.available),
+      },
+    });
+  })
+);
+
 // Get intelligent model recommendations
 router.get(
   "/model-recommendations",
   protect,
   asyncHandler(async (req, res) => {
     const { context = "general", ...userContext } = req.query;
-    
+
     const recommendations = await aiService.getModelRecommendations(
       req.user._id,
       context,
       userContext
     );
-    
+
     res.json({
       success: true,
       data: {
         context,
         recommendations,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
     });
   })
@@ -122,11 +161,9 @@ router.get(
       modelBreakdown: [],
     };
 
-    // Import limits from aiService to ensure consistency
-    const { DAILY_TOKEN_LIMITS } = require("../utils/aiService");
-    const limits = DAILY_TOKEN_LIMITS;
-
-    const userLimits = limits[userPlan];
+    // Import token limits from the new configuration
+    const { TOKEN_LIMITS, getTokenLimit } = require("../config/tokenLimits");
+    const userLimits = TOKEN_LIMITS[userPlan] || TOKEN_LIMITS.free;
 
     // Calculate remaining tokens for each model
     const modelBreakdown = Object.keys(userLimits).map((model) => {
@@ -552,6 +589,44 @@ router.post(
       model = "gpt-4o-mini",
     } = req.body;
 
+    // Check token limits before processing
+    const userPlan = req.user.subscriptionPlan || "free";
+    const tokenLimitCheck = await aiService.checkTokenLimit(
+      req.user._id,
+      model,
+      userPlan
+    );
+
+    if (!tokenLimitCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: "Daily token limit exceeded for this model",
+        data: {
+          model,
+          currentUsage: tokenLimitCheck.currentUsage,
+          limit: tokenLimitCheck.limit,
+          remaining: tokenLimitCheck.remaining,
+          exceeded: tokenLimitCheck.exceeded,
+        },
+      });
+    }
+
+    // Check model availability
+    const modelAvailability = aiService.checkModelAvailability(model, userPlan);
+    if (!modelAvailability.available) {
+      return res.status(403).json({
+        success: false,
+        message: modelAvailability.requiresPremium
+          ? "This model requires a premium subscription"
+          : "This model is not available for your plan",
+        data: {
+          model,
+          requiresPremium: modelAvailability.requiresPremium,
+          availableModels: modelAvailability.availableModels,
+        },
+      });
+    }
+
     const user = await User.findById(req.user._id).select(
       "skills level experience"
     );
@@ -633,6 +708,206 @@ router.post(
   })
 );
 
+// Streaming chat endpoint with Server-Sent Events
+router.post(
+  "/chat/stream",
+  [
+    protect,
+    aiRateLimit("general"),
+    trackAIUsage,
+    sanitizeRequestBody,
+    validateAIChat,
+    handleValidationErrors,
+  ],
+  asyncHandler(async (req, res) => {
+    const {
+      message,
+      context = "general",
+      conversationId,
+      model = "gpt-4o-mini",
+    } = req.body;
+
+    // Check token limits before processing
+    const userPlan = req.user.subscriptionPlan || "free";
+    const tokenLimitCheck = await aiService.checkTokenLimit(
+      req.user._id,
+      model,
+      userPlan
+    );
+
+    if (!tokenLimitCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: "Daily token limit exceeded for this model",
+        data: {
+          model,
+          currentUsage: tokenLimitCheck.currentUsage,
+          limit: tokenLimitCheck.limit,
+          remaining: tokenLimitCheck.remaining,
+          exceeded: tokenLimitCheck.exceeded,
+        },
+      });
+    }
+
+    // Check model availability
+    const modelAvailability = aiService.checkModelAvailability(model, userPlan);
+    if (!modelAvailability.available) {
+      return res.status(403).json({
+        success: false,
+        message: modelAvailability.requiresPremium
+          ? "This model requires a premium subscription"
+          : "This model is not available for your plan",
+        data: {
+          model,
+          requiresPremium: modelAvailability.requiresPremium,
+          availableModels: modelAvailability.availableModels,
+        },
+      });
+    }
+
+    const user = await User.findById(req.user._id).select(
+      "skills level experience"
+    );
+    const userContext = {
+      skills: user.skills || [],
+      level: user.level || "beginner",
+      experience: user.experience || 0,
+    };
+
+    // Get or create conversation
+    let conversation;
+    if (conversationId) {
+      conversation = await AIConversation.findOne({
+        _id: conversationId,
+        user: req.user._id,
+      });
+    }
+
+    if (!conversation) {
+      const title =
+        message.length > 50 ? message.substring(0, 50) + "..." : message;
+      conversation = new AIConversation({
+        user: req.user._id,
+        title,
+        context,
+      });
+      await conversation.save();
+    }
+
+    // Get conversation history for context
+    const conversationHistory = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    await conversation.addMessage("user", message);
+
+    // Set up SSE headers
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Cache-Control",
+    });
+
+    const startTime = Date.now();
+    let fullResponse = "";
+    let totalTokens = 0;
+    let totalCost = 0;
+
+    try {
+      res.write(
+        `data: ${JSON.stringify({
+          type: "connection",
+          message: "Connected to AI stream",
+          conversationId: conversation._id,
+        })}\n\n`
+      );
+
+      res.write(
+        `data: ${JSON.stringify({
+          type: "thinking",
+          message: "AI is thinking...",
+        })}\n\n`
+      );
+
+      // Stream the response
+      const stream = await aiService.chatStream(
+        req.user._id,
+        message,
+        context,
+        userContext,
+        model,
+        conversationHistory
+      );
+
+      // Handle streaming response
+      for await (const chunk of stream) {
+        if (chunk.type === "content") {
+          fullResponse += chunk.content;
+          res.write(
+            `data: ${JSON.stringify({
+              type: "content",
+              content: chunk.content,
+              conversationId: conversation._id,
+            })}\n\n`
+          );
+        } else if (chunk.type === "usage") {
+          totalTokens = chunk.tokens;
+          totalCost = chunk.cost;
+          // console.log(
+          //   `Streaming usage: ${totalTokens} tokens, $${totalCost} cost`
+          // );
+        } else if (chunk.type === "error") {
+          res.write(
+            `data: ${JSON.stringify({
+              type: "error",
+              error: chunk.error,
+            })}\n\n`
+          );
+          break;
+        }
+      }
+
+      // Add assistant message to conversation with usage information
+      if (fullResponse) {
+        // console.log(
+        //   `Saving conversation with tokens: ${totalTokens}, cost: ${totalCost}`
+        // );
+        await conversation.addMessage("assistant", fullResponse, {
+          tokens: totalTokens,
+          cost: totalCost,
+          model: model,
+          processingTime: Date.now() - startTime,
+        });
+      }
+
+      // Send completion event
+      res.write(
+        `data: ${JSON.stringify({
+          type: "complete",
+          conversationId: conversation._id,
+          totalTokens,
+          totalCost,
+          processingTime: Date.now() - startTime,
+        })}\n\n`
+      );
+    } catch (error) {
+      console.error("AI Streaming Error:", error);
+
+      res.write(
+        `data: ${JSON.stringify({
+          type: "error",
+          error: error.message,
+        })}\n\n`
+      );
+    } finally {
+      res.end();
+    }
+  })
+);
+
 // Code review endpoint
 router.post(
   "/code-review",
@@ -652,6 +927,44 @@ router.post(
       conversationId,
       model = "gpt-4o-mini",
     } = req.body;
+
+    // Check token limits before processing
+    const userPlan = req.user.subscriptionPlan || "free";
+    const tokenLimitCheck = await aiService.checkTokenLimit(
+      req.user._id,
+      model,
+      userPlan
+    );
+
+    if (!tokenLimitCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: "Daily token limit exceeded for this model",
+        data: {
+          model,
+          currentUsage: tokenLimitCheck.currentUsage,
+          limit: tokenLimitCheck.limit,
+          remaining: tokenLimitCheck.remaining,
+          exceeded: tokenLimitCheck.exceeded,
+        },
+      });
+    }
+
+    // Check model availability
+    const modelAvailability = aiService.checkModelAvailability(model, userPlan);
+    if (!modelAvailability.available) {
+      return res.status(403).json({
+        success: false,
+        message: modelAvailability.requiresPremium
+          ? "This model requires a premium subscription"
+          : "This model is not available for your plan",
+        data: {
+          model,
+          requiresPremium: modelAvailability.requiresPremium,
+          availableModels: modelAvailability.availableModels,
+        },
+      });
+    }
 
     // Get user context
     const user = await User.findById(req.user._id).select(

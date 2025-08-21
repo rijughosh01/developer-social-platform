@@ -294,6 +294,8 @@ export const aiAPI = {
 
   getModels: () => api.get<ApiResponse>("/ai/models"),
 
+  getTokenLimits: () => api.get<ApiResponse>("/ai/token-limits"),
+
   getModelRecommendations: (params?: { context?: string; [key: string]: any }) =>
     api.get<ApiResponse>("/ai/model-recommendations", { params }),
 
@@ -310,6 +312,26 @@ export const aiAPI = {
     conversationId?: string;
     model?: string;
   }) => api.post<ApiResponse>("/ai/chat", data),
+
+  // Streaming chat
+  chatStream: (data: {
+    message: string;
+    context?: string;
+    conversationId?: string;
+    model?: string;
+  }) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    return fetch(`${API_URL}/ai/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: JSON.stringify(data),
+    });
+  },
 
   // Code review
   codeReview: (data: {

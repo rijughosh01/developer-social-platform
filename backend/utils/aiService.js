@@ -4,6 +4,13 @@ const { RateLimiterMemory } = require("rate-limiter-flexible");
 const axios = require("axios");
 const DailyTokenUsage = require("../models/DailyTokenUsage");
 const User = require("../models/User");
+const {
+  getTokenLimit,
+  requiresPremium,
+  getAvailableModels,
+  hasExceededLimit,
+  getRemainingTokens,
+} = require("../config/tokenLimits");
 
 // Initialize OpenAI only if API key is available
 let openai = null;
@@ -152,6 +159,52 @@ const AI_MODELS = {
   },
 };
 
+// Token Limit Management Functions
+const checkTokenLimit = async (userId, modelId, userPlan = "free") => {
+  try {
+    const today = new Date();
+    const usage = await DailyTokenUsage.getDailyUsage(userId, modelId, today);
+    const currentUsage = usage ? usage.tokensUsed : 0;
+
+    // Check if user has exceeded the limit
+    const exceeded = hasExceededLimit(currentUsage, modelId, userPlan);
+    const remaining = getRemainingTokens(currentUsage, modelId, userPlan);
+    const limit = getTokenLimit(modelId, userPlan);
+
+    return {
+      allowed: !exceeded,
+      currentUsage,
+      limit,
+      remaining,
+      exceeded,
+    };
+  } catch (error) {
+    console.error("Error checking token limit:", error);
+    return {
+      allowed: false,
+      currentUsage: 0,
+      limit: 0,
+      remaining: 0,
+      exceeded: true,
+      error: error.message,
+    };
+  }
+};
+
+const checkModelAvailability = (modelId, userPlan = "free") => {
+  const needsPremium = requiresPremium(modelId, userPlan);
+
+  // Check if model is available for this plan
+  const availableModels = getAvailableModels(userPlan);
+  const isAvailable = availableModels.includes(modelId);
+
+  return {
+    available: isAvailable && !needsPremium,
+    requiresPremium: needsPremium,
+    availableModels,
+  };
+};
+
 // Intelligent Model Routing System
 class ModelRouter {
   constructor() {
@@ -296,7 +349,7 @@ class ModelRouter {
     }
 
     // Check if user has enough tokens
-    const modelLimit = DAILY_TOKEN_LIMITS[userPlan]?.[model.id] || 0;
+    const modelLimit = getTokenLimit(model.id, userPlan);
     if (availableTokens <= 0) {
       return 0;
     }
@@ -351,8 +404,6 @@ class ModelRouter {
   }
 
   getCurrentLoad(modelId) {
-    // This would be implemented with actual load tracking
-    // For now, return a random value for demonstration
     return Math.random() * 50;
   }
 
@@ -374,10 +425,8 @@ class ModelRouter {
       ),
     }));
 
-    // Sort by score descending
     modelScores.sort((a, b) => b.score - a.score);
 
-    // Return top 3 models for fallback strategy
     return modelScores.slice(0, 3).map((item) => item.modelId);
   }
 
@@ -387,16 +436,14 @@ class ModelRouter {
     let newHealth = currentHealth;
 
     if (success) {
-      // Improve health for successful requests
       newHealth = Math.min(1.0, currentHealth + 0.01);
     } else {
-      // Decrease health for failed requests
       newHealth = Math.max(0.1, currentHealth - 0.05);
     }
 
     // Adjust based on response time
     const model = AI_MODELS[modelId];
-    const expectedTime = 5000; // 5 seconds baseline
+    const expectedTime = 5000;
     if (responseTime > expectedTime * 2) {
       newHealth = Math.max(0.1, newHealth - 0.02);
     }
@@ -418,33 +465,7 @@ class ModelRouter {
   }
 }
 
-// Initialize model router
 const modelRouter = new ModelRouter();
-
-// Daily token limits for different subscription plans
-const DAILY_TOKEN_LIMITS = {
-  free: {
-    "gpt-4o": 0,
-    "gpt-4o-mini": 10000,
-    "gpt-3.5-turbo": 15000,
-    "deepseek-r1": 20000,
-    "qwen3-coder": 25000,
-  },
-  premium: {
-    "gpt-4o": 50000,
-    "gpt-4o-mini": 50000,
-    "gpt-3.5-turbo": 100000,
-    "deepseek-r1": 100000,
-    "qwen3-coder": 150000,
-  },
-  pro: {
-    "gpt-4o": 200000,
-    "gpt-4o-mini": 200000,
-    "gpt-3.5-turbo": 500000,
-    "deepseek-r1": 500000,
-    "qwen3-coder": 750000,
-  },
-};
 
 // AI System Prompts for different contexts
 const SYSTEM_PROMPTS = {
@@ -516,7 +537,6 @@ class AIService {
       .substring(0, 50)}`;
   }
 
-  // Get cached response if available
   getCachedResponse(cacheKey) {
     return aiCache.get(cacheKey);
   }
@@ -525,14 +545,12 @@ class AIService {
     aiCache.set(cacheKey, response);
   }
 
-  // Get available models
   getAvailableModels() {
     const availableModels = [];
 
     Object.keys(AI_MODELS).forEach((modelKey) => {
       const model = AI_MODELS[modelKey];
 
-      // Check if the required API key is available for this model
       let isAvailable = false;
       if (model.provider === "openai" && openai) {
         isAvailable = true;
@@ -551,7 +569,6 @@ class AIService {
     return availableModels;
   }
 
-  // Validate model
   validateModel(model) {
     return AI_MODELS.hasOwnProperty(model);
   }
@@ -584,7 +601,7 @@ class AIService {
     }
 
     const userPlan = user.subscription.plan;
-    const dailyLimit = DAILY_TOKEN_LIMITS[userPlan]?.[model];
+    const dailyLimit = getTokenLimit(model, userPlan);
 
     if (dailyLimit === undefined) {
       throw new Error("Invalid model or plan configuration");
@@ -667,19 +684,19 @@ class AIService {
     const modelConfig = AI_MODELS[model];
 
     try {
-      console.log(
-        `Making OpenRouter request for ${model} with modelId: ${modelConfig.modelId}`
-      );
+      // console.log(
+      //   `Making OpenRouter request for ${model} with modelId: ${modelConfig.modelId}`
+      // );
 
       // Additional debugging for Qwen3 Coder
       if (model === "qwen3-coder") {
-        console.log(
-          `Qwen3 Coder specific debug - API Key configured: ${!!process.env
-            .OPENROUTER_API_KEY}`
-        );
-        console.log(
-          `Qwen3 Coder specific debug - OpenRouter API instance: ${!!openRouterAPI}`
-        );
+        // console.log(
+        //   `Qwen3 Coder specific debug - API Key configured: ${!!process.env
+        //     .OPENROUTER_API_KEY}`
+        // );
+        // console.log(
+        //   `Qwen3 Coder specific debug - OpenRouter API instance: ${!!openRouterAPI}`
+        // );
       }
 
       const actualMaxTokens =
@@ -696,11 +713,11 @@ class AIService {
         frequency_penalty: 0.1,
       });
 
-      console.log(`📡 OpenRouter response status: ${response.status}`);
-      console.log(
-        `📡 OpenRouter response data:`,
-        JSON.stringify(response.data, null, 2)
-      );
+      // console.log(`OpenRouter response status: ${response.status}`);
+      // console.log(
+      //   `OpenRouter response data:`,
+      //   JSON.stringify(response.data, null, 2)
+      // );
 
       // Validate response structure
       if (
@@ -716,12 +733,12 @@ class AIService {
       // Handle empty content - check if there's reasoning available
       let content = choice.message?.content || "";
       if (!content && choice.message?.reasoning) {
-        console.log(
-          `⚠️ ${model} returned empty content but has reasoning: ${choice.message.reasoning.substring(
-            0,
-            100
-          )}...`
-        );
+        // console.log(
+        //   `${model} returned empty content but has reasoning: ${choice.message.reasoning.substring(
+        //     0,
+        //     100
+        //   )}...`
+        // );
         content = `[Response was cut off due to length limits. Partial reasoning: ${choice.message.reasoning}]`;
       }
 
@@ -775,7 +792,6 @@ class AIService {
     }
   }
 
-  
   async chat(
     userId,
     message,
@@ -795,7 +811,7 @@ class AIService {
     const availableTokens = {};
 
     Object.keys(AI_MODELS).forEach((modelId) => {
-      const modelLimit = DAILY_TOKEN_LIMITS[userPlan]?.[modelId] || 0;
+      const modelLimit = getTokenLimit(modelId, userPlan);
       const used =
         tokenUsage?.modelBreakdown?.find((m) => m.model === modelId)
           ?.tokensUsed || 0;
@@ -820,7 +836,6 @@ class AIService {
     let aiResponse = null;
     let lastError = null;
 
-    
     if (requestedModel && this.validateModel(requestedModel)) {
       selectedModels = [requestedModel];
 
@@ -836,7 +851,6 @@ class AIService {
 
       selectedModels.push(...fallbackCandidates.slice(0, 2));
     } else {
-      
       selectedModels = modelRouter.selectOptimalModel(
         context,
         enhancedUserContext,
@@ -845,7 +859,7 @@ class AIService {
       );
     }
 
-    console.log(`Selected models for routing: ${selectedModels.join(", ")}`);
+    // console.log(`Selected models for routing: ${selectedModels.join(", ")}`);
 
     // Try each model in order until one succeeds
     for (let i = 0; i < selectedModels.length; i++) {
@@ -853,7 +867,6 @@ class AIService {
       const modelConfig = AI_MODELS[currentModel];
 
       try {
-        
         await this.checkModelAccess(userId, currentModel);
 
         const estimatedTokens = Math.ceil((message.length + 500) / 4);
@@ -933,11 +946,11 @@ class AIService {
         usedFallback = i > 0;
         fallbackModel = usedFallback ? currentModel : null;
 
-        console.log(
-          `Successfully used ${
-            usedFallback ? "fallback" : "primary"
-          } model: ${currentModel}`
-        );
+        // console.log(
+        //   `Successfully used ${
+        //     usedFallback ? "fallback" : "primary"
+        //   } model: ${currentModel}`
+        // );
         break;
       } catch (error) {
         lastError = error;
@@ -953,7 +966,6 @@ class AIService {
           );
         }
 
-        // Continue to next model
         continue;
       }
     }
@@ -1131,7 +1143,7 @@ class AIService {
     const availableTokens = {};
 
     Object.keys(AI_MODELS).forEach((modelId) => {
-      const modelLimit = DAILY_TOKEN_LIMITS[userPlan]?.[modelId] || 0;
+      const modelLimit = getTokenLimit(modelId, userPlan);
       const used =
         tokenUsage?.modelBreakdown?.find((m) => m.model === modelId)
           ?.tokensUsed || 0;
@@ -1234,6 +1246,288 @@ class AIService {
     }
   }
 
+  // Streaming chat method using async generator
+  async *chatStream(
+    userId,
+    message,
+    context = "general",
+    userContext = {},
+    requestedModel = "gpt-4o-mini",
+    conversationHistory = []
+  ) {
+    const startTime = Date.now();
+
+    // Get user plan and available tokens
+    const user = await User.findById(userId).select("subscription");
+    const userPlan = user?.subscription?.plan || "free";
+
+    const tokenUsage = await DailyTokenUsage.getUserTokenUsage(userId);
+    const availableTokens = {};
+
+    Object.keys(AI_MODELS).forEach((modelId) => {
+      const modelLimit = getTokenLimit(modelId, userPlan);
+      const used =
+        tokenUsage?.modelBreakdown?.find((m) => m.model === modelId)
+          ?.tokensUsed || 0;
+      availableTokens[modelId] = Math.max(0, modelLimit - used);
+    });
+
+    // Enhanced user context with preferences
+    const enhancedUserContext = {
+      ...userContext,
+      userId,
+      preferences: {
+        speed: userContext.preferences?.speed || "balanced",
+        accuracy: userContext.preferences?.accuracy || "balanced",
+        cost: userContext.preferences?.cost || "efficient",
+      },
+    };
+
+    // Intelligent model selection
+    let selectedModels = [];
+    let usedFallback = false;
+    let fallbackModel = null;
+    let lastError = null;
+
+    if (requestedModel && this.validateModel(requestedModel)) {
+      selectedModels = [requestedModel];
+
+      const fallbackCandidates = modelRouter
+        .selectOptimalModel(
+          context,
+          enhancedUserContext,
+          availableTokens[requestedModel],
+          userPlan
+        )
+        .filter((model) => model !== requestedModel);
+
+      selectedModels.push(...fallbackCandidates.slice(0, 2));
+    } else {
+      selectedModels = modelRouter.selectOptimalModel(
+        context,
+        enhancedUserContext,
+        Math.max(...Object.values(availableTokens)),
+        userPlan
+      );
+    }
+
+    // console.log(`Selected models for streaming: ${selectedModels.join(", ")}`);
+
+    // Try each model in order until one succeeds
+    for (let i = 0; i < selectedModels.length; i++) {
+      const currentModel = selectedModels[i];
+      const modelConfig = AI_MODELS[currentModel];
+
+      try {
+        await this.checkModelAccess(userId, currentModel);
+
+        const estimatedTokens = Math.ceil((message.length + 500) / 4);
+        await this.checkDailyTokenLimit(userId, currentModel, estimatedTokens);
+
+        // Prepare system prompt
+        let systemPrompt = SYSTEM_PROMPTS[context] || SYSTEM_PROMPTS.general;
+        if (currentModel === "qwen3-coder") {
+          systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
+        }
+
+        if (
+          enhancedUserContext.skills &&
+          enhancedUserContext.skills.length > 0
+        ) {
+          systemPrompt += `\n\nThe user has experience with: ${enhancedUserContext.skills.join(
+            ", "
+          )}. Adjust your explanations accordingly.`;
+        }
+
+        if (enhancedUserContext.level) {
+          systemPrompt += `\n\nThe user's skill level is: ${enhancedUserContext.level}. Provide appropriate guidance.`;
+        }
+
+        // Add model-specific context
+        if (modelConfig.contextSpecialties.includes(context)) {
+          systemPrompt += `\n\nYou are particularly well-suited for ${context} tasks. Provide expert-level guidance.`;
+        }
+
+        const messages = [{ role: "system", content: systemPrompt }];
+
+        // Add conversation history
+        if (conversationHistory && conversationHistory.length > 0) {
+          const historyMessages = conversationHistory
+            .filter((msg) => msg.role !== "system")
+            .map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            }));
+          messages.push(...historyMessages);
+        }
+
+        messages.push({ role: "user", content: message });
+
+        // Stream the response based on provider
+        if (modelConfig.provider === "openai") {
+          yield* this.streamOpenAIResponse(currentModel, messages);
+        } else if (modelConfig.provider === "openrouter") {
+          yield* this.streamOpenRouterResponse(currentModel, messages);
+        } else {
+          throw new Error(`Unsupported provider: ${modelConfig.provider}`);
+        }
+
+        // Success! Record the successful request
+        const responseTime = Date.now() - startTime;
+        modelRouter.recordRequest(userId, currentModel, true, responseTime);
+
+        usedFallback = i > 0;
+        fallbackModel = usedFallback ? currentModel : null;
+
+        // console.log(
+        //   `Successfully used ${
+        //     usedFallback ? "fallback" : "primary"
+        //   } model for streaming: ${currentModel}`
+        // );
+        break;
+      } catch (error) {
+        lastError = error;
+        const responseTime = Date.now() - startTime;
+        modelRouter.recordRequest(userId, currentModel, false, responseTime);
+
+        console.warn(
+          `Model ${currentModel} failed for streaming: ${error.message}`
+        );
+
+        // If this is the last model, throw the error
+        if (i === selectedModels.length - 1) {
+          yield {
+            type: "error",
+            error: `All selected models failed. Last error: ${error.message}`,
+          };
+          return;
+        }
+
+        continue;
+      }
+    }
+  }
+
+  // Stream OpenAI response
+  async *streamOpenAIResponse(model, messages) {
+    if (!openai) {
+      throw new Error("OpenAI API key not configured.");
+    }
+
+    try {
+      const stream = await openai.chat.completions.create({
+        model: model,
+        messages: messages,
+        max_tokens: 1000,
+        temperature: 0.7,
+        presence_penalty: 0.1,
+        frequency_penalty: 0.1,
+        stream: true,
+      });
+
+      let totalTokens = 0;
+      let fullContent = "";
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          fullContent += content;
+          yield { type: "content", content };
+        }
+
+        if (chunk.usage) {
+          totalTokens = chunk.usage.total_tokens;
+        }
+      }
+
+      if (totalTokens === 0 && fullContent.length > 0) {
+        totalTokens = Math.ceil((fullContent.length + 500) / 4);
+      }
+
+      // Calculate cost
+      const cost = this.calculateCost(model, totalTokens, 0);
+      yield { type: "usage", tokens: totalTokens, cost };
+    } catch (error) {
+      console.error("OpenAI Streaming Error:", error);
+      yield { type: "error", error: error.message };
+    }
+  }
+
+  // Stream OpenRouter response
+  async *streamOpenRouterResponse(model, messages) {
+    if (!openRouterAPI) {
+      throw new Error("OpenRouter API key not configured.");
+    }
+
+    const modelConfig = AI_MODELS[model];
+
+    try {
+      const response = await openRouterAPI.post(
+        "/chat/completions",
+        {
+          model: modelConfig.modelId,
+          messages: messages,
+          max_tokens: 1000,
+          temperature: 0.7,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1,
+          stream: true,
+        },
+        {
+          responseType: "stream",
+          headers: {
+            Accept: "text/event-stream",
+          },
+        }
+      );
+
+      let totalTokens = 0;
+      let fullContent = "";
+
+      for await (const chunk of response.data) {
+        const lines = chunk.toString().split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+
+            if (data === "[DONE]") {
+              break;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices[0]?.delta?.content;
+
+              if (content) {
+                fullContent += content;
+                yield { type: "content", content };
+              }
+
+              if (parsed.usage) {
+                totalTokens = parsed.usage.total_tokens;
+              }
+            } catch (parseError) {
+              continue;
+            }
+          }
+        }
+      }
+
+      // If no usage was provided in chunks, estimate based on content length
+      if (totalTokens === 0 && fullContent.length > 0) {
+        totalTokens = Math.ceil((fullContent.length + 500) / 4);
+      }
+
+      // Calculate cost
+      const cost = this.calculateCost(model, totalTokens, 0);
+      yield { type: "usage", tokens: totalTokens, cost };
+    } catch (error) {
+      console.error("OpenRouter Streaming Error:", error);
+      yield { type: "error", error: error.message };
+    }
+  }
+
   async getAllModelsHealth() {
     const models = Object.keys(AI_MODELS);
     const healthChecks = await Promise.allSettled(
@@ -1266,8 +1560,11 @@ const aiServiceInstance = new AIService();
 
 module.exports = {
   ...aiServiceInstance,
-  DAILY_TOKEN_LIMITS,
-  // Explicitly export all methods to ensure they're available
+  AI_MODELS,
+
+  checkTokenLimit,
+  checkModelAvailability,
+
   getAvailableModels:
     aiServiceInstance.getAvailableModels.bind(aiServiceInstance),
   getAvailableContexts:
@@ -1283,6 +1580,7 @@ module.exports = {
   makeOpenRouterRequest:
     aiServiceInstance.makeOpenRouterRequest.bind(aiServiceInstance),
   chat: aiServiceInstance.chat.bind(aiServiceInstance),
+  chatStream: aiServiceInstance.chatStream.bind(aiServiceInstance),
   codeReview: aiServiceInstance.codeReview.bind(aiServiceInstance),
   debugCode: aiServiceInstance.debugCode.bind(aiServiceInstance),
   learningHelp: aiServiceInstance.learningHelp.bind(aiServiceInstance),

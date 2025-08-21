@@ -146,6 +146,106 @@ export const sendAIMessage = createAsyncThunk(
   }
 );
 
+export const sendAIMessageStream = createAsyncThunk(
+  "ai/sendMessageStream",
+  async (
+    {
+      message,
+      context,
+      model,
+      conversationId,
+      onChunk,
+      onComplete,
+      onError,
+    }: {
+      message: string;
+      context?: string;
+      model?: string;
+      conversationId?: string;
+      onChunk?: (chunk: any) => void;
+      onComplete?: (data: any) => void;
+      onError?: (error: string) => void;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await aiAPI.chatStream({
+        message,
+        context,
+        model,
+        conversationId,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Streaming request failed');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('No response body available');
+      }
+
+      let fullResponse = '';
+      let streamConversationId: string | null = null;
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'connection') {
+                  streamConversationId = data.conversationId;
+                } else if (data.type === 'content') {
+                  fullResponse += data.content;
+                  onChunk?.(data);
+                } else if (data.type === 'complete') {
+                  const result = {
+                    content: fullResponse,
+                    conversationId: streamConversationId || data.conversationId,
+                    tokens: data.totalTokens,
+                    cost: data.totalCost,
+                    processingTime: data.processingTime,
+                    timestamp: new Date().toISOString(),
+                    model: model || 'gpt-4o-mini',
+                    context: context || 'general',
+                  };
+                  onComplete?.(result);
+                  return result;
+                } else if (data.type === 'error') {
+                  onError?.(data.error);
+                  throw new Error(data.error);
+                }
+              } catch (parseError) {
+                // Skip invalid JSON lines
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      throw new Error('Stream ended unexpectedly');
+    } catch (error: any) {
+      onError?.(error.message);
+      return rejectWithValue(parseAIError(error));
+    }
+  }
+);
+
 export const codeReview = createAsyncThunk(
   "ai/codeReview",
   async (
@@ -579,6 +679,22 @@ const aiSlice = createSlice({
         state.stats = null;
       })
       .addCase(sendAIMessage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Send message stream
+    builder
+      .addCase(sendAIMessageStream.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(sendAIMessageStream.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.responses.push(action.payload);
+        state.stats = null;
+      })
+      .addCase(sendAIMessageStream.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
