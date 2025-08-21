@@ -14,6 +14,7 @@ import {
   unpinMessage,
   fetchPinnedMessages,
   deleteConversation,
+  clearError,
 } from "@/store/slices/aiSlice";
 import {
   ArrowLeft,
@@ -31,6 +32,9 @@ import {
   Pin,
   PinOff,
   Trash2,
+  Settings,
+  Crown,
+  Cpu,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -38,6 +42,7 @@ import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { formatDistanceToNow } from "date-fns";
 import dynamic from "next/dynamic";
 import PinnedMessagesSection from "./PinnedMessagesSection";
+import { formatCost, parseAIError } from "@/lib/utils";
 
 // Dynamic imports to prevent hydration errors
 const DashboardHeader = dynamic(
@@ -70,7 +75,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   onBack,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { currentConversation, isLoading, error } = useSelector(
+  const { currentConversation, isLoading, error, currentModel } = useSelector(
     (state: RootState) => state.ai
   );
   const { user } = useSelector((state: RootState) => state.auth);
@@ -82,6 +87,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -99,7 +105,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     if (currentConversation) {
       setEditTitle(currentConversation.title);
       setEditTags(currentConversation.tags?.join(", ") || "");
-      // Update pinned messages from conversation
+
       const pinned =
         currentConversation.messages?.filter((msg: any) => msg.pinned) || [];
       setPinnedMessages(pinned);
@@ -145,13 +151,18 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     const currentMessage = message;
     setMessage("");
 
-    await dispatch(
-      sendAIMessage({
-        message: currentMessage,
-        context: currentConversation?.context || "general",
-        conversationId: conversationId,
-      })
-    );
+    try {
+      await dispatch(
+        sendAIMessage({
+          message: currentMessage,
+          context: currentConversation?.context || "general",
+          model: currentModel,
+          conversationId: conversationId,
+        })
+      ).unwrap();
+    } catch (error: any) {
+      console.error("Failed to send message:", error);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -233,19 +244,53 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   }
 
   if (error || !currentConversation) {
+    const errorMessage = error
+      ? parseAIError(error)
+      : "The conversation could not be loaded. It may have been deleted.";
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <X className="w-10 h-10 text-white" />
+          </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Conversation Not Found
+            {error ? "Error Loading Conversation" : "Conversation Not Found"}
           </h2>
-          <p className="text-gray-600 mb-4">
-            {error ||
-              "The conversation could not be loaded. It may have been deleted."}
-          </p>
+          <p className="text-gray-600 mb-6 leading-relaxed">{errorMessage}</p>
+
+          {/* Error-specific actions */}
+          {error && error.includes("Daily token limit exceeded") && (
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-700 mb-3">
+                ⏰ <strong>Daily Limit Reached:</strong> You've used all your
+                daily tokens. Limits reset at midnight.
+              </p>
+              <p className="text-sm text-orange-600">
+                💡 <strong>Tip:</strong> Switch models in the main AI Chatbot to
+                continue your conversation.
+              </p>
+            </div>
+          )}
+
+          {error && error.includes("Authentication required") && (
+            <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <p className="text-sm text-indigo-700 mb-3">
+                🔐 <strong>Authentication Required:</strong> Please log in to
+                access this conversation.
+              </p>
+              <button
+                onClick={() => (window.location.href = "/auth/login")}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Go to Login
+              </button>
+            </div>
+          )}
+
           <button
             onClick={onBack}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors hover:bg-blue-700 shadow-lg"
           >
             Back to Conversations
           </button>
@@ -254,7 +299,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
     );
   }
 
-  // Don't render anything until mounted to prevent hydration issues
   if (!isMounted) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -420,7 +464,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   </div>
                   <div>
                     <div className="text-xs sm:text-sm font-semibold text-purple-900">
-                      ${currentConversation.totalCost.toFixed(2)}
+                      {formatCost(currentConversation.totalCost)}
                     </div>
                     <div className="text-xs text-purple-700">cost</div>
                   </div>
@@ -577,7 +621,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
                               {/* Message Footer */}
                               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-3 border-t border-gray-200/30 space-y-2 sm:space-y-0">
-                                {/* Timestamp */}
                                 <div
                                   className={`text-xs flex items-center gap-2 ${
                                     msg.role === "user"
@@ -596,7 +639,6 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
 
                                 {/* Action Buttons and Metadata */}
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                                  {/* Metadata for AI messages */}
                                   {msg.role === "assistant" && msg.metadata && (
                                     <div className="flex items-center gap-2 text-xs bg-white rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 shadow-sm">
                                       <div className="font-semibold text-gray-900">
@@ -678,6 +720,69 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                 </div>
                 Continue Conversation
               </h3>
+
+              {/* Error Display */}
+              {error && (
+                <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-xl sm:rounded-2xl shadow-lg">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                          <X className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-red-800 mb-1">
+                          Error Occurred
+                        </h4>
+                        <p className="text-sm text-red-700 leading-relaxed">
+                          {parseAIError(error)}
+                        </p>
+
+                        {/* Error-specific actions */}
+                        {error.includes("Daily token limit exceeded") && (
+                          <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <p className="text-xs text-orange-700 mb-2">
+                              ⏰ <strong>Daily Limit Reached:</strong> You've
+                              used all your daily tokens for this model. Limits
+                              reset at midnight.
+                            </p>
+                            <p className="text-xs text-orange-600">
+                              💡 <strong>Tip:</strong> Switch models in the main
+                              AI Chatbot to continue your conversation.
+                            </p>
+                          </div>
+                        )}
+
+                        {error.includes("Rate limit exceeded") && (
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-xs text-yellow-700 mb-2">
+                              ⚡ <strong>Rate Limit:</strong> You're sending
+                              messages too quickly. Please wait a moment before
+                              trying again.
+                            </p>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => dispatch(clearError())}
+                                className="px-3 py-1 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
+                              >
+                                Try Again Later
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => dispatch(clearError())}
+                      className="flex-shrink-0 p-1 hover:bg-red-200 rounded-lg transition-colors duration-200"
+                      aria-label="Dismiss error"
+                    >
+                      <X className="w-4 h-4 text-red-600" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <form
                 onSubmit={handleSendMessage}

@@ -1,13 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
-import { codeReview } from "@/store/slices/aiSlice";
-import { Code, Send, FileText, Languages, X } from "lucide-react";
+import { codeReview, clearError } from "@/store/slices/aiSlice";
+import { parseAIError } from "@/lib/utils";
+import {
+  Code,
+  Send,
+  FileText,
+  Languages,
+  X,
+  Settings,
+  Crown,
+  Cpu,
+  Check,
+} from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import toast from "react-hot-toast";
 
 interface CodeReviewFormProps {
   onClose: () => void;
@@ -15,11 +27,18 @@ interface CodeReviewFormProps {
 
 const CodeReviewForm: React.FC<CodeReviewFormProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading, error } = useSelector((state: RootState) => state.ai);
+  const { isLoading, error, currentModel, tokenUsage } = useSelector(
+    (state: RootState) => state.ai
+  );
+  const { user } = useSelector((state: RootState) => state.auth);
 
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
   const [showPreview, setShowPreview] = useState(false);
+
+  useEffect(() => {
+    console.log("Current model changed to:", currentModel);
+  }, [currentModel]);
 
   const languages = [
     { value: "javascript", label: "JavaScript", extension: ".js" },
@@ -48,7 +67,14 @@ const CodeReviewForm: React.FC<CodeReviewFormProps> = ({ onClose }) => {
     e.preventDefault();
     if (!code.trim() || isLoading) return;
 
-    await dispatch(codeReview({ code: code.trim(), language }));
+    console.log("Code Review - Current Model:", currentModel);
+    console.log("Code Review - Submitting with model:", currentModel);
+    console.log("Code Review - Redux State currentModel:", currentModel);
+    console.log("Code Review - Token Usage:", tokenUsage);
+
+    await dispatch(
+      codeReview({ code: code.trim(), language, model: currentModel })
+    );
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,13 +111,16 @@ const CodeReviewForm: React.FC<CodeReviewFormProps> = ({ onClose }) => {
             </p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-        >
-          <span className="sr-only">Close</span>
-          <X className="w-4 h-4 sm:w-5 sm:h-5" />
-        </button>
+
+        <div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+          >
+            <span className="sr-only">Close</span>
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
       </div>
 
       <form
@@ -185,8 +214,75 @@ const CodeReviewForm: React.FC<CodeReviewFormProps> = ({ onClose }) => {
 
         {/* Error Display */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-xl shadow-lg">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <X className="w-3 h-3 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-red-800 mb-1">
+                  Error Occurred
+                </h4>
+                <p className="text-sm text-red-700 leading-relaxed">
+                  {parseAIError(error)}
+                </p>
+
+                {/* Error-specific actions */}
+                {error.includes("Daily usage limit exceeded") && (
+                  <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-xs text-orange-700 mb-2">
+                      ⏰ <strong>Daily Request Limit Reached:</strong> You've
+                      reached the daily limit for Code Review requests (50 per
+                      day). Limits reset at midnight.
+                    </p>
+                    <p className="text-xs text-orange-600 mb-2">
+                      💡 <strong>Tip:</strong> Try using the "General" context
+                      in the main AI Chatbot for code review questions, or wait
+                      until tomorrow.
+                    </p>
+                    <p className="text-xs text-orange-600">
+                      🔧 <strong>Current Model:</strong> {currentModel} - This
+                      is a request limit, not a token limit.
+                    </p>
+                  </div>
+                )}
+
+                {error.includes("Daily token limit exceeded") && (
+                  <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-xs text-orange-700 mb-2">
+                      ⏰ <strong>Daily Token Limit Reached:</strong> You've used
+                      all your daily tokens for the current model. Limits reset
+                      at midnight.
+                    </p>
+                    <p className="text-xs text-orange-600 mb-2">
+                      💡 <strong>Tip:</strong> Switch to a model with available
+                      tokens in the main AI Chatbot to continue.
+                    </p>
+                    <p className="text-xs text-orange-600">
+                      🔧 <strong>Current Model:</strong> {currentModel} - This
+                      model has no remaining tokens for today.
+                    </p>
+                  </div>
+                )}
+
+                {error.includes("Rate limit exceeded") && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-xs text-yellow-700 mb-2">
+                      ⚡ <strong>Rate Limit:</strong> You're sending requests
+                      too quickly. Please wait a moment before trying again.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-3 py-1 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
+                    >
+                      Try Again Later
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

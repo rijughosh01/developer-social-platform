@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
 import toast from "react-hot-toast";
+import { parseAIError } from "@/lib/utils";
 import {
   sendAIMessage,
   fetchAIContexts,
@@ -32,6 +33,12 @@ import {
   Zap,
   Brain,
   Cpu,
+  Crown,
+  Star,
+  Loader2,
+  Clock,
+  Search,
+  Sparkles as SparklesIcon,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -62,8 +69,27 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   const [showContexts, setShowContexts] = useState(false);
   const [showModels, setShowModels] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
+  const [thinkingPhase, setThinkingPhase] = useState(0);
+  const [thinkingThought, setThinkingThought] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Natural thinking thoughts that cycle through
+  const thinkingThoughts = [
+    "Let me think about this...",
+    "Interesting question...",
+    "Processing the context...",
+    "Gathering relevant information...",
+    "Analyzing the patterns...",
+    "Formulating a response...",
+    "Making sure this is helpful...",
+    "Double-checking the details...",
+    "Almost there...",
+    "Putting it all together...",
+  ];
 
   // Context configurations with enhanced styling
   const contextConfigs = {
@@ -151,11 +177,27 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     scrollToBottom();
   }, [responses]);
 
+  // Natural thinking process effect
+  useEffect(() => {
+    if (isLoading) {
+      const thinkingInterval = setInterval(() => {
+        setThinkingPhase((prev) => (prev + 1) % 3);
+        setThinkingThought(
+          thinkingThoughts[Math.floor(Math.random() * thinkingThoughts.length)]
+        );
+      }, 2000);
+
+      return () => clearInterval(thinkingInterval);
+    } else {
+      setThinkingPhase(0);
+      setThinkingThought("");
+    }
+  }, [isLoading, thinkingThoughts]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Check if a model is available for the current user
   const isModelAvailable = (model: any) => {
     if (!user) return false;
 
@@ -166,7 +208,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     return true;
   };
 
-  // Get user's subscription plan
   const userPlan = user?.subscription?.plan || "free";
 
   // Show toast notification for errors
@@ -200,7 +241,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (!message.trim() || isLoading) return;
 
-    // Clear any previous errors when sending a new message
     if (error) {
       dispatch(clearError());
     }
@@ -208,22 +248,38 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     const currentMessage = message;
     setMessage("");
 
-    await dispatch(
+    const result = await dispatch(
       sendAIMessage({
         message: currentMessage,
         context: currentContext,
         model: currentModel,
+        conversationId: currentConversationId,
       })
     );
+
+    if (
+      result.payload &&
+      result.payload.conversationId &&
+      !currentConversationId
+    ) {
+      setCurrentConversationId(result.payload.conversationId);
+    }
   };
 
   const handleContextChange = (context: string) => {
     dispatch(setCurrentContext(context));
     setShowContexts(false);
+
+    setCurrentConversationId(null);
+    dispatch(clearResponses());
   };
 
   const handleModelChange = (model: string) => {
+    console.log("handleModelChange called with model:", model);
+    console.log("Available models:", models);
+
     const selectedModel = models.find((m) => m.id === model);
+    console.log("Selected model:", selectedModel);
 
     if (selectedModel && !isModelAvailable(selectedModel)) {
       if (userPlan === "free") {
@@ -245,8 +301,10 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
       return;
     }
 
+    console.log("Dispatching setCurrentModel with:", model);
     dispatch(setCurrentModel(model));
     setShowModels(false);
+    dispatch(clearError());
 
     dispatch(fetchTokenUsage());
 
@@ -289,7 +347,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
         onClick={onClose}
       />
 
-      {/* Main Modal - Mobile Responsive */}
+      {/* Main Modal */}
       <div className="relative w-full max-w-5xl h-[90vh] sm:h-[85vh] bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
         <div className="relative p-2 sm:p-4 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white">
           <div className="absolute inset-0 opacity-10">
@@ -297,7 +355,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-            {/* Logo and Title - Mobile Stacked */}
+            {/* Logo and Title */}
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="relative">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
@@ -325,7 +383,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
             {/* Context and Model Selectors and Close */}
             <div className="flex items-center justify-between sm:justify-end space-x-1 sm:space-x-2">
-              {/* Model Selector */}
               <div className="relative flex-1 sm:flex-none model-selector">
                 <button
                   onClick={() => setShowModels(!showModels)}
@@ -335,26 +392,37 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                     <Cpu className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                   </div>
                   <div className="text-left flex-1 sm:flex-none">
-                    <span className="text-xs font-medium block sm:hidden">
-                      {models.find((m) => m.id === currentModel)?.name ||
-                        "GPT-4o-mini"}
-                    </span>
+                    <div className="flex items-center space-x-1 block sm:hidden">
+                      {models.find((m) => m.id === currentModel)?.provider ===
+                      "openrouter" ? (
+                        <Cpu className="w-3 h-3 text-blue-300" />
+                      ) : (
+                        <Crown className="w-3 h-3 text-purple-300" />
+                      )}
+                      <span className="text-xs font-medium">
+                        {models.find((m) => m.id === currentModel)?.name ||
+                          "GPT-4o-mini"}
+                      </span>
+                    </div>
                     <div className="hidden sm:block">
                       <span className="text-xs font-medium">
                         {models.find((m) => m.id === currentModel)?.name ||
                           "GPT-4o-mini"}
                       </span>
-                      <p className="text-xs text-blue-200">
+                      <div className="flex items-center space-x-1">
                         {models.find((m) => m.id === currentModel)?.provider ===
-                        "openrouter"
-                          ? "Free Model"
-                          : "Premium Model"}
-                      </p>
-                      {userPlan === "free" && (
-                        <p className="text-xs text-yellow-300 mt-0.5">
-                          💡 Upgrade for premium models
+                        "openrouter" ? (
+                          <Cpu className="w-3 h-3 text-blue-300" />
+                        ) : (
+                          <Crown className="w-3 h-3 text-purple-300" />
+                        )}
+                        <p className="text-xs text-blue-200">
+                          {models.find((m) => m.id === currentModel)
+                            ?.provider === "openrouter"
+                            ? "Free Model"
+                            : "Premium Model"}
                         </p>
-                      )}
+                      </div>
                     </div>
                   </div>
                   <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-200 group-hover:rotate-90 transition-transform duration-200" />
@@ -390,11 +458,17 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                               <div
                                 className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                                   isAvailable
-                                    ? "bg-gradient-to-r from-purple-500 to-pink-500"
+                                    ? model.provider === "openrouter"
+                                      ? "bg-gradient-to-r from-blue-500 to-cyan-500"
+                                      : "bg-gradient-to-r from-purple-500 to-pink-500"
                                     : "bg-gray-400"
                                 }`}
                               >
-                                <Cpu className="w-4 h-4 text-white" />
+                                {model.provider === "openrouter" ? (
+                                  <Cpu className="w-4 h-4 text-white" />
+                                ) : (
+                                  <Crown className="w-4 h-4 text-white" />
+                                )}
                               </div>
                               <div className="text-left">
                                 <span
@@ -407,17 +481,24 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                                   {model.name}
                                 </span>
                                 <div className="flex items-center space-x-2">
-                                  <p
-                                    className={`text-xs ${
-                                      isAvailable
-                                        ? "text-gray-500"
-                                        : "text-gray-400"
-                                    }`}
-                                  >
-                                    {model.provider === "openrouter"
-                                      ? "Free"
-                                      : "Premium"}
-                                  </p>
+                                  <div className="flex items-center space-x-1">
+                                    {model.provider === "openrouter" ? (
+                                      <Cpu className="w-3 h-3 text-blue-500" />
+                                    ) : (
+                                      <Crown className="w-3 h-3 text-purple-500" />
+                                    )}
+                                    <p
+                                      className={`text-xs ${
+                                        isAvailable
+                                          ? "text-gray-500"
+                                          : "text-gray-400"
+                                      }`}
+                                    >
+                                      {model.provider === "openrouter"
+                                        ? "Free"
+                                        : "Premium"}
+                                    </p>
+                                  </div>
                                   {!isAvailable && (
                                     <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
                                       {userPlan === "free"
@@ -545,7 +626,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
         {/* Messages Area  */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
-          {responses.length === 0 ? (
+          {responses.length === 0 && !isLoading ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500 px-2 sm:px-0">
               <div className="relative mb-6 sm:mb-8">
                 <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full flex items-center justify-center">
@@ -615,6 +696,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                         {response.cached && (
                           <span className="text-xs bg-green-100 text-green-700 px-2 sm:px-3 py-1 rounded-full font-medium">
                             Cached Response
+                          </span>
+                        )}
+                        {response.usedFallback && (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-2 sm:px-3 py-1 rounded-full font-medium">
+                            Fallback: {response.modelName}
                           </span>
                         )}
                       </div>
@@ -703,26 +789,222 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
           {isLoading && (
             <div className="flex space-x-3 sm:space-x-4">
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
-                  <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden">
+                  <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white relative z-10" />
+
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl sm:rounded-2xl animate-pulse opacity-75"></div>
+
+                  <div className="absolute inset-0 rounded-xl sm:rounded-2xl border-2 border-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 bg-[length:200%_200%] animate-spin"></div>
                 </div>
               </div>
-              <div className="flex-1 bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-xl sm:rounded-2xl p-3 sm:p-6 border border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                    <div
-                      className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
+              <div className="flex-1 bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-100 shadow-sm">
+                <div className="space-y-3">
+                  {/* Header with model info */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-semibold text-gray-700">
+                        DevLink AI
+                      </span>
+                      <div className="flex items-center space-x-1">
+                        {models.find((m) => m.id === currentModel)?.provider ===
+                        "openrouter" ? (
+                          <Cpu className="w-3 h-3 text-blue-500" />
+                        ) : (
+                          <Crown className="w-3 h-3 text-purple-500" />
+                        )}
+                        <span className="text-xs text-gray-500">
+                          {models.find((m) => m.id === currentModel)?.name ||
+                            "GPT-4o-mini"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                        <div
+                          className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium text-gray-600">
-                    AI is thinking...
-                  </span>
+
+                  {/* Natural thinking process */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center transition-all duration-500 ${
+                          thinkingPhase === 0
+                            ? "scale-110 shadow-lg"
+                            : "scale-100"
+                        }`}
+                      >
+                        <Brain
+                          className={`w-4 h-4 text-white transition-all duration-300 ${
+                            thinkingPhase === 0 ? "animate-pulse" : ""
+                          }`}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Thinking
+                          </span>
+                          <div className="flex space-x-1">
+                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                            <div
+                              className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"
+                              style={{ animationDelay: "0.3s" }}
+                            ></div>
+                            <div
+                              className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"
+                              style={{ animationDelay: "0.6s" }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {thinkingThought ||
+                            "Understanding your question and gathering context..."}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Natural processing indicator */}
+                    <div
+                      className={`flex items-center space-x-3 transition-all duration-500 ${
+                        thinkingPhase === 1 ? "opacity-100" : "opacity-75"
+                      }`}
+                    >
+                      <div
+                        className={`w-6 h-6 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center transition-all duration-500 ${
+                          thinkingPhase === 1
+                            ? "scale-110 shadow-md"
+                            : "scale-100"
+                        }`}
+                      >
+                        <SparklesIcon
+                          className={`w-3 h-3 text-white transition-all duration-300 ${
+                            thinkingPhase === 1 ? "animate-spin" : ""
+                          }`}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-600">
+                            Processing
+                          </span>
+                          <div className="flex space-x-1">
+                            <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce"></div>
+                            <div
+                              className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                            <div
+                              className="w-1 h-1 bg-green-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.4s" }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Analyzing patterns and generating insights...
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Natural response crafting */}
+                    <div
+                      className={`flex items-center space-x-3 transition-all duration-500 ${
+                        thinkingPhase === 2 ? "opacity-100" : "opacity-50"
+                      }`}
+                    >
+                      <div
+                        className={`w-6 h-6 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center transition-all duration-500 ${
+                          thinkingPhase === 2
+                            ? "scale-110 shadow-md"
+                            : "scale-100"
+                        }`}
+                      >
+                        <MessageCircle
+                          className={`w-3 h-3 text-white transition-all duration-300 ${
+                            thinkingPhase === 2 ? "animate-bounce" : ""
+                          }`}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-500">
+                            Crafting
+                          </span>
+                          <div className="flex space-x-1">
+                            <div className="w-1 h-1 bg-purple-400 rounded-full animate-ping"></div>
+                            <div
+                              className="w-1 h-1 bg-pink-400 rounded-full animate-ping"
+                              style={{ animationDelay: "0.1s" }}
+                            ></div>
+                            <div
+                              className="w-1 h-1 bg-purple-400 rounded-full animate-ping"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Formulating a helpful response for you...
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Natural typing indicator */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <Loader2 className="w-3 h-3 text-white animate-spin" />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Almost ready
+                        </span>
+                        <div className="flex space-x-1">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
+                          <div
+                            className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
+                          <div
+                            className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "0.4s" }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 text-xs text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      <span className="animate-pulse">Just a moment...</span>
+                    </div>
+                  </div>
+
+                  {/* Natural typing cursor effect */}
+                  <div className="flex items-center space-x-2 mt-2 text-xs text-gray-400">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-1 h-4 bg-blue-400 rounded-full animate-pulse"></div>
+                      <span>Typing</span>
+                    </div>
+                    <div className="flex space-x-1">
+                      <div className="w-1 h-1 bg-gray-400 rounded-full animate-ping"></div>
+                      <div
+                        className="w-1 h-1 bg-gray-400 rounded-full animate-ping"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-1 h-1 bg-gray-400 rounded-full animate-ping"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -748,6 +1030,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                   <p className="text-sm text-red-700 leading-relaxed">
                     {error}
                   </p>
+
+                  {/* Premium Subscription Error */}
                   {error.includes("Premium subscription required") && (
                     <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-xs text-blue-700 mb-2">
@@ -758,7 +1042,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => {
-                            toast.info("Upgrade feature coming soon!", {
+                            toast("Upgrade feature coming soon!", {
                               duration: 3000,
                             });
                           }}
@@ -768,7 +1052,6 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                         </button>
                         <button
                           onClick={() => {
-                            // Switch to a free model
                             const freeModel = models.find(
                               (m) => !m.requiresPremium
                             );
@@ -783,6 +1066,8 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                   )}
+
+                  {/* Daily Token Limit Error */}
                   {error.includes("Daily token limit exceeded") && (
                     <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                       <p className="text-xs text-orange-700 mb-2">
@@ -793,7 +1078,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => {
-                            toast.info("Upgrade feature coming soon!", {
+                            toast("Upgrade feature coming soon!", {
                               duration: 3000,
                             });
                           }}
@@ -802,21 +1087,118 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                           Upgrade for Higher Limits
                         </button>
                         <button
-                          onClick={() => {
-                            // Switch to a model with remaining tokens
-                            const availableModel = models.find((m) => {
-                              const usage = tokenUsage?.modelBreakdown.find(
-                                (u) => u.model === m.id
+                          onClick={async () => {
+                            try {
+                              const result = await dispatch(fetchTokenUsage());
+
+                              const updatedTokenUsage = result.payload;
+                              console.log(
+                                "Updated Token Usage:",
+                                updatedTokenUsage
                               );
-                              return usage && usage.remaining > 0;
-                            });
-                            if (availableModel) {
-                              handleModelChange(availableModel.id);
+                              console.log("Models:", models);
+
+                              // Find a model with remaining tokens using the updated data
+                              const availableModel = models.find((m) => {
+                                const usage =
+                                  updatedTokenUsage?.modelBreakdown?.find(
+                                    (u) => u.model === m.id
+                                  );
+                                console.log(`Checking model ${m.id}:`, usage);
+                                return usage && usage.remaining > 0;
+                              });
+
+                              if (availableModel) {
+                                console.log("Switching to:", availableModel);
+                                handleModelChange(availableModel.id);
+                                dispatch(clearError());
+                              } else {
+                                const freeModel = models.find(
+                                  (m) => !m.requiresPremium
+                                );
+                                if (freeModel) {
+                                  console.log(
+                                    "Falling back to free model:",
+                                    freeModel
+                                  );
+                                  handleModelChange(freeModel.id);
+                                  dispatch(clearError());
+                                } else {
+                                  toast.error(
+                                    "No models with available tokens found. Please try again tomorrow or upgrade your plan.",
+                                    {
+                                      duration: 5000,
+                                    }
+                                  );
+                                }
+                              }
+                            } catch (error) {
+                              console.error("Error switching models:", error);
+                              toast.error(
+                                "Failed to switch models. Please try again.",
+                                {
+                                  duration: 3000,
+                                }
+                              );
                             }
                           }}
                           className="px-3 py-1 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors"
                         >
                           Switch to Available Model
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rate Limit Error */}
+                  {error.includes("Rate limit exceeded") && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-700 mb-2">
+                        ⚡ <strong>Rate Limit:</strong> You're sending messages
+                        too quickly. Please wait a moment before trying again.
+                      </p>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => dispatch(clearError())}
+                          className="px-3 py-1 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
+                        >
+                          Try Again Later
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Network Error */}
+                  {error.includes("Network connection error") && (
+                    <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <p className="text-xs text-purple-700 mb-2">
+                        🌐 <strong>Connection Issue:</strong> Please check your
+                        internet connection and try again.
+                      </p>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          Refresh Page
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Authentication Error */}
+                  {error.includes("Please log in") && (
+                    <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                      <p className="text-xs text-indigo-700 mb-2">
+                        🔐 <strong>Authentication Required:</strong> Please log
+                        in to use the AI features.
+                      </p>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => (window.location.href = "/auth/login")}
+                          className="px-3 py-1 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors"
+                        >
+                          Go to Login
                         </button>
                       </div>
                     </div>

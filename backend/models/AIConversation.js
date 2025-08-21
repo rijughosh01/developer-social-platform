@@ -108,6 +108,10 @@ aiConversationSchema.methods.addMessage = function (
     this.totalTokens += metadata.tokens;
   }
 
+  if (metadata.cost) {
+    this.totalCost += metadata.cost;
+  }
+
   this.lastActivity = new Date();
   return this.save();
 };

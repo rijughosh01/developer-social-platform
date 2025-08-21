@@ -32,7 +32,6 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         window.location.href = "/auth/login";
@@ -245,29 +244,22 @@ export const notificationsAPI = {
   getNotifications: (params?: { page?: number; limit?: number }) =>
     api.get<ApiResponse>("/notifications", { params }),
 
-  // Get unread count
   getUnreadCount: () => api.get<ApiResponse>("/notifications/unread-count"),
 
-  // Mark notification as read
   markAsRead: (notificationId: string) =>
     api.put<ApiResponse>(`/notifications/${notificationId}/read`),
 
-  // Mark multiple notifications as read
   markMultipleAsRead: (notificationIds: string[]) =>
     api.put<ApiResponse>("/notifications/mark-read", { notificationIds }),
 
-  // Mark all notifications as read
   markAllAsRead: () => api.put<ApiResponse>("/notifications/mark-all-read"),
 
-  // Delete notification
   deleteNotification: (notificationId: string) =>
     api.delete<ApiResponse>(`/notifications/${notificationId}`),
 
-  // Delete multiple notifications
   deleteMultipleNotifications: (notificationIds: string[]) =>
     api.delete<ApiResponse>("/notifications", { data: { notificationIds } }),
 
-  // Get notification settings
   getSettings: () => api.get<ApiResponse>("/notifications/settings"),
 
   // Update notification settings
@@ -298,16 +290,14 @@ export const searchAPI = {
 };
 
 export const aiAPI = {
-  // Get available AI contexts
   getContexts: () => api.get<ApiResponse>("/ai/contexts"),
 
-  // Get available AI models
   getModels: () => api.get<ApiResponse>("/ai/models"),
 
-  // Get user's daily token usage and limits
+  getHealth: () => api.get<ApiResponse>("/ai/health"),
+
   getTokenUsage: () => api.get<ApiResponse>("/ai/token-usage"),
 
-  // Get user's AI usage statistics
   getStats: () => api.get<ApiResponse>("/ai/stats"),
 
   // General chat
@@ -319,19 +309,30 @@ export const aiAPI = {
   }) => api.post<ApiResponse>("/ai/chat", data),
 
   // Code review
-  codeReview: (data: { code: string; language: string; model?: string }) =>
-    api.post<ApiResponse>("/ai/code-review", data),
+  codeReview: (data: {
+    code: string;
+    language: string;
+    model?: string;
+    conversationId?: string;
+  }) => api.post<ApiResponse>("/ai/code-review", data),
 
   // Debugging
-  debugCode: (data: { code: string; error: string; language: string; model?: string }) =>
-    api.post<ApiResponse>("/ai/debug", data),
+  debugCode: (data: {
+    code: string;
+    error: string;
+    language: string;
+    model?: string;
+    conversationId?: string;
+  }) => api.post<ApiResponse>("/ai/debug", data),
 
-  // Learning assistance
-  learn: (data: { topic: string; model?: string }) => api.post<ApiResponse>("/ai/learn", data),
+  learn: (data: { topic: string; model?: string; conversationId?: string }) =>
+    api.post<ApiResponse>("/ai/learn", data),
 
-  // Project advice
-  projectAdvice: (data: { description: string; model?: string }) =>
-    api.post<ApiResponse>("/ai/project-advice", data),
+  projectAdvice: (data: {
+    description: string;
+    model?: string;
+    conversationId?: string;
+  }) => api.post<ApiResponse>("/ai/project-advice", data),
 
   // Conversation History
   getConversations: (params?: {

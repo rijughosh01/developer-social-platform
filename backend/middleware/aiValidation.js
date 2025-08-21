@@ -15,7 +15,17 @@ const validateAIChat = [
 
   body("conversationId")
     .optional()
-    .isMongoId()
+    .custom((value) => {
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (!mongoIdRegex.test(value)) {
+        throw new Error("Invalid conversation ID format");
+      }
+      return true;
+    })
     .withMessage("Invalid conversation ID"),
 
   body("model")
@@ -45,7 +55,17 @@ const validateCodeReview = [
 
   body("conversationId")
     .optional()
-    .isMongoId()
+    .custom((value) => {
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (!mongoIdRegex.test(value)) {
+        throw new Error("Invalid conversation ID format");
+      }
+      return true;
+    })
     .withMessage("Invalid conversation ID"),
 ];
 
@@ -71,7 +91,17 @@ const validateDebugging = [
 
   body("conversationId")
     .optional()
-    .isMongoId()
+    .custom((value) => {
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (!mongoIdRegex.test(value)) {
+        throw new Error("Invalid conversation ID format");
+      }
+      return true;
+    })
     .withMessage("Invalid conversation ID"),
 ];
 
@@ -95,7 +125,17 @@ const validateLearning = [
 
   body("conversationId")
     .optional()
-    .isMongoId()
+    .custom((value) => {
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (!mongoIdRegex.test(value)) {
+        throw new Error("Invalid conversation ID format");
+      }
+      return true;
+    })
     .withMessage("Invalid conversation ID"),
 ];
 
@@ -123,7 +163,17 @@ const validateProjectAdvice = [
 
   body("conversationId")
     .optional()
-    .isMongoId()
+    .custom((value) => {
+      if (value === null || value === undefined || value === "") {
+        return true;
+      }
+
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      if (!mongoIdRegex.test(value)) {
+        throw new Error("Invalid conversation ID format");
+      }
+      return true;
+    })
     .withMessage("Invalid conversation ID"),
 ];
 

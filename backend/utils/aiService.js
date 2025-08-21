@@ -5,21 +5,27 @@ const axios = require("axios");
 const DailyTokenUsage = require("../models/DailyTokenUsage");
 const User = require("../models/User");
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI only if API key is available
+let openai = null;
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
-// Initialize OpenRouter for DeepSeek R1
-const openRouterAPI = axios.create({
-  baseURL: "https://openrouter.ai/api/v1",
-  headers: {
-    "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-    "Content-Type": "application/json",
-    "HTTP-Referer": process.env.FRONTEND_URL || "http://localhost:3000",
-    "X-Title": "DevLink AI Assistant"
-  }
-});
+let openRouterAPI = null;
+if (process.env.OPENROUTER_API_KEY) {
+  openRouterAPI = axios.create({
+    baseURL: "https://openrouter.ai/api/v1",
+    timeout: 30000,
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": process.env.FRONTEND_URL || "http://localhost:3000",
+      "X-Title": "DevLink AI Assistant",
+    },
+  });
+}
 
 // Initialize cache for AI responses
 const aiCache = new NodeCache({
@@ -43,16 +49,16 @@ const AI_MODELS = {
     costPer1kOutput: 0.0006,
     maxTokens: 16384,
     contextWindow: 128000,
-    requiresPremium: false
+    requiresPremium: false,
   },
   "gpt-4o": {
-    provider: "openai", 
+    provider: "openai",
     name: "GPT-4o",
     costPer1kInput: 0.005,
     costPer1kOutput: 0.015,
     maxTokens: 4096,
     contextWindow: 128000,
-    requiresPremium: true
+    requiresPremium: true,
   },
   "gpt-3.5-turbo": {
     provider: "openai",
@@ -61,7 +67,7 @@ const AI_MODELS = {
     costPer1kOutput: 0.0015,
     maxTokens: 4096,
     contextWindow: 16385,
-    requiresPremium: false
+    requiresPremium: false,
   },
   "deepseek-r1": {
     provider: "openrouter",
@@ -71,8 +77,8 @@ const AI_MODELS = {
     costPer1kOutput: 0,
     maxTokens: 4096,
     contextWindow: 163840,
-    requiresPremium: false
-  }
+    requiresPremium: false,
+  },
 };
 
 // Daily token limits for different subscription plans
@@ -81,20 +87,20 @@ const DAILY_TOKEN_LIMITS = {
     "gpt-4o": 0,
     "gpt-4o-mini": 10000,
     "gpt-3.5-turbo": 15000,
-    "deepseek-r1": 20000
+    "deepseek-r1": 20000,
   },
   premium: {
     "gpt-4o": 50000,
     "gpt-4o-mini": 50000,
     "gpt-3.5-turbo": 100000,
-    "deepseek-r1": 100000
+    "deepseek-r1": 100000,
   },
   pro: {
     "gpt-4o": 200000,
     "gpt-4o-mini": 200000,
     "gpt-3.5-turbo": 500000,
-    "deepseek-r1": 500000
-  }
+    "deepseek-r1": 500000,
+  },
 };
 
 // AI System Prompts for different contexts
@@ -168,10 +174,28 @@ class AIService {
 
   // Get available models
   getAvailableModels() {
-    return Object.keys(AI_MODELS).map(modelKey => ({
-      id: modelKey,
-      ...AI_MODELS[modelKey]
-    }));
+    const availableModels = [];
+
+    Object.keys(AI_MODELS).forEach((modelKey) => {
+      const model = AI_MODELS[modelKey];
+
+      // Check if the required API key is available for this model
+      let isAvailable = false;
+      if (model.provider === "openai" && openai) {
+        isAvailable = true;
+      } else if (model.provider === "openrouter" && openRouterAPI) {
+        isAvailable = true;
+      }
+
+      if (isAvailable) {
+        availableModels.push({
+          id: modelKey,
+          ...model,
+        });
+      }
+    });
+
+    return availableModels;
   }
 
   // Validate model
@@ -208,31 +232,36 @@ class AIService {
 
     const userPlan = user.subscription.plan;
     const dailyLimit = DAILY_TOKEN_LIMITS[userPlan]?.[model];
-    
+
     if (dailyLimit === undefined) {
       throw new Error("Invalid model or plan configuration");
     }
 
-    // If limit is 0, no access allowed
     if (dailyLimit === 0) {
       throw new Error("This model is not available for your subscription plan");
     }
 
     // Get current daily usage
     const today = new Date();
-    const currentUsage = await DailyTokenUsage.getDailyUsage(userId, model, today);
+    const currentUsage = await DailyTokenUsage.getDailyUsage(
+      userId,
+      model,
+      today
+    );
     const tokensUsed = currentUsage ? currentUsage.tokensUsed : 0;
 
     // Check if adding estimated tokens would exceed limit
     if (tokensUsed + estimatedTokens > dailyLimit) {
       const remaining = Math.max(0, dailyLimit - tokensUsed);
-      throw new Error(`Daily token limit exceeded. You have ${remaining} tokens remaining for ${model} today.`);
+      throw new Error(
+        `Daily token limit exceeded. You have ${remaining} tokens remaining for ${model} today.`
+      );
     }
 
     return {
       tokensUsed,
       dailyLimit,
-      remaining: dailyLimit - tokensUsed
+      remaining: dailyLimit - tokensUsed,
     };
   }
 
@@ -242,7 +271,6 @@ class AIService {
       await DailyTokenUsage.createOrUpdateUsage(userId, model, tokens, cost);
     } catch (error) {
       console.error("Error recording token usage:", error);
-      // Don't throw error as this shouldn't break the main functionality
     }
   }
 
@@ -253,12 +281,15 @@ class AIService {
 
     const inputCost = (inputTokens / 1000) * modelConfig.costPer1kInput;
     const outputCost = (outputTokens / 1000) * modelConfig.costPer1kOutput;
-    
+
     return inputCost + outputCost;
   }
 
   // Make request to OpenAI
   async makeOpenAIRequest(model, messages, maxTokens = 1000) {
+    if (!openai) {
+      throw new Error("OpenAI API key not configured.");
+    }
     const completion = await openai.chat.completions.create({
       model: model,
       messages: messages,
@@ -271,28 +302,111 @@ class AIService {
     return {
       content: completion.choices[0].message.content,
       usage: completion.usage,
-      model: model
+      model: model,
     };
   }
 
   // Make request to OpenRouter (DeepSeek R1)
   async makeOpenRouterRequest(model, messages, maxTokens = 1000) {
+    if (!openRouterAPI) {
+      throw new Error("OpenRouter API key not configured.");
+    }
     const modelConfig = AI_MODELS[model];
-    
-    const response = await openRouterAPI.post("/chat/completions", {
-      model: modelConfig.modelId,
-      messages: messages,
-      max_tokens: maxTokens,
-      temperature: 0.7,
-      presence_penalty: 0.1,
-      frequency_penalty: 0.1,
-    });
 
-    return {
-      content: response.data.choices[0].message.content,
-      usage: response.data.usage,
-      model: model
-    };
+    try {
+      console.log(
+        `🔍 Making OpenRouter request for ${model} with modelId: ${modelConfig.modelId}`
+      );
+
+      const actualMaxTokens =
+        model === "deepseek-r1" ? Math.max(maxTokens, 2000) : maxTokens;
+
+      const response = await openRouterAPI.post("/chat/completions", {
+        model: modelConfig.modelId,
+        messages: messages,
+        max_tokens: actualMaxTokens,
+        temperature: 0.7,
+        presence_penalty: 0.1,
+        frequency_penalty: 0.1,
+      });
+
+      console.log(`📡 OpenRouter response status: ${response.status}`);
+      console.log(
+        `📡 OpenRouter response data:`,
+        JSON.stringify(response.data, null, 2)
+      );
+
+      // Validate response structure
+      if (
+        !response.data ||
+        !response.data.choices ||
+        !response.data.choices[0]
+      ) {
+        throw new Error("Invalid response structure from OpenRouter");
+      }
+
+      const choice = response.data.choices[0];
+
+      // Handle empty content - check if there's reasoning available
+      let content = choice.message?.content || "";
+      if (!content && choice.message?.reasoning) {
+        console.log(
+          `⚠️ DeepSeek R1 returned empty content but has reasoning: ${choice.message.reasoning.substring(
+            0,
+            100
+          )}...`
+        );
+        content = `[Response was cut off due to length limits. Partial reasoning: ${choice.message.reasoning}]`;
+      }
+
+      if (!content) {
+        throw new Error("No content in OpenRouter response");
+      }
+
+      // Validate usage data
+      if (!response.data.usage) {
+        throw new Error("No usage data in OpenRouter response");
+      }
+
+      return {
+        content: content,
+        usage: response.data.usage,
+        model: model,
+      };
+    } catch (error) {
+      console.error("OpenRouter API Error:", {
+        model: model,
+        error: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+
+      // Handle specific OpenRouter errors
+      if (error.response?.status === 429) {
+        throw new Error(
+          "OpenRouter rate limit exceeded. Please try again later."
+        );
+      } else if (error.response?.status === 401) {
+        throw new Error("OpenRouter API key is invalid or expired.");
+      } else if (error.response?.status === 400) {
+        throw new Error(
+          `OpenRouter request failed: ${
+            error.response.data?.error?.message || "Bad request"
+          }`
+        );
+      } else if (error.response?.status >= 500) {
+        throw new Error(
+          "OpenRouter service is temporarily unavailable. Please try again later."
+        );
+      } else if (error.code === "ECONNABORTED" || error.code === "ENOTFOUND") {
+        throw new Error(
+          "Network error connecting to OpenRouter. Please check your internet connection."
+        );
+      } else {
+        throw new Error(`OpenRouter request failed: ${error.message}`);
+      }
+    }
   }
 
   // Main chat method
@@ -301,32 +415,27 @@ class AIService {
     message,
     context = "general",
     userContext = {},
-    model = "gpt-4o-mini"
+    model = "gpt-4o-mini",
+    conversationHistory = []
   ) {
-    // Validate model
     if (!this.validateModel(model)) {
       throw new Error(`Invalid model: ${model}`);
     }
 
-    // Check model access and token limits
     await this.checkModelAccess(userId, model);
-    
-    // Estimate tokens for the request (rough estimation)
-    const estimatedTokens = Math.ceil((message.length + 500) / 4); // Rough token estimation
+
+    const estimatedTokens = Math.ceil((message.length + 500) / 4);
     await this.checkDailyTokenLimit(userId, model, estimatedTokens);
 
     const cacheKey = this.generateCacheKey(userId, message, context, model);
 
-    // Check cache first
     const cachedResponse = this.getCachedResponse(cacheKey);
     if (cachedResponse) {
       return { ...cachedResponse, cached: true };
     }
 
-    // Prepare system prompt with user context
     let systemPrompt = SYSTEM_PROMPTS[context] || SYSTEM_PROMPTS.general;
 
-    // Add user-specific context
     if (userContext.skills && userContext.skills.length > 0) {
       systemPrompt += `\n\nThe user has experience with: ${userContext.skills.join(
         ", "
@@ -337,26 +446,69 @@ class AIService {
       systemPrompt += `\n\nThe user's skill level is: ${userContext.level}. Provide appropriate guidance.`;
     }
 
-    const messages = [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: message },
-    ];
+    const messages = [{ role: "system", content: systemPrompt }];
+
+    // Add conversation history
+    if (conversationHistory && conversationHistory.length > 0) {
+      const historyMessages = conversationHistory
+        .filter((msg) => msg.role !== "system")
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+      messages.push(...historyMessages);
+    }
+
+    messages.push({ role: "user", content: message });
 
     try {
       let aiResponse;
       const modelConfig = AI_MODELS[model];
+      let usedFallback = false;
+      let fallbackModel = null;
 
-      if (modelConfig.provider === "openai") {
-        aiResponse = await this.makeOpenAIRequest(model, messages);
-      } else if (modelConfig.provider === "openrouter") {
-        aiResponse = await this.makeOpenRouterRequest(model, messages);
-      } else {
-        throw new Error(`Unsupported provider: ${modelConfig.provider}`);
+      try {
+        if (modelConfig.provider === "openai") {
+          aiResponse = await this.makeOpenAIRequest(model, messages);
+        } else if (modelConfig.provider === "openrouter") {
+          aiResponse = await this.makeOpenRouterRequest(model, messages);
+        } else {
+          throw new Error(`Unsupported provider: ${modelConfig.provider}`);
+        }
+      } catch (primaryError) {
+        if (model === "deepseek-r1") {
+          console.warn(
+            `DeepSeek R1 failed, attempting fallback to GPT-4o Mini: ${primaryError.message}`
+          );
+
+          try {
+            // Check if user can access fallback model
+            await this.checkModelAccess(userId, "gpt-4o-mini");
+            await this.checkDailyTokenLimit(
+              userId,
+              "gpt-4o-mini",
+              estimatedTokens
+            );
+
+            aiResponse = await this.makeOpenAIRequest("gpt-4o-mini", messages);
+            usedFallback = true;
+            fallbackModel = "gpt-4o-mini";
+
+            console.log("Successfully used fallback model: GPT-4o Mini");
+          } catch (fallbackError) {
+            console.error("Fallback model also failed:", fallbackError);
+            throw new Error(
+              `Primary model (${model}) failed: ${primaryError.message}. Fallback model also failed: ${fallbackError.message}`
+            );
+          }
+        } else {
+          throw primaryError;
+        }
       }
 
       // Calculate cost
       const cost = this.calculateCost(
-        model,
+        usedFallback ? fallbackModel : model,
         aiResponse.usage.prompt_tokens,
         aiResponse.usage.completion_tokens
       );
@@ -365,16 +517,19 @@ class AIService {
         content: aiResponse.content,
         tokens: aiResponse.usage.total_tokens,
         cost: cost,
-        model: model,
-        modelName: modelConfig.name,
+        model: usedFallback ? fallbackModel : model,
+        modelName: usedFallback
+          ? AI_MODELS[fallbackModel].name
+          : modelConfig.name,
         timestamp: new Date().toISOString(),
         context: context,
+        usedFallback: usedFallback,
+        originalModel: usedFallback ? model : null,
       };
 
-      // Record token usage
       await this.recordTokenUsage(
         userId,
-        model,
+        usedFallback ? fallbackModel : model,
         aiResponse.usage.total_tokens,
         cost
       );
@@ -390,17 +545,47 @@ class AIService {
   }
 
   // Code review specific method
-  async codeReview(userId, code, language, userContext = {}, focus = "all", model = "gpt-4o-mini") {
+  async codeReview(
+    userId,
+    code,
+    language,
+    userContext = {},
+    focus = "all",
+    model = "gpt-4o-mini",
+    conversationHistory = []
+  ) {
     const focusPrompt =
       focus !== "all" ? `Focus specifically on ${focus} aspects.` : "";
     const message = `Please review this ${language} code:\n\n${code}\n\n${focusPrompt}Provide a comprehensive code review with specific suggestions for improvement.`;
-    return this.chat(userId, message, "codeReview", userContext, model);
+    return this.chat(
+      userId,
+      message,
+      "codeReview",
+      userContext,
+      model,
+      conversationHistory
+    );
   }
 
   // Debugging specific method
-  async debugCode(userId, code, error, language, userContext = {}, model = "gpt-4o-mini") {
+  async debugCode(
+    userId,
+    code,
+    error,
+    language,
+    userContext = {},
+    model = "gpt-4o-mini",
+    conversationHistory = []
+  ) {
     const message = `I'm getting this error in my ${language} code:\n\nCode:\n${code}\n\nError:\n${error}\n\nPlease help me debug this issue.`;
-    return this.chat(userId, message, "debugging", userContext, model);
+    return this.chat(
+      userId,
+      message,
+      "debugging",
+      userContext,
+      model,
+      conversationHistory
+    );
   }
 
   // Learning assistance method
@@ -410,12 +595,20 @@ class AIService {
     userContext = {},
     level = null,
     focus = "all",
-    model = "gpt-4o-mini"
+    model = "gpt-4o-mini",
+    conversationHistory = []
   ) {
     const levelPrompt = level ? `The user's level is ${level}.` : "";
     const focusPrompt = focus !== "all" ? `Focus on ${focus}.` : "";
     const message = `I want to learn about ${topic}. ${levelPrompt} ${focusPrompt}Please provide a comprehensive explanation with examples and resources.`;
-    return this.chat(userId, message, "learning", userContext, model);
+    return this.chat(
+      userId,
+      message,
+      "learning",
+      userContext,
+      model,
+      conversationHistory
+    );
   }
 
   // Project advice method
@@ -425,30 +618,28 @@ class AIService {
     userContext = {},
     projectId = null,
     aspect = "all",
-    model = "gpt-4o-mini"
+    model = "gpt-4o-mini",
+    conversationHistory = []
   ) {
     const projectPrompt = projectId
       ? `This is for project ID: ${projectId}.`
       : "";
     const aspectPrompt = aspect !== "all" ? `Focus on ${aspect} aspects.` : "";
     const message = `I'm working on this project: ${projectDescription}. ${projectPrompt} ${aspectPrompt}Please provide advice on architecture, best practices, and potential challenges.`;
-    return this.chat(userId, message, "projectHelp", userContext, model);
+    return this.chat(
+      userId,
+      message,
+      "projectHelp",
+      userContext,
+      model,
+      conversationHistory
+    );
   }
 
-  // Get available contexts
   getAvailableContexts() {
     return Object.keys(SYSTEM_PROMPTS);
   }
 
-  // Get available models
-  getAvailableModels() {
-    return Object.keys(AI_MODELS).map(modelKey => ({
-      id: modelKey,
-      ...AI_MODELS[modelKey]
-    }));
-  }
-
-  // Get user's AI usage statistics
   async getUserStats(userId) {
     return {
       totalRequests: 0,
@@ -456,6 +647,92 @@ class AIService {
       favoriteContext: "general",
       lastUsed: null,
     };
+  }
+
+  // Method to check model health/availability
+  async checkModelHealth(model) {
+    const modelConfig = AI_MODELS[model];
+    if (!modelConfig) {
+      return { healthy: false, error: "Invalid model" };
+    }
+
+    // Check if required API client is available
+    if (modelConfig.provider === "openai" && !openai) {
+      return {
+        healthy: false,
+        error: "OpenAI API key not configured",
+        model: model,
+        provider: modelConfig.provider,
+      };
+    }
+
+    if (modelConfig.provider === "openrouter" && !openRouterAPI) {
+      return {
+        healthy: false,
+        error: "OpenRouter API key not configured",
+        model: model,
+        provider: modelConfig.provider,
+      };
+    }
+
+    try {
+      const testMessage =
+        model === "deepseek-r1" ? "Hi" : "Hello, this is a health check.";
+      const messages = [
+        {
+          role: "system",
+          content:
+            "You are a helpful assistant. Respond with 'OK' to health checks.",
+        },
+        { role: "user", content: testMessage },
+      ];
+
+      let response;
+      if (modelConfig.provider === "openai") {
+        response = await this.makeOpenAIRequest(model, messages, 10);
+      } else if (modelConfig.provider === "openrouter") {
+        response = await this.makeOpenRouterRequest(model, messages, 50); // Higher limit for health check
+      } else {
+        return { healthy: false, error: "Unsupported provider" };
+      }
+
+      return {
+        healthy: true,
+        responseTime: Date.now(),
+        model: model,
+        provider: modelConfig.provider,
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        error: error.message,
+        model: model,
+        provider: modelConfig.provider,
+      };
+    }
+  }
+
+  async getAllModelsHealth() {
+    const models = Object.keys(AI_MODELS);
+    const healthChecks = await Promise.allSettled(
+      models.map((model) => this.checkModelHealth(model))
+    );
+
+    const results = {};
+    models.forEach((model, index) => {
+      const result = healthChecks[index];
+      if (result.status === "fulfilled") {
+        results[model] = result.value;
+      } else {
+        results[model] = {
+          healthy: false,
+          error: result.reason?.message || "Unknown error",
+          model: model,
+        };
+      }
+    });
+
+    return results;
   }
 
   clearCache() {

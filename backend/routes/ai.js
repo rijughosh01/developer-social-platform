@@ -52,6 +52,19 @@ router.get(
   })
 );
 
+// Get AI models health status
+router.get(
+  "/health",
+  protect,
+  asyncHandler(async (req, res) => {
+    const healthStatus = await aiService.getAllModelsHealth();
+    res.json({
+      success: true,
+      data: healthStatus,
+    });
+  })
+);
+
 // Get user's AI usage statistics
 router.get(
   "/stats",
@@ -563,34 +576,54 @@ router.post(
       await conversation.save();
     }
 
+    // Get conversation history for context
+    const conversationHistory = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     // Add user message to conversation
     await conversation.addMessage("user", message);
 
     const startTime = Date.now();
-    const response = await aiService.chat(
-      req.user._id,
-      message,
-      context,
-      userContext,
-      model
-    );
-    const processingTime = Date.now() - startTime;
 
-    // Add AI response to conversation
-    await conversation.addMessage("assistant", response.content, {
-      tokens: response.tokens,
-      model: model,
-      processingTime,
-    });
+    try {
+      const response = await aiService.chat(
+        req.user._id,
+        message,
+        context,
+        userContext,
+        model,
+        conversationHistory
+      );
+      const processingTime = Date.now() - startTime;
 
-    // Update response with conversation info
-    response.conversationId = conversation._id;
-    response.processingTime = processingTime;
+      if (response && response.content) {
+        await conversation.addMessage("assistant", response.content, {
+          tokens: response.tokens,
+          cost: response.cost,
+          model: model,
+          processingTime,
+        });
+      }
 
-    res.json({
-      success: true,
-      data: response,
-    });
+      // Update response with conversation info
+      response.conversationId = conversation._id;
+      response.processingTime = processingTime;
+
+      res.json({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      console.error("AI Service Error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong!",
+        error: error.message,
+      });
+    }
   })
 );
 
@@ -643,36 +676,56 @@ router.post(
       await conversation.save();
     }
 
+    // Get conversation history for context
+    const conversationHistory = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     // Add user message to conversation
     const userMessage = `Code Review Request:\nLanguage: ${language}\nFocus: ${focus}\n\nCode:\n${code}`;
     await conversation.addMessage("user", userMessage);
 
     const startTime = Date.now();
-    const response = await aiService.codeReview(
-      req.user._id,
-      code,
-      language,
-      userContext,
-      focus,
-      model
-    );
-    const processingTime = Date.now() - startTime;
 
-    // Add AI response to conversation
-    await conversation.addMessage("assistant", response.content, {
-      tokens: response.tokens,
-      model: model,
-      processingTime,
-    });
+    try {
+      const response = await aiService.codeReview(
+        req.user._id,
+        code,
+        language,
+        userContext,
+        focus,
+        model,
+        conversationHistory
+      );
+      const processingTime = Date.now() - startTime;
 
-    // Update response with conversation info
-    response.conversationId = conversation._id;
-    response.processingTime = processingTime;
+      if (response && response.content) {
+        await conversation.addMessage("assistant", response.content, {
+          tokens: response.tokens,
+          cost: response.cost,
+          model: model,
+          processingTime,
+        });
+      }
 
-    res.json({
-      success: true,
-      data: response,
-    });
+      // Update response with conversation info
+      response.conversationId = conversation._id;
+      response.processingTime = processingTime;
+
+      res.json({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      console.error("AI Service Error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong!",
+        error: error.message,
+      });
+    }
   })
 );
 
@@ -725,36 +778,55 @@ router.post(
       await conversation.save();
     }
 
+    // Get conversation history for context
+    const conversationHistory = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     // Add user message to conversation
     const userMessage = `Debug Request:\nLanguage: ${language}\n\nCode:\n${code}\n\nError:\n${error}`;
     await conversation.addMessage("user", userMessage);
 
     const startTime = Date.now();
-    const response = await aiService.debugCode(
-      req.user._id,
-      code,
-      error,
-      language,
-      userContext,
-      model
-    );
-    const processingTime = Date.now() - startTime;
 
-    // Add AI response to conversation
-    await conversation.addMessage("assistant", response.content, {
-      tokens: response.tokens,
-      model: model,
-      processingTime,
-    });
+    try {
+      const response = await aiService.debugCode(
+        req.user._id,
+        code,
+        error,
+        language,
+        userContext,
+        model,
+        conversationHistory
+      );
+      const processingTime = Date.now() - startTime;
 
-    // Update response with conversation info
-    response.conversationId = conversation._id;
-    response.processingTime = processingTime;
+      if (response && response.content) {
+        await conversation.addMessage("assistant", response.content, {
+          tokens: response.tokens,
+          cost: response.cost,
+          model: model,
+          processingTime,
+        });
+      }
 
-    res.json({
-      success: true,
-      data: response,
-    });
+      response.conversationId = conversation._id;
+      response.processingTime = processingTime;
+
+      res.json({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      console.error("AI Service Error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong!",
+        error: error.message,
+      });
+    }
   })
 );
 
@@ -807,6 +879,12 @@ router.post(
       await conversation.save();
     }
 
+    // Get conversation history for context
+    const conversationHistory = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     // Add user message to conversation
     const userMessage = `Learning Request:\nTopic: ${topic}\nLevel: ${
       level || "auto"
@@ -814,31 +892,44 @@ router.post(
     await conversation.addMessage("user", userMessage);
 
     const startTime = Date.now();
-    const response = await aiService.learningHelp(
-      req.user._id,
-      topic,
-      userContext,
-      level,
-      focus,
-      model
-    );
-    const processingTime = Date.now() - startTime;
 
-    // Add AI response to conversation
-    await conversation.addMessage("assistant", response.content, {
-      tokens: response.tokens,
-      model: model,
-      processingTime,
-    });
+    try {
+      const response = await aiService.learningHelp(
+        req.user._id,
+        topic,
+        userContext,
+        level,
+        focus,
+        model,
+        conversationHistory
+      );
+      const processingTime = Date.now() - startTime;
 
-    // Update response with conversation info
-    response.conversationId = conversation._id;
-    response.processingTime = processingTime;
+      if (response && response.content) {
+        await conversation.addMessage("assistant", response.content, {
+          tokens: response.tokens,
+          cost: response.cost,
+          model: model,
+          processingTime,
+        });
+      }
 
-    res.json({
-      success: true,
-      data: response,
-    });
+      response.conversationId = conversation._id;
+      response.processingTime = processingTime;
+
+      res.json({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      console.error("AI Service Error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong!",
+        error: error.message,
+      });
+    }
   })
 );
 
@@ -892,6 +983,12 @@ router.post(
       await conversation.save();
     }
 
+    // Get conversation history for context
+    const conversationHistory = conversation.messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     // Add user message to conversation
     const userMessage = `Project Advice Request:\nAspect: ${aspect}\nProject ID: ${
       projectId || "N/A"
@@ -899,31 +996,44 @@ router.post(
     await conversation.addMessage("user", userMessage);
 
     const startTime = Date.now();
-    const response = await aiService.projectAdvice(
-      req.user._id,
-      description,
-      userContext,
-      projectId,
-      aspect,
-      model
-    );
-    const processingTime = Date.now() - startTime;
 
-    // Add AI response to conversation
-    await conversation.addMessage("assistant", response.content, {
-      tokens: response.tokens,
-      model: model,
-      processingTime,
-    });
+    try {
+      const response = await aiService.projectAdvice(
+        req.user._id,
+        description,
+        userContext,
+        projectId,
+        aspect,
+        model,
+        conversationHistory
+      );
+      const processingTime = Date.now() - startTime;
 
-    // Update response with conversation info
-    response.conversationId = conversation._id;
-    response.processingTime = processingTime;
+      if (response && response.content) {
+        await conversation.addMessage("assistant", response.content, {
+          tokens: response.tokens,
+          cost: response.cost,
+          model: model,
+          processingTime,
+        });
+      }
 
-    res.json({
-      success: true,
-      data: response,
-    });
+      response.conversationId = conversation._id;
+      response.processingTime = processingTime;
+
+      res.json({
+        success: true,
+        data: response,
+      });
+    } catch (error) {
+      console.error("AI Service Error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong!",
+        error: error.message,
+      });
+    }
   })
 );
 

@@ -8,7 +8,6 @@ import toast from "react-hot-toast";
 import {
   fetchConversations,
   fetchConversationStats,
-  searchConversations,
   setCurrentConversation,
   deleteConversation,
 } from "@/store/slices/aiSlice";
@@ -40,6 +39,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import dynamic from "next/dynamic";
 import ConversationDetail from "@/components/ai/ConversationDetail";
+import { formatCost } from "@/lib/utils";
 
 // Dynamic imports to prevent hydration errors
 const DashboardHeader = dynamic(
@@ -76,6 +76,7 @@ const ConversationsPage: React.FC = () => {
   );
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedContext, setSelectedContext] = useState("");
   const [sortBy, setSortBy] = useState("lastActivity");
   const [sortOrder, setSortOrder] = useState("desc");
@@ -145,6 +146,15 @@ const ConversationsPage: React.FC = () => {
     }
   }, [isAuthenticated, user, dispatch]);
 
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     if (isAuthenticated && user) {
       loadConversations();
@@ -155,6 +165,7 @@ const ConversationsPage: React.FC = () => {
     sortOrder,
     showOnlyPinned,
     pagination.page,
+    debouncedSearchQuery,
     isAuthenticated,
     user,
   ]);
@@ -175,24 +186,16 @@ const ConversationsPage: React.FC = () => {
       params.hasPinned = true;
     }
 
-    if (searchQuery.trim()) {
-      dispatch(
-        searchConversations({ q: searchQuery, context: selectedContext })
-      );
-    } else {
-      dispatch(fetchConversations(params));
+    if (debouncedSearchQuery.trim()) {
+      params.search = debouncedSearchQuery.trim();
     }
+
+    dispatch(fetchConversations(params));
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      dispatch(
-        searchConversations({ q: searchQuery, context: selectedContext })
-      );
-    } else {
-      loadConversations();
-    }
+    loadConversations();
   };
 
   const handleConversationSelect = (conversationId: string) => {
@@ -388,7 +391,7 @@ const ConversationsPage: React.FC = () => {
                       Total Cost
                     </p>
                     <p className="text-2xl font-bold text-gray-900">
-                      ${conversationStats.totalCost.toFixed(2)}
+                      {formatCost(conversationStats.totalCost)}
                     </p>
                   </div>
                 </div>
@@ -409,12 +412,34 @@ const ConversationsPage: React.FC = () => {
                         placeholder="Search conversations..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                        className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/50 backdrop-blur-sm"
                       />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-3">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                      Search
+                    </button>
+
                     <select
                       aria-label="Select Context"
                       value={selectedContext}
@@ -493,128 +518,144 @@ const ConversationsPage: React.FC = () => {
                   <MessageCircle className="w-10 h-10 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                  No conversations found
+                  {searchQuery
+                    ? "No search results found"
+                    : "No conversations found"}
                 </h3>
                 <p className="text-gray-600 max-w-md mx-auto">
                   {searchQuery
-                    ? "Try adjusting your search criteria to find what you're looking for."
+                    ? `No conversations found matching "${searchQuery}". Try adjusting your search criteria or try a different search term.`
                     : "Start a conversation with AI to see it appear here. Your chat history will be saved for future reference."}
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {conversations.map((conversation, index) => (
-                  <div
-                    key={conversation._id}
-                    className="p-6 hover:bg-white/50 transition-all duration-200 group"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div
-                        onClick={() =>
-                          handleConversationSelect(conversation._id)
-                        }
-                        className="cursor-pointer flex-1 min-w-0 group-hover:scale-[1.02] transition-transform duration-200"
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div
-                            className={`w-10 h-10 bg-gradient-to-r ${getContextGradient(
-                              conversation.context
-                            )} rounded-xl flex items-center justify-center shadow-md`}
-                          >
-                            {getContextIcon(conversation.context)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors duration-200">
-                              {conversation.title}
-                            </h3>
-                          </div>
-                          <span
-                            className={`px-3 py-1 text-xs font-medium rounded-full border ${getContextColor(
-                              conversation.context
-                            )}`}
-                          >
-                            {conversation.context}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-6 text-sm text-gray-500 mb-3">
-                          <div className="flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" />
-                            <span className="font-medium">
-                              {conversation.messageCount} messages
+              <div>
+                {searchQuery && (
+                  <div className="p-4 bg-blue-50 border-b border-blue-200">
+                    <p className="text-sm text-blue-700">
+                      Found {conversations.length} conversation
+                      {conversations.length !== 1 ? "s" : ""} matching "
+                      {searchQuery}"
+                    </p>
+                  </div>
+                )}
+                <div className="divide-y divide-gray-100">
+                  {conversations.map((conversation, index) => (
+                    <div
+                      key={conversation._id}
+                      className="p-6 hover:bg-white/50 transition-all duration-200 group"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div
+                          onClick={() =>
+                            handleConversationSelect(conversation._id)
+                          }
+                          className="cursor-pointer flex-1 min-w-0 group-hover:scale-[1.02] transition-transform duration-200"
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <div
+                              className={`w-10 h-10 bg-gradient-to-r ${getContextGradient(
+                                conversation.context
+                              )} rounded-xl flex items-center justify-center shadow-md`}
+                            >
+                              {getContextIcon(conversation.context)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors duration-200">
+                                {conversation.title}
+                              </h3>
+                            </div>
+                            <span
+                              className={`px-3 py-1 text-xs font-medium rounded-full border ${getContextColor(
+                                conversation.context
+                              )}`}
+                            >
+                              {conversation.context}
                             </span>
                           </div>
-                          {conversation.pinnedMessagesCount > 0 && (
+
+                          <div className="flex items-center gap-6 text-sm text-gray-500 mb-3">
                             <div className="flex items-center gap-2">
-                              <Pin className="w-4 h-4 text-yellow-500" />
+                              <MessageSquare className="w-4 h-4" />
                               <span className="font-medium">
-                                {conversation.pinnedMessagesCount} pinned
+                                {conversation.messageCount} messages
                               </span>
                             </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span>
-                              {formatDistanceToNow(
-                                new Date(conversation.lastActivity),
-                                { addSuffix: true }
-                              )}
-                            </span>
-                          </div>
-                          {conversation.project && (
+                            {conversation.pinnedMessagesCount > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Pin className="w-4 h-4 text-yellow-500" />
+                                <span className="font-medium">
+                                  {conversation.pinnedMessagesCount} pinned
+                                </span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-2">
-                              <Tag className="w-4 h-4" />
-                              <span>{conversation.project.title}</span>
+                              <Clock className="w-4 h-4" />
+                              <span>
+                                {formatDistanceToNow(
+                                  new Date(conversation.lastActivity),
+                                  { addSuffix: true }
+                                )}
+                              </span>
                             </div>
-                          )}
-                        </div>
-
-                        {conversation.tags && conversation.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {conversation.tags.slice(0, 3).map((tag, index) => (
-                              <span
-                                key={index}
-                                className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg border border-gray-200 font-medium"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                            {conversation.tags.length > 3 && (
-                              <span className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg border border-gray-200 font-medium">
-                                +{conversation.tags.length - 3} more
-                              </span>
+                            {conversation.project && (
+                              <div className="flex items-center gap-2">
+                                <Tag className="w-4 h-4" />
+                                <span>{conversation.project.title}</span>
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
 
-                      <div className="ml-6 flex-shrink-0 flex items-start gap-4">
-                        <div className="text-right">
-                          <div className="text-sm font-semibold text-gray-900">
-                            ${conversation.totalCost.toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {conversation.totalTokens.toLocaleString()} tokens
-                          </div>
+                          {conversation.tags &&
+                            conversation.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {conversation.tags
+                                  .slice(0, 3)
+                                  .map((tag, index) => (
+                                    <span
+                                      key={index}
+                                      className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg border border-gray-200 font-medium"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                {conversation.tags.length > 3 && (
+                                  <span className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg border border-gray-200 font-medium">
+                                    +{conversation.tags.length - 3} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteConversation(
-                              conversation._id,
-                              conversation.title
-                            );
-                          }}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 group/delete"
-                          title="Delete conversation"
-                        >
-                          <Trash2 className="w-4 h-4 group-hover/delete:scale-110 transition-transform duration-200" />
-                        </button>
+
+                        <div className="ml-6 flex-shrink-0 flex items-start gap-4">
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-gray-900">
+                              {formatCost(conversation.totalCost)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {conversation.totalTokens.toLocaleString()} tokens
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteConversation(
+                                conversation._id,
+                                conversation.title
+                              );
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 group/delete"
+                            title="Delete conversation"
+                          >
+                            <Trash2 className="w-4 h-4 group-hover/delete:scale-110 transition-transform duration-200" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>

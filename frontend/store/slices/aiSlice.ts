@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { aiAPI } from "@/lib/api";
+import { parseAIError } from "@/lib/utils";
 import {
   AIState,
   AIResponse,
@@ -39,9 +40,7 @@ export const fetchAIContexts = createAsyncThunk(
       const response = await aiAPI.getContexts();
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch AI contexts"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -53,9 +52,19 @@ export const fetchAIModels = createAsyncThunk(
       const response = await aiAPI.getModels();
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch AI models"
-      );
+      return rejectWithValue(parseAIError(error));
+    }
+  }
+);
+
+export const fetchAIHealth = createAsyncThunk(
+  "ai/fetchHealth",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await aiAPI.getHealth();
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -68,9 +77,7 @@ export const fetchAIStats = createAsyncThunk(
       return response.data.data;
     } catch (error: any) {
       console.error("Error fetching AI stats:", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch AI stats"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -83,9 +90,7 @@ export const fetchTokenUsage = createAsyncThunk(
       return response.data.data;
     } catch (error: any) {
       console.error("Error fetching token usage:", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch token usage"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -97,16 +102,25 @@ export const sendAIMessage = createAsyncThunk(
       message,
       context,
       model,
-    }: { message: string; context?: string; model?: string },
+      conversationId,
+    }: {
+      message: string;
+      context?: string;
+      model?: string;
+      conversationId?: string;
+    },
     { rejectWithValue }
   ) => {
     try {
-      const response = await aiAPI.chat({ message, context, model });
+      const response = await aiAPI.chat({
+        message,
+        context,
+        model,
+        conversationId,
+      });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to send message to AI"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -118,16 +132,25 @@ export const codeReview = createAsyncThunk(
       code,
       language,
       model,
-    }: { code: string; language: string; model?: string },
+      conversationId,
+    }: {
+      code: string;
+      language: string;
+      model?: string;
+      conversationId?: string;
+    },
     { rejectWithValue }
   ) => {
     try {
-      const response = await aiAPI.codeReview({ code, language, model });
+      const response = await aiAPI.codeReview({
+        code,
+        language,
+        model,
+        conversationId,
+      });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to review code"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -140,21 +163,27 @@ export const debugCode = createAsyncThunk(
       error,
       language,
       model,
+      conversationId,
     }: {
       code: string;
       error: string;
       language: string;
       model?: string;
+      conversationId?: string;
     },
     { rejectWithValue }
   ) => {
     try {
-      const response = await aiAPI.debugCode({ code, error, language, model });
+      const response = await aiAPI.debugCode({
+        code,
+        error,
+        language,
+        model,
+        conversationId,
+      });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to debug code"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -175,9 +204,7 @@ export const pinMessage = createAsyncThunk(
       const response = await aiAPI.pinMessage(conversationId, messageIndex);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to pin message"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -198,9 +225,7 @@ export const unpinMessage = createAsyncThunk(
       const response = await aiAPI.unpinMessage(conversationId, messageIndex);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to unpin message"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -212,9 +237,7 @@ export const fetchPinnedMessages = createAsyncThunk(
       const response = await aiAPI.getPinnedMessages(conversationId);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch pinned messages"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -229,9 +252,7 @@ export const learnTopic = createAsyncThunk(
       const response = await aiAPI.learn({ topic, model });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to get learning help"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -246,9 +267,7 @@ export const getProjectAdvice = createAsyncThunk(
       const response = await aiAPI.projectAdvice({ description, model });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to get project advice"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -272,9 +291,7 @@ export const fetchConversations = createAsyncThunk(
       const response = await aiAPI.getConversations(params);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch conversations"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -286,9 +303,7 @@ export const fetchConversation = createAsyncThunk(
       const response = await aiAPI.getConversation(id);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch conversation"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -308,9 +323,7 @@ export const createConversation = createAsyncThunk(
       const response = await aiAPI.createConversation(data);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to create conversation"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -336,9 +349,7 @@ export const updateConversation = createAsyncThunk(
       });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update conversation"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -350,9 +361,7 @@ export const deleteConversation = createAsyncThunk(
       const response = await aiAPI.deleteConversation(conversationId);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete conversation"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -371,9 +380,7 @@ export const searchConversations = createAsyncThunk(
       const response = await aiAPI.searchConversations(params);
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to search conversations"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -385,9 +392,7 @@ export const fetchConversationStats = createAsyncThunk(
       const response = await aiAPI.getConversationStats();
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch conversation stats"
-      );
+      return rejectWithValue(parseAIError(error));
     }
   }
 );
@@ -477,6 +482,20 @@ const aiSlice = createSlice({
         state.models = action.payload;
       })
       .addCase(fetchAIModels.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch health
+    builder
+      .addCase(fetchAIHealth.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAIHealth.fulfilled, (state, action) => {
+        state.isLoading = false;
+      })
+      .addCase(fetchAIHealth.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

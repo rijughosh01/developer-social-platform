@@ -94,3 +94,53 @@ export function isUserOnline(lastSeen: string | Date): boolean {
 
   return diffInMinutes <= 5;
 }
+
+export const formatCost = (cost: number): string => {
+  if (cost < 0.01) {
+    return `$${cost.toFixed(6)}`;
+  }
+  return `$${cost.toFixed(2)}`;
+};
+
+export const parseAIError = (error: any): string => {
+  if (typeof error === "string") {
+    return error;
+  }
+
+  const errorMessage =
+    error?.response?.data?.error ||
+    error?.response?.data?.message ||
+    error?.message ||
+    "An unexpected error occurred";
+
+  if (errorMessage.includes("Daily token limit exceeded")) {
+    const match = errorMessage.match(/for (\w+) today/);
+    const model = match ? match[1] : "this model";
+    return `Daily token limit exceeded for ${model}. Your limits reset at midnight.`;
+  }
+
+  if (errorMessage.includes("Rate limit exceeded")) {
+    return "You're sending messages too quickly. Please wait a moment before trying again.";
+  }
+
+  if (errorMessage.includes("Premium subscription required")) {
+    return "This model requires a premium subscription. Please upgrade or switch to a free model.";
+  }
+
+  if (errorMessage.includes("Invalid model")) {
+    return "The selected AI model is not available. Please choose a different model.";
+  }
+
+  if (errorMessage.includes("Authentication required")) {
+    return "Please log in to use the AI features.";
+  }
+
+  if (
+    errorMessage.includes("Network Error") ||
+    errorMessage.includes("Failed to fetch")
+  ) {
+    return "Network connection error. Please check your internet connection and try again.";
+  }
+
+  return errorMessage;
+};
