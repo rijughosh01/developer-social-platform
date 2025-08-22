@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
@@ -13,10 +13,19 @@ import {
   Languages,
   AlertTriangle,
   X,
-  Settings,
-  Crown,
-  Cpu,
+  Upload,
   Check,
+  AlertCircle,
+  Sparkles,
+  Zap,
+  Clock,
+  FileCode,
+  ChevronDown,
+  Eye,
+  EyeOff,
+  Copy,
+  CheckCircle,
+  Wrench,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -37,30 +46,140 @@ const DebugForm: React.FC<DebugFormProps> = ({ onClose }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [language, setLanguage] = useState("javascript");
   const [showPreview, setShowPreview] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     console.log("Current model changed to:", currentModel);
   }, [currentModel]);
 
   const languages = [
-    { value: "javascript", label: "JavaScript", extension: ".js" },
-    { value: "typescript", label: "TypeScript", extension: ".ts" },
-    { value: "python", label: "Python", extension: ".py" },
-    { value: "java", label: "Java", extension: ".java" },
-    { value: "cpp", label: "C++", extension: ".cpp" },
-    { value: "csharp", label: "C#", extension: ".cs" },
-    { value: "php", label: "PHP", extension: ".php" },
-    { value: "ruby", label: "Ruby", extension: ".rb" },
-    { value: "go", label: "Go", extension: ".go" },
-    { value: "rust", label: "Rust", extension: ".rs" },
-    { value: "swift", label: "Swift", extension: ".swift" },
-    { value: "kotlin", label: "Kotlin", extension: ".kt" },
-    { value: "scala", label: "Scala", extension: ".scala" },
-    { value: "html", label: "HTML", extension: ".html" },
-    { value: "css", label: "CSS", extension: ".css" },
-    { value: "sql", label: "SQL", extension: ".sql" },
-    { value: "bash", label: "Bash", extension: ".sh" },
+    {
+      value: "javascript",
+      label: "JavaScript",
+      icon: "⚡",
+      extension: ".js",
+      color: "bg-yellow-100 text-yellow-800",
+    },
+    {
+      value: "typescript",
+      label: "TypeScript",
+      icon: "🔷",
+      extension: ".ts",
+      color: "bg-blue-100 text-blue-800",
+    },
+    {
+      value: "python",
+      label: "Python",
+      icon: "🐍",
+      extension: ".py",
+      color: "bg-green-100 text-green-800",
+    },
+    {
+      value: "java",
+      label: "Java",
+      icon: "☕",
+      extension: ".java",
+      color: "bg-red-100 text-red-800",
+    },
+    {
+      value: "cpp",
+      label: "C++",
+      icon: "⚙️",
+      extension: ".cpp",
+      color: "bg-purple-100 text-purple-800",
+    },
+    {
+      value: "csharp",
+      label: "C#",
+      icon: "💜",
+      extension: ".cs",
+      color: "bg-purple-100 text-purple-800",
+    },
+    {
+      value: "php",
+      label: "PHP",
+      icon: "🐘",
+      extension: ".php",
+      color: "bg-indigo-100 text-indigo-800",
+    },
+    {
+      value: "ruby",
+      label: "Ruby",
+      icon: "💎",
+      extension: ".rb",
+      color: "bg-red-100 text-red-800",
+    },
+    {
+      value: "go",
+      label: "Go",
+      icon: "🔵",
+      extension: ".go",
+      color: "bg-blue-100 text-blue-800",
+    },
+    {
+      value: "rust",
+      label: "Rust",
+      icon: "🦀",
+      extension: ".rs",
+      color: "bg-orange-100 text-orange-800",
+    },
+    {
+      value: "swift",
+      label: "Swift",
+      icon: "🍎",
+      extension: ".swift",
+      color: "bg-orange-100 text-orange-800",
+    },
+    {
+      value: "kotlin",
+      label: "Kotlin",
+      icon: "🟠",
+      extension: ".kt",
+      color: "bg-orange-100 text-orange-800",
+    },
+    {
+      value: "scala",
+      label: "Scala",
+      icon: "🔴",
+      extension: ".scala",
+      color: "bg-red-100 text-red-800",
+    },
+    {
+      value: "html",
+      label: "HTML",
+      icon: "🌐",
+      extension: ".html",
+      color: "bg-orange-100 text-orange-800",
+    },
+    {
+      value: "css",
+      label: "CSS",
+      icon: "🎨",
+      extension: ".css",
+      color: "bg-blue-100 text-blue-800",
+    },
+    {
+      value: "sql",
+      label: "SQL",
+      icon: "🗄️",
+      extension: ".sql",
+      color: "bg-gray-100 text-gray-800",
+    },
+    {
+      value: "bash",
+      label: "Bash",
+      icon: "💻",
+      extension: ".sh",
+      color: "bg-gray-100 text-gray-800",
+    },
   ];
+
+  const selectedLanguage = languages.find((lang) => lang.value === language);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,259 +195,455 @@ const DebugForm: React.FC<DebugFormProps> = ({ onClose }) => {
     );
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setCode(content);
+
+      // Try to detect language from file extension
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      const detectedLanguage = languages.find(
+        (lang) => lang.extension.slice(1) === extension
+      );
+      if (detectedLanguage) {
+        setLanguage(detectedLanguage.value);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleFileInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setCode(content);
+      handleFileUpload(file);
+    }
+  };
 
-        // Try to detect language from file extension
-        const extension = file.name.split(".").pop()?.toLowerCase();
-        const detectedLanguage = languages.find(
-          (lang) => lang.extension.slice(1) === extension
-        );
-        if (detectedLanguage) {
-          setLanguage(detectedLanguage.value);
-        }
-      };
-      reader.readAsText(file);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast.success("Code copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy code");
+    }
+  };
+
+  const clearForm = () => {
+    setCode("");
+    setErrorMessage("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-auto max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-auto max-h-[95vh] overflow-hidden border border-gray-100">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-t-lg sticky top-0 z-10">
-        <div className="flex items-center space-x-3">
-          <Bug className="w-5 h-5 sm:w-6 sm:h-6" />
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold">
-              AI Code Debugging
-            </h2>
-            <p className="text-xs sm:text-sm opacity-90">
-              Get help fixing your code errors
-            </p>
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-pink-600 to-rose-600"></div>
+        <div className="absolute inset-0 bg-black bg-opacity-10"></div>
+        <div className="relative flex items-center justify-between p-6 text-white">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-white bg-opacity-20 rounded-xl backdrop-blur-sm">
+              <Bug className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold flex items-center space-x-2">
+                <span>AI Code Debugging</span>
+                <Wrench className="w-5 h-5 text-yellow-300" />
+              </h2>
+              <p className="text-sm opacity-90 mt-1 flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Get help fixing your code errors</span>
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+            className="p-3 hover:bg-white hover:bg-opacity-20 rounded-xl transition-all duration-200 group"
           >
-            <span className="sr-only">Close</span>
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
         </div>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="p-4 sm:p-6 space-y-4 sm:space-y-6"
-      >
-        {/* Language Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Languages className="w-4 h-4 inline mr-2" />
-            Programming Language *
-          </label>
-          <select
-            aria-label="Select programming language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
-          >
-            {languages.map((lang) => (
-              <option key={lang.value} value={lang.value}>
-                {lang.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* File Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <FileText className="w-4 h-4 inline mr-2" />
-            Upload Code File (Optional)
-          </label>
-          <input
-            aria-label="Upload Code File"
-            type="file"
-            onChange={handleFileUpload}
-            accept=".js,.ts,.py,.java,.cpp,.cs,.php,.rb,.go,.rs,.swift,.kt,.scala,.html,.css,.sql,.sh"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
-          />
-        </div>
-
-        {/* Code Input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Bug className="w-4 h-4 inline mr-2" />
-            Code with Error *
-          </label>
+      <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Language Selection */}
           <div className="relative">
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder={`Paste your ${
-                languages.find((l) => l.value === language)?.label
-              } code that has an error...`}
-              className="w-full h-32 sm:h-48 px-3 py-2 border border-gray-300 rounded-lg font-mono text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-              required
-            />
-            <div className="absolute top-2 right-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
+              <Languages className="w-4 h-4 text-red-600" />
+              <span>Programming Language</span>
+              <span className="text-red-500">*</span>
+            </label>
+
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => setShowPreview(!showPreview)}
-                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                onClick={() =>
+                  setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
+                }
+                className="w-full flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all duration-200 focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
-                {showPreview ? "Hide Preview" : "Show Preview"}
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">{selectedLanguage?.icon}</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedLanguage?.label}
+                  </span>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${selectedLanguage?.color}`}
+                  >
+                    {selectedLanguage?.extension}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-5 h-5 text-gray-400 transition-transform ${
+                    isLanguageDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
               </button>
+
+              {isLanguageDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-20 max-h-60 overflow-y-auto">
+                  <div className="p-2">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.value}
+                        type="button"
+                        onClick={() => {
+                          setLanguage(lang.value);
+                          setIsLanguageDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <span className="text-lg">{lang.icon}</span>
+                        <span className="font-medium text-gray-900">
+                          {lang.label}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${lang.color}`}
+                        >
+                          {lang.extension}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Error Message Input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <AlertTriangle className="w-4 h-4 inline mr-2" />
-            Error Message *
-          </label>
-          <textarea
-            value={errorMessage}
-            onChange={(e) => setErrorMessage(e.target.value)}
-            placeholder="Paste the exact error message you're getting..."
-            className="w-full h-20 sm:h-24 px-3 py-2 border border-gray-300 rounded-lg font-mono text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none bg-red-50"
-            required
-          />
-        </div>
-
-        {/* Code Preview */}
-        {showPreview && code && (
+          {/* File Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Code Preview
+            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
+              <FileText className="w-4 h-4 text-red-600" />
+              <span>Upload Code File</span>
+              <span className="text-gray-500 text-xs">(Optional)</span>
             </label>
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
-              <SyntaxHighlighter
-                language={language}
-                style={tomorrow}
-                customStyle={{
-                  margin: 0,
-                  borderRadius: "0.5rem",
-                  fontSize: "0.875rem",
-                }}
-              >
-                {code}
-              </SyntaxHighlighter>
-            </div>
-          </div>
-        )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="p-4 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-xl shadow-lg">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0 mt-0.5">
-                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                  <X className="w-3 h-3 text-white" />
+            <div
+              ref={dropZoneRef}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 cursor-pointer ${
+                isDragOver
+                  ? "border-red-500 bg-red-50"
+                  : "border-gray-300 hover:border-red-400 hover:bg-gray-50"
+              }`}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileInputChange}
+                accept=".js,.ts,.py,.java,.cpp,.cs,.php,.rb,.go,.rs,.swift,.kt,.scala,.html,.css,.sql,.sh"
+                className="hidden"
+              />
+
+              <div className="space-y-3">
+                <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {isDragOver
+                      ? "Drop your file here"
+                      : "Click to upload or drag and drop"}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Supports {languages.length} programming languages
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-red-800 mb-1">
-                  Error Occurred
-                </h4>
-                <p className="text-sm text-red-700 leading-relaxed">
-                  {parseAIError(error)}
-                </p>
-
-                {error.includes("Daily usage limit exceeded") && (
-                  <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-xs text-orange-700 mb-2">
-                      ⏰ <strong>Daily Request Limit Reached:</strong> You've
-                      reached the daily limit for Debug requests (100 per day).
-                      Limits reset at midnight.
-                    </p>
-                    <p className="text-xs text-orange-600 mb-2">
-                      💡 <strong>Tip:</strong> Try using the "General" context
-                      in the main AI Chatbot for debugging questions, or wait
-                      until tomorrow.
-                    </p>
-                    <p className="text-xs text-orange-600">
-                      🔧 <strong>Current Model:</strong> {currentModel} - This
-                      is a request limit, not a token limit.
-                    </p>
-                  </div>
-                )}
-
-                {error.includes("Daily token limit exceeded") && (
-                  <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-xs text-orange-700 mb-2">
-                      ⏰ <strong>Daily Token Limit Reached:</strong> You've used
-                      all your daily tokens for the current model. Limits reset
-                      at midnight.
-                    </p>
-                    <p className="text-xs text-orange-600 mb-2">
-                      💡 <strong>Tip:</strong> Switch to a model with available
-                      tokens in the main AI Chatbot to continue.
-                    </p>
-                    <p className="text-xs text-orange-600">
-                      🔧 <strong>Current Model:</strong> {currentModel} - This
-                      model has no remaining tokens for today.
-                    </p>
-                  </div>
-                )}
-
-                {error.includes("Rate limit exceeded") && (
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-xs text-yellow-700 mb-2">
-                      ⚡ <strong>Rate Limit:</strong> You're sending requests
-                      too quickly. Please wait a moment before trying again.
-                    </p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="px-3 py-1 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
-                    >
-                      Try Again Later
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
-        )}
 
-        {/* Submit Button */}
-        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!code.trim() || !errorMessage.trim() || isLoading}
-            className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2 text-sm"
-          >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Debugging...</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                <span>Debug Code</span>
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+          {/* Code Input */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
+                <Bug className="w-4 h-4 text-red-600" />
+                <span>Code with Error</span>
+                <span className="text-red-500">*</span>
+              </label>
+
+              <div className="flex items-center space-x-2">
+                {code && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={copyToClipboard}
+                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Copy code"
+                    >
+                      {copied ? (
+                        <CheckCircle className="w-4 h-4 text-red-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearForm}
+                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Clear form"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title={showPreview ? "Hide preview" : "Show preview"}
+                >
+                  {showPreview ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder={`Paste your ${selectedLanguage?.label} code that has an error...\n\nExample:\nfunction example() {\n  console.log("Hello, World!");\n  // This might have an error\n}`}
+                className="w-full h-40 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none bg-gray-50"
+                required
+              />
+
+              {!code && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="text-center text-gray-400">
+                    <FileCode className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">Start typing or upload a file</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Error Message Input */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center space-x-2">
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+              <span>Error Message</span>
+              <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={errorMessage}
+              onChange={(e) => setErrorMessage(e.target.value)}
+              placeholder="Paste the exact error message you're getting...\n\nExample:\nReferenceError: variable is not defined\nat example.js:2:5"
+              className="w-full h-32 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none bg-red-50"
+              required
+            />
+          </div>
+
+          {/* Code Preview */}
+          {showPreview && code && (
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
+                <Eye className="w-4 h-4 text-blue-600" />
+                <span>Code Preview</span>
+              </label>
+              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
+                  <span className="text-white text-sm font-medium">
+                    {selectedLanguage?.label}
+                  </span>
+                  <span className="text-gray-400 text-xs">
+                    {code.split("\n").length} lines
+                  </span>
+                </div>
+                <SyntaxHighlighter
+                  language={language}
+                  style={tomorrow}
+                  customStyle={{
+                    margin: 0,
+                    fontSize: "0.875rem",
+                    lineHeight: "1.5",
+                  }}
+                >
+                  {code}
+                </SyntaxHighlighter>
+              </div>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {error && (
+            <div className="p-6 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-xl shadow-lg">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 mt-1">
+                  <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                    <AlertCircle className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-red-800 mb-2">
+                    Error Occurred
+                  </h4>
+                  <p className="text-sm text-red-700 leading-relaxed">
+                    {parseAIError(error)}
+                  </p>
+
+                  {/* Error-specific actions */}
+                  {error.includes("Daily usage limit exceeded") && (
+                    <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <Clock className="w-5 h-5 text-orange-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-orange-800 mb-2">
+                            Daily Request Limit Reached
+                          </p>
+                          <p className="text-xs text-orange-700 mb-2">
+                            You've reached the daily limit for Debug requests
+                            (100 per day). Limits reset at midnight.
+                          </p>
+                          <p className="text-xs text-orange-600 mb-2">
+                            💡 <strong>Tip:</strong> Try using the "General"
+                            context in the main AI Chatbot for debugging
+                            questions.
+                          </p>
+                          <p className="text-xs text-orange-600">
+                            🔧 <strong>Current Model:</strong> {currentModel}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {error.includes("Daily token limit exceeded") && (
+                    <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <Zap className="w-5 h-5 text-orange-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-orange-800 mb-2">
+                            Daily Token Limit Reached
+                          </p>
+                          <p className="text-xs text-orange-700 mb-2">
+                            You've used all your daily tokens for the current
+                            model. Limits reset at midnight.
+                          </p>
+                          <p className="text-xs text-orange-600 mb-2">
+                            💡 <strong>Tip:</strong> Switch to a model with
+                            available tokens in the main AI Chatbot.
+                          </p>
+                          <p className="text-xs text-orange-600">
+                            🔧 <strong>Current Model:</strong> {currentModel}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {error.includes("Rate limit exceeded") && (
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-yellow-800 mb-2">
+                            Rate Limit Exceeded
+                          </p>
+                          <p className="text-xs text-yellow-700 mb-2">
+                            You're sending requests too quickly. Please wait a
+                            moment before trying again.
+                          </p>
+                          <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 transition-colors"
+                          >
+                            Try Again Later
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!code.trim() || !errorMessage.trim() || isLoading}
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:from-red-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center space-x-2 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Debugging Code...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  <span>Debug Code</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

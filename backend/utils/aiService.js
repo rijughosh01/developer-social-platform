@@ -12,26 +12,33 @@ const {
   getRemainingTokens,
 } = require("../config/tokenLimits");
 
-// Initialize OpenAI only if API key is available
+// Initialize API clients lazily
 let openai = null;
-if (process.env.OPENAI_API_KEY) {
-  openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+let openRouterAPI = null;
+
+function initializeOpenAI() {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
 }
 
-let openRouterAPI = null;
-if (process.env.OPENROUTER_API_KEY) {
-  openRouterAPI = axios.create({
-    baseURL: "https://openrouter.ai/api/v1",
-    timeout: 30000,
-    headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": process.env.FRONTEND_URL || "http://localhost:3000",
-      "X-Title": "DevLink AI Assistant",
-    },
-  });
+function initializeOpenRouter() {
+  if (!openRouterAPI && process.env.OPENROUTER_API_KEY) {
+    openRouterAPI = axios.create({
+      baseURL: "https://openrouter.ai/api/v1",
+      timeout: 30000,
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.FRONTEND_URL || "http://localhost:3000",
+        "X-Title": "DevLink AI Assistant",
+      },
+    });
+  }
+  return openRouterAPI;
 }
 
 // Initialize cache for AI responses
@@ -552,9 +559,9 @@ class AIService {
       const model = AI_MODELS[modelKey];
 
       let isAvailable = false;
-      if (model.provider === "openai" && openai) {
+      if (model.provider === "openai" && initializeOpenAI()) {
         isAvailable = true;
-      } else if (model.provider === "openrouter" && openRouterAPI) {
+      } else if (model.provider === "openrouter" && initializeOpenRouter()) {
         isAvailable = true;
       }
 
@@ -657,15 +664,16 @@ class AIService {
 
   // Make request to OpenAI
   async makeOpenAIRequest(model, messages, maxTokens = null) {
-    if (!openai) {
+    const openaiClient = initializeOpenAI();
+    if (!openaiClient) {
       throw new Error("OpenAI API key not configured.");
     }
     
     
     const modelConfig = AI_MODELS[model];
-    const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
+    const actualMaxTokens = Math.floor(maxTokens || modelConfig?.maxTokens || 4096);
     
-    const completion = await openai.chat.completions.create({
+    const completion = await openaiClient.chat.completions.create({
       model: model,
       messages: messages,
       max_tokens: actualMaxTokens,
@@ -683,31 +691,16 @@ class AIService {
 
   // Make request to OpenRouter (DeepSeek R1)
   async makeOpenRouterRequest(model, messages, maxTokens = null) {
-    if (!openRouterAPI) {
+    const openRouterClient = initializeOpenRouter();
+    if (!openRouterClient) {
       throw new Error("OpenRouter API key not configured.");
     }
     const modelConfig = AI_MODELS[model];
 
     try {
-      // console.log(
-      //   `Making OpenRouter request for ${model} with modelId: ${modelConfig.modelId}`
-      // );
+      const actualMaxTokens = Math.floor(maxTokens || modelConfig?.maxTokens || 4096);
 
-      // Additional debugging for Qwen3 Coder
-      if (model === "qwen3-coder") {
-        // console.log(
-        //   `Qwen3 Coder specific debug - API Key configured: ${!!process.env
-        //     .OPENROUTER_API_KEY}`
-        // );
-        // console.log(
-        //   `Qwen3 Coder specific debug - OpenRouter API instance: ${!!openRouterAPI}`
-        // );
-      }
-
-      
-      const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
-
-      const response = await openRouterAPI.post("/chat/completions", {
+      const response = await openRouterClient.post("/chat/completions", {
         model: modelConfig.modelId,
         messages: messages,
         max_tokens: actualMaxTokens,
@@ -715,12 +708,6 @@ class AIService {
         presence_penalty: 0.1,
         frequency_penalty: 0.1,
       });
-
-      // console.log(`OpenRouter response status: ${response.status}`);
-      // console.log(
-      //   `OpenRouter response data:`,
-      //   JSON.stringify(response.data, null, 2)
-      // );
 
       // Validate response structure
       if (
@@ -736,12 +723,6 @@ class AIService {
       // Handle empty content - check if there's reasoning available
       let content = choice.message?.content || "";
       if (!content && choice.message?.reasoning) {
-        // console.log(
-        //   `${model} returned empty content but has reasoning: ${choice.message.reasoning.substring(
-        //     0,
-        //     100
-        //   )}...`
-        // );
         content = `[Response was cut off due to length limits. Partial reasoning: ${choice.message.reasoning}]`;
       }
 
@@ -805,11 +786,24 @@ class AIService {
   ) {
     const startTime = Date.now();
 
+    // Validate input parameters
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      throw new Error("Message cannot be empty");
+    }
+
+    if (message.trim().length > 4000) {
+      throw new Error("Message cannot exceed 4000 characters");
+    }
+
+    if (requestedModel && !this.validateModel(requestedModel)) {
+      throw new Error(`Invalid model: ${requestedModel}`);
+    }
+
     // Get user plan and available tokens
     const user = await User.findById(userId).select("subscription");
     const userPlan = user?.subscription?.plan || "free";
 
-    // Get token usage for all models
+    
     const tokenUsage = await DailyTokenUsage.getUserTokenUsage(userId);
     const availableTokens = {};
 
@@ -862,8 +856,6 @@ class AIService {
       );
     }
 
-    // console.log(`Selected models for routing: ${selectedModels.join(", ")}`);
-
     // Try each model in order until one succeeds
     for (let i = 0; i < selectedModels.length; i++) {
       const currentModel = selectedModels[i];
@@ -902,10 +894,11 @@ class AIService {
   
         let contextAdjustedMaxTokens = modelConfig.maxTokens;
         if (context === "codeReview" || context === "projectHelp") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.5, 12000);
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.5), 12000);
         } else if (context === "debugging") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.3, 10000);
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.3), 10000);
         }
+        contextAdjustedMaxTokens = Math.max(1, Math.floor(contextAdjustedMaxTokens));
 
         // Enhance prompt with user context
         if (
@@ -957,11 +950,6 @@ class AIService {
         usedFallback = i > 0;
         fallbackModel = usedFallback ? currentModel : null;
 
-        // console.log(
-        //   `Successfully used ${
-        //     usedFallback ? "fallback" : "primary"
-        //   } model: ${currentModel}`
-        // );
         break;
       } catch (error) {
         lastError = error;
@@ -1200,7 +1188,7 @@ class AIService {
     }
 
     // Check if required API client is available
-    if (modelConfig.provider === "openai" && !openai) {
+    if (modelConfig.provider === "openai" && !initializeOpenAI()) {
       return {
         healthy: false,
         error: "OpenAI API key not configured",
@@ -1209,7 +1197,7 @@ class AIService {
       };
     }
 
-    if (modelConfig.provider === "openrouter" && !openRouterAPI) {
+    if (modelConfig.provider === "openrouter" && !initializeOpenRouter()) {
       return {
         healthy: false,
         error: "OpenRouter API key not configured",
@@ -1322,8 +1310,6 @@ class AIService {
       );
     }
 
-    // console.log(`Selected models for streaming: ${selectedModels.join(", ")}`);
-
     // Try each model in order until one succeeds
     for (let i = 0; i < selectedModels.length; i++) {
       const currentModel = selectedModels[i];
@@ -1344,10 +1330,11 @@ class AIService {
       
         let contextAdjustedMaxTokens = modelConfig.maxTokens;
         if (context === "codeReview" || context === "projectHelp") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.5, 12000);
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.5), 12000);
         } else if (context === "debugging") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.3, 10000);
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.3), 10000);
         }
+        contextAdjustedMaxTokens = Math.max(1, Math.floor(contextAdjustedMaxTokens));
 
         if (
           enhancedUserContext.skills &&
@@ -1398,11 +1385,6 @@ class AIService {
         usedFallback = i > 0;
         fallbackModel = usedFallback ? currentModel : null;
 
-        // console.log(
-        //   `Successfully used ${
-        //     usedFallback ? "fallback" : "primary"
-        //   } model for streaming: ${currentModel}`
-        // );
         break;
       } catch (error) {
         lastError = error;
@@ -1429,7 +1411,8 @@ class AIService {
 
   // Stream OpenAI response
   async *streamOpenAIResponse(model, messages, maxTokens = null) {
-    if (!openai) {
+    const openaiClient = initializeOpenAI();
+    if (!openaiClient) {
       throw new Error("OpenAI API key not configured.");
     }
 
@@ -1438,7 +1421,7 @@ class AIService {
       const modelConfig = AI_MODELS[model];
       const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
       
-      const stream = await openai.chat.completions.create({
+      const stream = await openaiClient.chat.completions.create({
         model: model,
         messages: messages,
         max_tokens: actualMaxTokens,
@@ -1478,7 +1461,8 @@ class AIService {
 
   // Stream OpenRouter response
   async *streamOpenRouterResponse(model, messages, maxTokens = null) {
-    if (!openRouterAPI) {
+    const openRouterClient = initializeOpenRouter();
+    if (!openRouterClient) {
       throw new Error("OpenRouter API key not configured.");
     }
 
@@ -1486,7 +1470,7 @@ class AIService {
     const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
 
     try {
-      const response = await openRouterAPI.post(
+      const response = await openRouterClient.post(
         "/chat/completions",
         {
           model: modelConfig.modelId,
@@ -1619,4 +1603,5 @@ module.exports = {
   getCachedResponse:
     aiServiceInstance.getCachedResponse.bind(aiServiceInstance),
   cacheResponse: aiServiceInstance.cacheResponse.bind(aiServiceInstance),
+  getModelRecommendations: aiServiceInstance.getModelRecommendations.bind(aiServiceInstance),
 };
