@@ -714,7 +714,6 @@ router.post(
   [
     protect,
     aiRateLimit("general"),
-    trackAIUsage,
     sanitizeRequestBody,
     validateAIChat,
     handleValidationErrors,
@@ -881,6 +880,31 @@ router.post(
           model: model,
           processingTime: Date.now() - startTime,
         });
+
+        // Track AI usage for streaming requests
+        try {
+          const today = new Date();
+          let usage = await AIUsage.getDailyUsage(req.user._id, today);
+
+          if (!usage) {
+            usage = new AIUsage({
+              user: req.user._id,
+              date: today,
+              context: context,
+            });
+          }
+
+          await usage.incrementUsage(
+            totalTokens,
+            totalCost,
+            Date.now() - startTime
+          );
+
+          // Also record token usage for the specific model
+          await aiService.recordTokenUsage(req.user._id, model, totalTokens, totalCost);
+        } catch (error) {
+          console.error("Error tracking AI usage for streaming:", error);
+        }
       }
 
       // Send completion event
