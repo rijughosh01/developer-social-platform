@@ -40,6 +40,7 @@ import {
   Loader2,
   Clock,
   Search,
+  Lock as LockIcon,
   Sparkles as SparklesIcon,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -331,13 +332,10 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
     if (selectedModel && !isModelAvailable(selectedModel)) {
       if (userPlan === "free") {
-        toast.error(
-          "This model requires a premium subscription. Please upgrade your plan to access premium models.",
-          {
-            duration: 6000,
-            icon: "🔒",
-          }
-        );
+        toast.error("Upgrade Required", {
+          duration: 4000,
+          icon: "🔒",
+        });
       } else {
         toast.error(
           "This model is not available for your current subscription plan.",
@@ -490,16 +488,13 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                         return (
                           <button
                             key={model.id}
-                            onClick={() =>
-                              isAvailable ? handleModelChange(model.id) : null
-                            }
-                            disabled={!isAvailable}
+                            onClick={() => handleModelChange(model.id)}
                             className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 mb-2 ${
                               isCurrent
                                 ? "bg-purple-50 border-2 border-purple-200"
                                 : isAvailable
                                 ? "hover:bg-gray-50 border border-transparent"
-                                : "opacity-50 cursor-not-allowed bg-gray-50 border border-gray-200"
+                                : "opacity-50 cursor-pointer bg-gray-50 border border-gray-200 hover:bg-gray-100"
                             }`}
                           >
                             <div className="flex items-center space-x-3">
@@ -527,6 +522,16 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                                   }`}
                                 >
                                   {model.name}
+                                  {model.id === "deepseek-r1" && (
+                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      ✨
+                                    </span>
+                                  )}
+                                  {model.id === "qwen3-coder" && (
+                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      ✨
+                                    </span>
+                                  )}
                                 </span>
                                 <div className="flex items-center space-x-2">
                                   <div className="flex items-center space-x-1">
@@ -548,10 +553,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                                     </p>
                                   </div>
                                   {!isAvailable && (
-                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                                      {userPlan === "free"
-                                        ? "Upgrade Required"
-                                        : "Not Available"}
+                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex items-center space-x-1">
+                                      {userPlan === "free" ? (
+                                        <LockIcon className="w-3 h-3" />
+                                      ) : (
+                                        <X className="w-3 h-3" />
+                                      )}
                                     </span>
                                   )}
                                 </div>
