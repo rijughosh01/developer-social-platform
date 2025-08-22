@@ -121,7 +121,7 @@ const AI_MODELS = {
     modelId: "deepseek/deepseek-r1-0528:free",
     costPer1kInput: 0,
     costPer1kOutput: 0,
-    maxTokens: 4096,
+    maxTokens: 8192,
     contextWindow: 163840,
     requiresPremium: false,
     capabilities: ["coding", "analysis", "reasoning", "specialized"],
@@ -656,14 +656,19 @@ class AIService {
   }
 
   // Make request to OpenAI
-  async makeOpenAIRequest(model, messages, maxTokens = 1000) {
+  async makeOpenAIRequest(model, messages, maxTokens = null) {
     if (!openai) {
       throw new Error("OpenAI API key not configured.");
     }
+    
+    
+    const modelConfig = AI_MODELS[model];
+    const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
+    
     const completion = await openai.chat.completions.create({
       model: model,
       messages: messages,
-      max_tokens: maxTokens,
+      max_tokens: actualMaxTokens,
       temperature: 0.7,
       presence_penalty: 0.1,
       frequency_penalty: 0.1,
@@ -677,7 +682,7 @@ class AIService {
   }
 
   // Make request to OpenRouter (DeepSeek R1)
-  async makeOpenRouterRequest(model, messages, maxTokens = 1000) {
+  async makeOpenRouterRequest(model, messages, maxTokens = null) {
     if (!openRouterAPI) {
       throw new Error("OpenRouter API key not configured.");
     }
@@ -699,10 +704,8 @@ class AIService {
         // );
       }
 
-      const actualMaxTokens =
-        model === "deepseek-r1" || model === "qwen3-coder"
-          ? Math.max(maxTokens, 2000)
-          : maxTokens;
+      
+      const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
 
       const response = await openRouterAPI.post("/chat/completions", {
         model: modelConfig.modelId,
@@ -896,6 +899,14 @@ class AIService {
           systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
         }
 
+  
+        let contextAdjustedMaxTokens = modelConfig.maxTokens;
+        if (context === "codeReview" || context === "projectHelp") {
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.5, 12000);
+        } else if (context === "debugging") {
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.3, 10000);
+        }
+
         // Enhance prompt with user context
         if (
           enhancedUserContext.skills &&
@@ -932,9 +943,9 @@ class AIService {
 
         // Make API request
         if (modelConfig.provider === "openai") {
-          aiResponse = await this.makeOpenAIRequest(currentModel, messages);
+          aiResponse = await this.makeOpenAIRequest(currentModel, messages, contextAdjustedMaxTokens);
         } else if (modelConfig.provider === "openrouter") {
-          aiResponse = await this.makeOpenRouterRequest(currentModel, messages);
+          aiResponse = await this.makeOpenRouterRequest(currentModel, messages, contextAdjustedMaxTokens);
         } else {
           throw new Error(`Unsupported provider: ${modelConfig.provider}`);
         }
@@ -959,7 +970,7 @@ class AIService {
 
         console.warn(`Model ${currentModel} failed: ${error.message}`);
 
-        // If this is the last model, throw the error
+        
         if (i === selectedModels.length - 1) {
           throw new Error(
             `All selected models failed. Last error: ${error.message}`
@@ -1330,6 +1341,14 @@ class AIService {
           systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
         }
 
+      
+        let contextAdjustedMaxTokens = modelConfig.maxTokens;
+        if (context === "codeReview" || context === "projectHelp") {
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.5, 12000);
+        } else if (context === "debugging") {
+          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens * 1.3, 10000);
+        }
+
         if (
           enhancedUserContext.skills &&
           enhancedUserContext.skills.length > 0
@@ -1365,9 +1384,9 @@ class AIService {
 
         // Stream the response based on provider
         if (modelConfig.provider === "openai") {
-          yield* this.streamOpenAIResponse(currentModel, messages);
+          yield* this.streamOpenAIResponse(currentModel, messages, contextAdjustedMaxTokens);
         } else if (modelConfig.provider === "openrouter") {
-          yield* this.streamOpenRouterResponse(currentModel, messages);
+          yield* this.streamOpenRouterResponse(currentModel, messages, contextAdjustedMaxTokens);
         } else {
           throw new Error(`Unsupported provider: ${modelConfig.provider}`);
         }
@@ -1409,16 +1428,20 @@ class AIService {
   }
 
   // Stream OpenAI response
-  async *streamOpenAIResponse(model, messages) {
+  async *streamOpenAIResponse(model, messages, maxTokens = null) {
     if (!openai) {
       throw new Error("OpenAI API key not configured.");
     }
 
     try {
+      
+      const modelConfig = AI_MODELS[model];
+      const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
+      
       const stream = await openai.chat.completions.create({
         model: model,
         messages: messages,
-        max_tokens: 1000,
+        max_tokens: actualMaxTokens,
         temperature: 0.7,
         presence_penalty: 0.1,
         frequency_penalty: 0.1,
@@ -1454,12 +1477,13 @@ class AIService {
   }
 
   // Stream OpenRouter response
-  async *streamOpenRouterResponse(model, messages) {
+  async *streamOpenRouterResponse(model, messages, maxTokens = null) {
     if (!openRouterAPI) {
       throw new Error("OpenRouter API key not configured.");
     }
 
     const modelConfig = AI_MODELS[model];
+    const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
 
     try {
       const response = await openRouterAPI.post(
@@ -1467,7 +1491,7 @@ class AIService {
         {
           model: modelConfig.modelId,
           messages: messages,
-          max_tokens: 1000,
+          max_tokens: actualMaxTokens,
           temperature: 0.7,
           presence_penalty: 0.1,
           frequency_penalty: 0.1,
@@ -1514,7 +1538,7 @@ class AIService {
         }
       }
 
-      // If no usage was provided in chunks, estimate based on content length
+      
       if (totalTokens === 0 && fullContent.length > 0) {
         totalTokens = Math.ceil((fullContent.length + 500) / 4);
       }
