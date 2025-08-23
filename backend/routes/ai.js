@@ -901,7 +901,12 @@ router.post(
           );
 
           // Also record token usage for the specific model
-          await aiService.recordTokenUsage(req.user._id, model, totalTokens, totalCost);
+          await aiService.recordTokenUsage(
+            req.user._id,
+            model,
+            totalTokens,
+            totalCost
+          );
         } catch (error) {
           console.error("Error tracking AI usage for streaming:", error);
         }

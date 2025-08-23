@@ -56,7 +56,7 @@ A comprehensive setup guide for DevLink - the AI-powered developer social platfo
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/rijughosh01/developer-social-platform
 cd developer-social-platform
 ```
 

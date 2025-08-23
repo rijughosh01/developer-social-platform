@@ -7,6 +7,8 @@ A comprehensive, AI-powered social platform designed specifically for developers
 ![Node.js](https://img.shields.io/badge/Node.js-18-green?style=for-the-badge&logo=node.js)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?style=for-the-badge&logo=mongodb)
 ![AI Powered](https://img.shields.io/badge/AI-Powered-orange?style=for-the-badge&logo=openai)
+![TypeScript](https://img.shields.io/badge/TypeScript-Blue?style=for-the-badge&logo=typescript&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 
 ---
 
@@ -232,7 +234,7 @@ developer-social-platform/
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone https://github.com/rijughosh01/developer-social-platform
 cd developer-social-platform
 ```
 

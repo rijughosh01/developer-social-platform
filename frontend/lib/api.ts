@@ -296,8 +296,10 @@ export const aiAPI = {
 
   getTokenLimits: () => api.get<ApiResponse>("/ai/token-limits"),
 
-  getModelRecommendations: (params?: { context?: string; [key: string]: any }) =>
-    api.get<ApiResponse>("/ai/model-recommendations", { params }),
+  getModelRecommendations: (params?: {
+    context?: string;
+    [key: string]: any;
+  }) => api.get<ApiResponse>("/ai/model-recommendations", { params }),
 
   getHealth: () => api.get<ApiResponse>("/ai/health"),
 
@@ -320,13 +322,14 @@ export const aiAPI = {
     conversationId?: string;
     model?: string;
   }) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
+
     return fetch(`${API_URL}/ai/chat/stream`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...headers,
       },
       body: JSON.stringify(data),

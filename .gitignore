@@ -129,3 +129,6 @@ check-*.js
 
 # Local development files
 .local
+
+# System Design Documentation
+SYSTEM_DESIGN.md

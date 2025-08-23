@@ -668,11 +668,12 @@ class AIService {
     if (!openaiClient) {
       throw new Error("OpenAI API key not configured.");
     }
-    
-    
+
     const modelConfig = AI_MODELS[model];
-    const actualMaxTokens = Math.floor(maxTokens || modelConfig?.maxTokens || 4096);
-    
+    const actualMaxTokens = Math.floor(
+      maxTokens || modelConfig?.maxTokens || 4096
+    );
+
     const completion = await openaiClient.chat.completions.create({
       model: model,
       messages: messages,
@@ -698,7 +699,9 @@ class AIService {
     const modelConfig = AI_MODELS[model];
 
     try {
-      const actualMaxTokens = Math.floor(maxTokens || modelConfig?.maxTokens || 4096);
+      const actualMaxTokens = Math.floor(
+        maxTokens || modelConfig?.maxTokens || 4096
+      );
 
       const response = await openRouterClient.post("/chat/completions", {
         model: modelConfig.modelId,
@@ -787,7 +790,11 @@ class AIService {
     const startTime = Date.now();
 
     // Validate input parameters
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    if (
+      !message ||
+      typeof message !== "string" ||
+      message.trim().length === 0
+    ) {
       throw new Error("Message cannot be empty");
     }
 
@@ -803,7 +810,6 @@ class AIService {
     const user = await User.findById(userId).select("subscription");
     const userPlan = user?.subscription?.plan || "free";
 
-    
     const tokenUsage = await DailyTokenUsage.getUserTokenUsage(userId);
     const availableTokens = {};
 
@@ -891,14 +897,24 @@ class AIService {
           systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
         }
 
-  
         let contextAdjustedMaxTokens = modelConfig.maxTokens;
         if (context === "codeReview" || context === "projectHelp") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.5), 12000);
+          contextAdjustedMaxTokens = Math.min(
+            modelConfig.maxTokens,
+            Math.floor(modelConfig.maxTokens * 1.5),
+            12000
+          );
         } else if (context === "debugging") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.3), 10000);
+          contextAdjustedMaxTokens = Math.min(
+            modelConfig.maxTokens,
+            Math.floor(modelConfig.maxTokens * 1.3),
+            10000
+          );
         }
-        contextAdjustedMaxTokens = Math.max(1, Math.floor(contextAdjustedMaxTokens));
+        contextAdjustedMaxTokens = Math.max(
+          1,
+          Math.floor(contextAdjustedMaxTokens)
+        );
 
         // Enhance prompt with user context
         if (
@@ -936,9 +952,17 @@ class AIService {
 
         // Make API request
         if (modelConfig.provider === "openai") {
-          aiResponse = await this.makeOpenAIRequest(currentModel, messages, contextAdjustedMaxTokens);
+          aiResponse = await this.makeOpenAIRequest(
+            currentModel,
+            messages,
+            contextAdjustedMaxTokens
+          );
         } else if (modelConfig.provider === "openrouter") {
-          aiResponse = await this.makeOpenRouterRequest(currentModel, messages, contextAdjustedMaxTokens);
+          aiResponse = await this.makeOpenRouterRequest(
+            currentModel,
+            messages,
+            contextAdjustedMaxTokens
+          );
         } else {
           throw new Error(`Unsupported provider: ${modelConfig.provider}`);
         }
@@ -958,7 +982,6 @@ class AIService {
 
         console.warn(`Model ${currentModel} failed: ${error.message}`);
 
-        
         if (i === selectedModels.length - 1) {
           throw new Error(
             `All selected models failed. Last error: ${error.message}`
@@ -1327,14 +1350,24 @@ class AIService {
           systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
         }
 
-      
         let contextAdjustedMaxTokens = modelConfig.maxTokens;
         if (context === "codeReview" || context === "projectHelp") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.5), 12000);
+          contextAdjustedMaxTokens = Math.min(
+            modelConfig.maxTokens,
+            Math.floor(modelConfig.maxTokens * 1.5),
+            12000
+          );
         } else if (context === "debugging") {
-          contextAdjustedMaxTokens = Math.min(modelConfig.maxTokens, Math.floor(modelConfig.maxTokens * 1.3), 10000);
+          contextAdjustedMaxTokens = Math.min(
+            modelConfig.maxTokens,
+            Math.floor(modelConfig.maxTokens * 1.3),
+            10000
+          );
         }
-        contextAdjustedMaxTokens = Math.max(1, Math.floor(contextAdjustedMaxTokens));
+        contextAdjustedMaxTokens = Math.max(
+          1,
+          Math.floor(contextAdjustedMaxTokens)
+        );
 
         if (
           enhancedUserContext.skills &&
@@ -1371,9 +1404,17 @@ class AIService {
 
         // Stream the response based on provider
         if (modelConfig.provider === "openai") {
-          yield* this.streamOpenAIResponse(currentModel, messages, contextAdjustedMaxTokens);
+          yield* this.streamOpenAIResponse(
+            currentModel,
+            messages,
+            contextAdjustedMaxTokens
+          );
         } else if (modelConfig.provider === "openrouter") {
-          yield* this.streamOpenRouterResponse(currentModel, messages, contextAdjustedMaxTokens);
+          yield* this.streamOpenRouterResponse(
+            currentModel,
+            messages,
+            contextAdjustedMaxTokens
+          );
         } else {
           throw new Error(`Unsupported provider: ${modelConfig.provider}`);
         }
@@ -1417,10 +1458,9 @@ class AIService {
     }
 
     try {
-      
       const modelConfig = AI_MODELS[model];
       const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
-      
+
       const stream = await openaiClient.chat.completions.create({
         model: model,
         messages: messages,
@@ -1522,7 +1562,6 @@ class AIService {
         }
       }
 
-      
       if (totalTokens === 0 && fullContent.length > 0) {
         totalTokens = Math.ceil((fullContent.length + 500) / 4);
       }
@@ -1603,5 +1642,6 @@ module.exports = {
   getCachedResponse:
     aiServiceInstance.getCachedResponse.bind(aiServiceInstance),
   cacheResponse: aiServiceInstance.cacheResponse.bind(aiServiceInstance),
-  getModelRecommendations: aiServiceInstance.getModelRecommendations.bind(aiServiceInstance),
+  getModelRecommendations:
+    aiServiceInstance.getModelRecommendations.bind(aiServiceInstance),
 };
