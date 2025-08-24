@@ -179,6 +179,20 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     scrollToBottom();
   }, [responses]);
@@ -387,14 +401,14 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/20 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Main Modal */}
-      <div className="relative w-full max-w-5xl h-[90vh] sm:h-[85vh] bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
+      <div className="relative w-full h-full bg-white/95 backdrop-blur-xl flex flex-col overflow-hidden">
         <div className="relative p-2 sm:p-4 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)]" />
@@ -705,9 +719,10 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                 type="button"
                 aria-label="Close"
                 onClick={onClose}
-                className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-all duration-200 group"
+                className="p-2 sm:p-3 hover:bg-white/20 rounded-xl transition-all duration-200 group bg-white/10 backdrop-blur-sm border border-white/20"
+                title="Close (Esc)"
               >
-                <X className="w-3 h-3 sm:w-4 sm:h-4 group-hover:rotate-90 transition-transform duration-200" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-90 transition-transform duration-200" />
               </button>
             </div>
           </div>
@@ -716,26 +731,17 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
         {/* Messages Area  */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
           {responses.length === 0 && !isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500 px-2 sm:px-0">
-              <div className="relative mb-6 sm:mb-8">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full flex items-center justify-center">
-                  <Bot className="w-12 h-12 sm:w-16 sm:h-16 text-blue-500" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-                  <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-bold mb-3 bg-gradient-to-r from-gray-700 to-gray-500 bg-clip-text text-transparent text-center">
+            <div className="flex flex-col items-center justify-center min-h-full text-gray-500 px-4 sm:px-8 py-8 sm:py-12">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-gray-700 to-gray-500 bg-clip-text text-transparent text-center">
                 Welcome to DevLink AI!
               </h3>
-              <p className="text-center max-w-lg text-gray-600 leading-relaxed text-sm sm:text-base px-2">
+              <p className="text-center max-w-lg text-gray-600 leading-relaxed text-sm sm:text-base px-4 mb-6 sm:mb-8">
                 I'm your intelligent coding companion. Choose a context below
                 and let's build something amazing together!
               </p>
 
               {/* Quick Actions Grid  */}
-              <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-lg px-2 sm:px-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-lg px-4 sm:px-0">
                 {Object.entries(contextConfigs).map(([key, config]) => {
                   const Icon = config.icon;
                   return (
