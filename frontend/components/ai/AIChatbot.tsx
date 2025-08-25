@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
+import { useAutoResizeTextarea } from "../../hooks/useAutoResizeTextarea";
 import toast from "react-hot-toast";
 import { parseAIError } from "@/lib/utils";
 import {
@@ -81,7 +82,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
   const [streamingResponse, setStreamingResponse] = useState("");
   const [useStreaming, setUseStreaming] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useAutoResizeTextarea(message);
 
   // Natural thinking thoughts that cycle through
   const thinkingThoughts = [
@@ -283,7 +284,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
               setStreamingResponse((prev) => prev + chunk.content);
             }
           },
-          onComplete: (data) => {
+          onComplete: (data: any) => {
             setIsStreaming(false);
             setStreamingResponse("");
             if (data.conversationId && !currentConversationId) {
@@ -292,6 +293,16 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
             if (data.conversationId) {
               dispatch(fetchConversation(data.conversationId));
+            }
+
+            if (data.content && data.content.trim().length === 0) {
+              toast.error(
+                "The AI response was empty. Please try rephrasing your question or try again.",
+                {
+                  duration: 5000,
+                  icon: "🤖",
+                }
+              );
             }
           },
           onError: (error) => {
@@ -309,6 +320,19 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
       ) {
         setCurrentConversationId(result.payload.conversationId);
       }
+
+      if (
+        result.payload &&
+        (!result.payload.content || result.payload.content.trim().length === 0)
+      ) {
+        toast.error(
+          "The AI response was empty. Please try rephrasing your question or try again.",
+          {
+            duration: 5000,
+            icon: "🤖",
+          }
+        );
+      }
     } else {
       const result = await dispatch(
         sendAIMessage({
@@ -321,10 +345,25 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
 
       if (
         result.payload &&
-        result.payload.conversationId &&
+        (result.payload as any).conversationId &&
         !currentConversationId
       ) {
-        setCurrentConversationId(result.payload.conversationId);
+        setCurrentConversationId((result.payload as any).conversationId);
+      }
+
+      
+      if (
+        result.payload &&
+        (!(result.payload as any).content ||
+          (result.payload as any).content.trim().length === 0)
+      ) {
+        toast.error(
+          "The AI response was empty. Please try rephrasing your question or try again.",
+          {
+            duration: 5000,
+            icon: "🤖",
+          }
+        );
       }
     }
   };
@@ -1396,8 +1435,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                   placeholder={`Ask me anything about ${contextConfigs[
                     currentContext as keyof typeof contextConfigs
                   ]?.label.toLowerCase()}...`}
-                  className="w-full px-4 sm:px-6 py-3 sm:py-4 border-2 border-gray-200 rounded-xl sm:rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm text-sm sm:text-base"
-                  rows={1}
+                  className="w-full px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-200 rounded-xl sm:rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white/80 backdrop-blur-sm text-sm sm:text-base min-h-[36px] max-h-[200px] overflow-y-auto"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -1411,7 +1449,7 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ isOpen, onClose }) => {
                 type="submit"
                 aria-label="Send message"
                 disabled={!message.trim() || isLoading || isStreaming}
-                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl sm:rounded-2xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center"
+                className="flex-shrink-0 w-full sm:w-auto h-[52px] sm:h-[68px] px-4 sm:px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl sm:rounded-2xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center"
               >
                 <Send className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>

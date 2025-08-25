@@ -698,83 +698,121 @@ class AIService {
     }
     const modelConfig = AI_MODELS[model];
 
-    try {
-      const actualMaxTokens = Math.floor(
-        maxTokens || modelConfig?.maxTokens || 4096
-      );
+    let retryCount = 0;
+    const maxRetries = 3;
+    const baseDelay = 1000;
 
-      const response = await openRouterClient.post("/chat/completions", {
-        model: modelConfig.modelId,
-        messages: messages,
-        max_tokens: actualMaxTokens,
-        temperature: 0.7,
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1,
-      });
-
-      // Validate response structure
-      if (
-        !response.data ||
-        !response.data.choices ||
-        !response.data.choices[0]
-      ) {
-        throw new Error("Invalid response structure from OpenRouter");
-      }
-
-      const choice = response.data.choices[0];
-
-      // Handle empty content - check if there's reasoning available
-      let content = choice.message?.content || "";
-      if (!content && choice.message?.reasoning) {
-        content = `[Response was cut off due to length limits. Partial reasoning: ${choice.message.reasoning}]`;
-      }
-
-      if (!content) {
-        throw new Error("No content in OpenRouter response");
-      }
-
-      // Validate usage data
-      if (!response.data.usage) {
-        throw new Error("No usage data in OpenRouter response");
-      }
-
-      return {
-        content: content,
-        usage: response.data.usage,
-        model: model,
-      };
-    } catch (error) {
-      console.error("OpenRouter API Error:", {
-        model: model,
-        error: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-      });
-
-      // Handle specific OpenRouter errors
-      if (error.response?.status === 429) {
-        throw new Error(
-          "OpenRouter rate limit exceeded. Please try again later."
+    while (retryCount <= maxRetries) {
+      try {
+        const actualMaxTokens = Math.floor(
+          maxTokens || modelConfig?.maxTokens || 4096
         );
-      } else if (error.response?.status === 401) {
-        throw new Error("OpenRouter API key is invalid or expired.");
-      } else if (error.response?.status === 400) {
-        throw new Error(
-          `OpenRouter request failed: ${
-            error.response.data?.error?.message || "Bad request"
-          }`
-        );
-      } else if (error.response?.status >= 500) {
-        throw new Error(
-          "OpenRouter service is temporarily unavailable. Please try again later."
-        );
-      } else if (error.code === "ECONNABORTED" || error.code === "ENOTFOUND") {
-        throw new Error(
-          "Network error connecting to OpenRouter. Please check your internet connection."
-        );
-      } else {
-        throw new Error(`OpenRouter request failed: ${error.message}`);
+
+        const response = await openRouterClient.post("/chat/completions", {
+          model: modelConfig.modelId,
+          messages: messages,
+          max_tokens: actualMaxTokens,
+          temperature: 0.7,
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1,
+        });
+
+        // Validate response structure
+        if (
+          !response.data ||
+          !response.data.choices ||
+          !response.data.choices[0]
+        ) {
+          throw new Error("Invalid response structure from OpenRouter");
+        }
+
+        const choice = response.data.choices[0];
+
+        let content = choice.message?.content || "";
+        if (!content && choice.message?.reasoning) {
+          content = `[Response was cut off due to length limits. Partial reasoning: ${choice.message.reasoning}]`;
+        }
+
+        if (!content) {
+          throw new Error("No content in OpenRouter response");
+        }
+
+        // Validate usage data
+        if (!response.data.usage) {
+          throw new Error("No usage data in OpenRouter response");
+        }
+
+        return {
+          content: content,
+          usage: response.data.usage,
+          model: model,
+        };
+      } catch (error) {
+        retryCount++;
+
+        console.error("OpenRouter API Error:", {
+          model: model,
+          error: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          retryCount,
+        });
+
+        // Handle specific OpenRouter errors
+        if (error.response?.status === 429) {
+          if (retryCount <= maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount - 1);
+            console.warn(
+              `OpenRouter rate limit hit, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error(
+              "OpenRouter rate limit exceeded after multiple retries. Please try again later."
+            );
+          }
+        } else if (error.response?.status === 401) {
+          throw new Error("OpenRouter API key is invalid or expired.");
+        } else if (error.response?.status === 400) {
+          throw new Error(
+            `OpenRouter request failed: ${
+              error.response.data?.error?.message || "Bad request"
+            }`
+          );
+        } else if (error.response?.status >= 500) {
+          if (retryCount <= maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount - 1);
+            console.warn(
+              `OpenRouter server error, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error(
+              "OpenRouter service is temporarily unavailable. Please try again later."
+            );
+          }
+        } else if (
+          error.code === "ECONNABORTED" ||
+          error.code === "ENOTFOUND"
+        ) {
+          if (retryCount <= maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount - 1);
+            console.warn(
+              `Network error, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error(
+              "Network error connecting to OpenRouter. Please check your internet connection."
+            );
+          }
+        } else {
+          throw new Error(`OpenRouter request failed: ${error.message}`);
+        }
       }
     }
   }
@@ -897,6 +935,11 @@ class AIService {
           systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
         }
 
+        // Enhanced prompt for short responses
+        if (message.trim().length <= 10) {
+          systemPrompt += `\n\nIMPORTANT: The user has provided a very short response (like "yes", "no", "ok", etc.). This is likely a follow-up to a previous question. Please provide a detailed, helpful response that addresses what they likely want to know based on the conversation context. Do not respond with just "yes" or "no" - provide a comprehensive explanation.`;
+        }
+
         let contextAdjustedMaxTokens = modelConfig.maxTokens;
         if (context === "codeReview" || context === "projectHelp") {
           contextAdjustedMaxTokens = Math.min(
@@ -965,6 +1008,29 @@ class AIService {
           );
         } else {
           throw new Error(`Unsupported provider: ${modelConfig.provider}`);
+        }
+
+        // Validate AI response is not empty
+        if (
+          !aiResponse ||
+          !aiResponse.content ||
+          aiResponse.content.trim().length === 0
+        ) {
+          const fallbackResponse = this.generateFallbackResponse(
+            message,
+            context,
+            conversationHistory
+          );
+          aiResponse = {
+            content: fallbackResponse,
+            usage: {
+              prompt_tokens: Math.ceil((message.length + 500) / 4),
+              completion_tokens: Math.ceil(fallbackResponse.length / 4),
+              total_tokens: Math.ceil(
+                (message.length + fallbackResponse.length + 500) / 4
+              ),
+            },
+          };
         }
 
         // Success! Record the successful request
@@ -1049,6 +1115,50 @@ class AIService {
   catch(error) {
     console.error("AI Service Error:", error);
     throw new Error(`AI request failed: ${error.message}`);
+  }
+
+  // Generate fallback response for empty AI responses
+  generateFallbackResponse(message, context, conversationHistory) {
+    const shortResponse = message.trim().toLowerCase();
+    if (
+      shortResponse === "yes" ||
+      shortResponse === "y" ||
+      shortResponse === "ok" ||
+      shortResponse === "okay"
+    ) {
+      const lastAIMessage = conversationHistory
+        .filter((msg) => msg.role === "assistant")
+        .pop();
+
+      if (
+        lastAIMessage &&
+        lastAIMessage.content.includes("Want me to explain")
+      ) {
+        return (
+          "I'd be happy to provide more detailed explanations! Let me break down the key concepts we discussed:\n\n" +
+          "1. **Core Concepts**: I'll explain the fundamental principles in detail\n" +
+          "2. **Practical Examples**: I'll provide real-world examples and use cases\n" +
+          "3. **Best Practices**: I'll share industry best practices and recommendations\n" +
+          "4. **Common Pitfalls**: I'll highlight things to avoid and potential challenges\n\n" +
+          "What specific aspect would you like me to focus on? Feel free to ask about any particular concept, implementation details, or practical applications."
+        );
+      }
+
+      return "I understand you'd like more information! Let me provide a comprehensive explanation of the topic we were discussing. Could you please specify which particular aspect you'd like me to elaborate on? This will help me give you the most relevant and helpful details.";
+    }
+
+    if (shortResponse === "no" || shortResponse === "n") {
+      return "No problem! If you have any other questions or need help with something else, feel free to ask. I'm here to help with coding, debugging, learning, or any other development-related topics.";
+    }
+
+    // Generic fallback for other short responses
+    return (
+      "I see you've provided a brief response. Let me help you get the most out of our conversation. Could you please:\n\n" +
+      "1. **Clarify your question** - What specific information are you looking for?\n" +
+      "2. **Provide more context** - What are you working on or trying to achieve?\n" +
+      "3. **Ask follow-up questions** - What aspects would you like me to explain further?\n\n" +
+      "I'm here to help with detailed explanations, code examples, debugging, and comprehensive guidance!"
+    );
   }
 
   // Code review specific method
@@ -1350,6 +1460,11 @@ class AIService {
           systemPrompt = SYSTEM_PROMPTS.qwen3Coder;
         }
 
+        // Enhanced prompt for short responses
+        if (message.trim().length <= 10) {
+          systemPrompt += `\n\nIMPORTANT: The user has provided a very short response (like "yes", "no", "ok", etc.). This is likely a follow-up to a previous question. Please provide a detailed, helpful response that addresses what they likely want to know based on the conversation context. Do not respond with just "yes" or "no" - provide a comprehensive explanation.`;
+        }
+
         let contextAdjustedMaxTokens = modelConfig.maxTokens;
         if (context === "codeReview" || context === "projectHelp") {
           contextAdjustedMaxTokens = Math.min(
@@ -1509,69 +1624,131 @@ class AIService {
     const modelConfig = AI_MODELS[model];
     const actualMaxTokens = maxTokens || modelConfig?.maxTokens || 4096;
 
-    try {
-      const response = await openRouterClient.post(
-        "/chat/completions",
-        {
-          model: modelConfig.modelId,
-          messages: messages,
-          max_tokens: actualMaxTokens,
-          temperature: 0.7,
-          presence_penalty: 0.1,
-          frequency_penalty: 0.1,
-          stream: true,
-        },
-        {
-          responseType: "stream",
-          headers: {
-            Accept: "text/event-stream",
+    let retryCount = 0;
+    const maxRetries = 3;
+    const baseDelay = 1000;
+
+    while (retryCount <= maxRetries) {
+      try {
+        const response = await openRouterClient.post(
+          "/chat/completions",
+          {
+            model: modelConfig.modelId,
+            messages: messages,
+            max_tokens: actualMaxTokens,
+            temperature: 0.7,
+            presence_penalty: 0.1,
+            frequency_penalty: 0.1,
+            stream: true,
           },
-        }
-      );
+          {
+            responseType: "stream",
+            headers: {
+              Accept: "text/event-stream",
+            },
+          }
+        );
 
-      let totalTokens = 0;
-      let fullContent = "";
+        let totalTokens = 0;
+        let fullContent = "";
 
-      for await (const chunk of response.data) {
-        const lines = chunk.toString().split("\n");
+        for await (const chunk of response.data) {
+          const lines = chunk.toString().split("\n");
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
 
-            if (data === "[DONE]") {
-              break;
-            }
-
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices[0]?.delta?.content;
-
-              if (content) {
-                fullContent += content;
-                yield { type: "content", content };
+              if (data === "[DONE]") {
+                break;
               }
 
-              if (parsed.usage) {
-                totalTokens = parsed.usage.total_tokens;
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices[0]?.delta?.content;
+
+                if (content) {
+                  fullContent += content;
+                  yield { type: "content", content };
+                }
+
+                if (parsed.usage) {
+                  totalTokens = parsed.usage.total_tokens;
+                }
+              } catch (parseError) {
+                continue;
               }
-            } catch (parseError) {
-              continue;
             }
           }
         }
-      }
 
-      if (totalTokens === 0 && fullContent.length > 0) {
-        totalTokens = Math.ceil((fullContent.length + 500) / 4);
-      }
+        if (totalTokens === 0 && fullContent.length > 0) {
+          totalTokens = Math.ceil((fullContent.length + 500) / 4);
+        }
 
-      // Calculate cost
-      const cost = this.calculateCost(model, totalTokens, 0);
-      yield { type: "usage", tokens: totalTokens, cost };
-    } catch (error) {
-      console.error("OpenRouter Streaming Error:", error);
-      yield { type: "error", error: error.message };
+        // Calculate cost
+        const cost = this.calculateCost(model, totalTokens, 0);
+        yield { type: "usage", tokens: totalTokens, cost };
+
+        break;
+      } catch (error) {
+        retryCount++;
+
+        // Handle specific OpenRouter errors
+        if (error.response?.status === 429) {
+          if (retryCount <= maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount - 1);
+            console.warn(
+              `OpenRouter rate limit hit, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error(
+              "OpenRouter rate limit exceeded after multiple retries. Please try again later."
+            );
+          }
+        } else if (error.response?.status === 401) {
+          throw new Error("OpenRouter API key is invalid or expired.");
+        } else if (error.response?.status === 400) {
+          throw new Error(
+            `OpenRouter request failed: ${
+              error.response.data?.error?.message || "Bad request"
+            }`
+          );
+        } else if (error.response?.status >= 500) {
+          if (retryCount <= maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount - 1);
+            console.warn(
+              `OpenRouter server error, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error(
+              "OpenRouter service is temporarily unavailable. Please try again later."
+            );
+          }
+        } else if (
+          error.code === "ECONNABORTED" ||
+          error.code === "ENOTFOUND"
+        ) {
+          if (retryCount <= maxRetries) {
+            const delay = baseDelay * Math.pow(2, retryCount - 1);
+            console.warn(
+              `Network error, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`
+            );
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          } else {
+            throw new Error(
+              "Network error connecting to OpenRouter. Please check your internet connection."
+            );
+          }
+        } else {
+          throw new Error(`OpenRouter request failed: ${error.message}`);
+        }
+      }
     }
   }
 
@@ -1644,4 +1821,6 @@ module.exports = {
   cacheResponse: aiServiceInstance.cacheResponse.bind(aiServiceInstance),
   getModelRecommendations:
     aiServiceInstance.getModelRecommendations.bind(aiServiceInstance),
+  generateFallbackResponse:
+    aiServiceInstance.generateFallbackResponse.bind(aiServiceInstance),
 };

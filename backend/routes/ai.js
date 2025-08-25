@@ -910,6 +910,67 @@ router.post(
         } catch (error) {
           console.error("Error tracking AI usage for streaming:", error);
         }
+      } else {
+        // Handle empty response with fallback
+        try {
+          const fallbackResponse = aiService.generateFallbackResponse(
+            message,
+            context,
+            conversationHistory
+          );
+
+          // Send fallback response as content chunks
+          const fallbackChunks = fallbackResponse
+            .split(" ")
+            .map((word) => word + " ");
+          for (const chunk of fallbackChunks) {
+            res.write(
+              `data: ${JSON.stringify({
+                type: "content",
+                content: chunk,
+                conversationId: conversation._id,
+              })}\n\n`
+            );
+
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+
+          // Save fallback response to conversation
+          await conversation.addMessage("assistant", fallbackResponse, {
+            tokens: Math.ceil((fallbackResponse.length + 500) / 4),
+            cost: 0,
+            model: model,
+            processingTime: Date.now() - startTime,
+          });
+
+          totalTokens = Math.ceil((fallbackResponse.length + 500) / 4);
+          totalCost = 0;
+        } catch (fallbackError) {
+          console.error("Fallback response generation failed:", fallbackError);
+
+          // Send a simple fallback message
+          const simpleFallback =
+            "I apologize, but I'm having trouble generating a response right now. Please try rephrasing your question or try again in a moment.";
+
+          res.write(
+            `data: ${JSON.stringify({
+              type: "content",
+              content: simpleFallback,
+              conversationId: conversation._id,
+            })}\n\n`
+          );
+
+          // Save simple fallback to conversation
+          await conversation.addMessage("assistant", simpleFallback, {
+            tokens: Math.ceil((simpleFallback.length + 500) / 4),
+            cost: 0,
+            model: model,
+            processingTime: Date.now() - startTime,
+          });
+
+          totalTokens = Math.ceil((simpleFallback.length + 500) / 4);
+          totalCost = 0;
+        }
       }
 
       // Send completion event
@@ -925,10 +986,24 @@ router.post(
     } catch (error) {
       console.error("AI Streaming Error:", error);
 
+      // Handle specific error types
+      let errorMessage = "Something went wrong!";
+
+      if (error.status === 429) {
+        errorMessage = "Rate limit exceeded. Please try again in a moment.";
+      } else if (
+        error.message &&
+        error.message.includes("generateFallbackResponse")
+      ) {
+        errorMessage = "AI service temporarily unavailable. Please try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       res.write(
         `data: ${JSON.stringify({
           type: "error",
-          error: error.message,
+          error: errorMessage,
         })}\n\n`
       );
     } finally {

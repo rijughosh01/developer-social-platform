@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { AppDispatch } from "@/store";
+import { useAutoResizeTextarea } from "../../hooks/useAutoResizeTextarea";
 import toast from "react-hot-toast";
 import {
   fetchConversation,
@@ -89,7 +90,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useAutoResizeTextarea(message);
 
   useEffect(() => {
     setIsMounted(true);
@@ -794,8 +795,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Type your message here... Ask me anything about programming, code review, debugging, or project help!"
-                    className="w-full border-2 border-gray-200 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-500 text-sm sm:text-base"
-                    rows={4}
+                    className="w-full border-2 border-gray-200 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-3 sm:py-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-white/80 backdrop-blur-sm transition-all duration-200 placeholder-gray-500 text-sm sm:text-base min-h-[120px] max-h-[300px] overflow-y-auto"
                     disabled={isLoading}
                   />
                   <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 text-xs text-gray-400">
@@ -807,7 +807,7 @@ const ConversationDetail: React.FC<ConversationDetailProps> = ({
                   <button
                     type="submit"
                     disabled={!message.trim() || isLoading}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 sm:gap-3 shadow-lg hover:shadow-glow hover:scale-105 transform text-sm sm:text-base"
+                    className="flex-shrink-0 h-[52px] sm:h-[60px] bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 sm:px-8 rounded-xl sm:rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 sm:gap-3 shadow-lg hover:shadow-glow hover:scale-105 transform text-sm sm:text-base"
                   >
                     {isLoading ? (
                       <>

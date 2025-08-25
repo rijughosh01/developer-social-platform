@@ -26,6 +26,11 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   isFollowing?: boolean;
+  subscription?: {
+    plan: "free" | "premium" | "pro";
+    status: "active" | "inactive" | "cancelled";
+    expiresAt?: string;
+  };
 }
 
 export interface Post {
@@ -295,6 +300,7 @@ export interface AIResponse {
   cached?: boolean;
   conversationId?: string;
   processingTime?: number;
+  usedFallback?: boolean;
 }
 
 export interface AIStats {
