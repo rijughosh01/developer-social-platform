@@ -148,10 +148,25 @@ export default function ProjectDetailsModal({
     );
   }
 
-  const isOwner =
-    typeof window !== "undefined" &&
-    displayProject.owner?._id ===
-      JSON.parse(localStorage.getItem("user") || "{}")._id;
+  const getStoredUser = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("user");
+      if (!raw || raw === "undefined" || raw === "null" || raw === "") {
+        return null;
+      }
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  };
+
+  const storedUser = getStoredUser();
+  const isOwner = Boolean(
+    displayProject.owner?._id &&
+      storedUser?._id &&
+      displayProject.owner._id === storedUser._id
+  );
 
   const statusConfig = {
     "in-progress": {
