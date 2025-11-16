@@ -41,7 +41,7 @@
     "multer": "^1.4.5-lts.1",
     "node-cache": "^5.1.2",
     "nodemailer": "^7.0.5",
-    "openai": "^5.11.0",
+    "openai": "^4.104.0",
     "rate-limit-redis": "^4.2.2",
     "rate-limiter-flexible": "^7.2.0",
     "redis": "^4.6.13",
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.1.10",
+    "nodemon": "^3.1.11",
     "supertest": "^6.3.4"
   },
   "engines": {
